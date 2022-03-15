@@ -165,8 +165,8 @@ if __name__ == "__main__":
     meters_per_pixel = 0.1  # @param {type:"slider", min:0.01, max:1.0, step:0.01}
     # @markdown ---
     # @markdown Customize the map slice height (global y coordinate):
-    custom_height = False  # @param {type:"boolean"}
-    height = 1  # @param {type:"slider", min:-10, max:10, step:0.1}
+    custom_height = True  # @param {type:"boolean"}
+    height = 0.1  # @param {type:"slider", min:-10, max:10, step:0.1}
     # @markdown If not using custom height, default to scene lower limit.
     # @markdown (Cell output provides scene height range from bounding box for reference.)
 
