@@ -1,12 +1,11 @@
 import argparse
 import random
 
-import habitat_sim
 from habitat.utils.visualizations import maps
+import habitat_sim
 import numpy as np
 
-from grid2topo.habitat_utils import make_cfg, display_map, convert_points_to_topdown
-
+from grid2topo.habitat_utils import convert_points_to_topdown, display_map, make_cfg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -39,7 +38,7 @@ if __name__ == "__main__":
     # The randomness is needed when choosing the actions
     random.seed(sim_settings["seed"])
     sim.seed(sim_settings["seed"])
-    pathfinder_seed = 4
+    pathfinder_seed = 1
 
     # Set agent state
     agent = sim.initialize_agent(sim_settings["default_agent"])
@@ -58,7 +57,6 @@ if __name__ == "__main__":
         print("Sampled point is not navigable")
 
     topdown_map = maps.get_topdown_map(sim.pathfinder, height=nav_point[1], meters_per_pixel=meters_per_pixel)
-
     recolor_map = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
     recolored_topdown_map = recolor_map[topdown_map]
 

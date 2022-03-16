@@ -6,3 +6,6 @@ pylint
 pytest
 pytest-pylint
 pytest-flake8
+
+# Module for images
+scikit-image

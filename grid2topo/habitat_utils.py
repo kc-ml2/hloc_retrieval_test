@@ -64,7 +64,7 @@ def print_scene_recur(scene, limit_output=10):
 
 
 def display_observation(rgb_obs, depth_obs=np.array([])):
-    '''Display sensor observation image.'''
+    """Display sensor observation image."""
     arr = []
     titles = []
 
@@ -89,7 +89,7 @@ def display_observation(rgb_obs, depth_obs=np.array([])):
 
 
 def convert_points_to_topdown(pathfinder, points, meters_per_pix):
-    '''Convert 3d points to 2d topdown coordinates.'''
+    """Convert 3d points to 2d topdown coordinates."""
     points_topdown = []
     bounds = pathfinder.get_bounds()
     for pnt in points:
@@ -101,7 +101,7 @@ def convert_points_to_topdown(pathfinder, points, meters_per_pix):
 
 
 def display_map(topdown_map, key_points=None):
-    '''Display a topdown map with matplotlib.'''
+    """Display a topdown map with matplotlib."""
     plt.figure(figsize=(12, 8))
     ax = plt.subplot(1, 1, 1)
     ax.axis("off")

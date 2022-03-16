@@ -5,6 +5,7 @@ import random
 
 # function to display the topdown map
 from PIL import Image
+from habitat.utils.visualizations import maps
 import habitat_sim
 from habitat_sim.utils import common as utils
 from habitat_sim.utils.common import d3_40_colors_rgb
@@ -12,8 +13,6 @@ import imageio
 import magnum as mn
 from matplotlib import pyplot as plt
 import numpy as np
-
-from habitat.utils.visualizations import maps
 
 
 def make_cfg(settings):
