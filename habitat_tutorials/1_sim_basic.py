@@ -8,7 +8,7 @@ from habitat_sim.utils.common import d3_40_colors_rgb
 from matplotlib import pyplot as plt
 import numpy as np
 
-output_path = "habitat/tutorials/output/"
+output_path = "habitat_tutorials/output/"
 
 if not os.path.exists(output_path):
     os.mkdir(output_path)

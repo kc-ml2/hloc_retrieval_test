@@ -116,7 +116,7 @@ def display_map(topdown_map, key_points=None):
     plt.show(block=False)
 
 
-output_path = "habitat/tutorials/output/"
+output_path = "habitat_tutorials/output/"
 
 if not os.path.exists(output_path):
     os.mkdir(output_path)
@@ -181,10 +181,14 @@ if __name__ == "__main__":
         # @markdown You can get the topdown map directly from the Habitat-sim API with *PathFinder.get_topdown_view*.
         # This map is a 2D boolean array
         sim_topdown_map = sim.pathfinder.get_topdown_view(meters_per_pixel, height)
+        print(np.shape(sim_topdown_map))
+        input()
 
         # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module]
         # https://github.com/facebookresearch/habitat-lab/blob/main/habitat/utils/visualizations/maps.py)
         hablab_topdown_map = maps.get_topdown_map(sim.pathfinder, height, meters_per_pixel=meters_per_pixel)
+        print(np.shape(hablab_topdown_map))
+        input()
         recolor_map = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
         hablab_topdown_map = recolor_map[hablab_topdown_map]
         print("Displaying the raw map from get_topdown_view:")
@@ -212,6 +216,8 @@ if __name__ == "__main__":
         pathfinder_seed = 4  # @param {type:"integer"}
         sim.pathfinder.seed(pathfinder_seed)
         nav_point = sim.pathfinder.get_random_navigable_point()
+        print("Nav point: ", nav_point)
+        input()
         print("Random navigable point : " + str(nav_point))
         print("Is point navigable? " + str(sim.pathfinder.is_navigable(nav_point)))
 
@@ -227,6 +233,8 @@ if __name__ == "__main__":
         print(" distance: " + str(hit_record.hit_dist))
 
         vis_points = [nav_point]
+        print("Vis point: ", vis_points)
+        input()
 
         # HitRecord will have infinite distance if no valid point was found:
         if math.isinf(hit_record.hit_dist):
@@ -241,12 +249,17 @@ if __name__ == "__main__":
             print("Is point navigable? " + str(sim.pathfinder.is_navigable(snapped_point)))
             vis_points.append(snapped_point)
 
+        print("Nav point: ", vis_points)
+        input()
+
         # @markdown ---
         # @markdown ### Visualization
         # @markdown Running this cell generates a topdown visualization of the NavMesh with sampled points overlayed.
         meters_per_pixel = 0.1  # @param {type:"slider", min:0.01, max:1.0, step:0.01}
 
         xy_vis_points = convert_points_to_topdown(sim.pathfinder, vis_points, meters_per_pixel)
+        print("xy vis point: ", xy_vis_points)
+        input()
         # use the y coordinate of the sampled nav_point for the map height slice
         top_down_map = maps.get_topdown_map(sim.pathfinder, height=nav_point[1], meters_per_pixel=meters_per_pixel)
         recolor_map = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
