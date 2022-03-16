@@ -57,19 +57,13 @@ if __name__ == "__main__":
         print("Sampled point is not navigable")
 
     topdown_map = maps.get_topdown_map(sim.pathfinder, height=nav_point[1], meters_per_pixel=meters_per_pixel)
-    recolor_map = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
-    recolored_topdown_map = recolor_map[topdown_map]
+    recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
+    recolored_topdown_map = recolor_palette[topdown_map]
 
-    print("Displaying the raw map from get_topdown_view:")
-    display_map(topdown_map)
-    input()
-
-    print("Displaying recolored:")
+    print("Displaying recolored map:")
     display_map(recolored_topdown_map)
-    input()
 
     vis_points = [nav_point]
     xy_vis_points = convert_points_to_topdown(sim.pathfinder, vis_points, meters_per_pixel)
     print("\nDisplay the map with key_point overlay:")
     display_map(recolored_topdown_map, key_points=xy_vis_points)
-    input()

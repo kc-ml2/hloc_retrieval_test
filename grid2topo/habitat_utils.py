@@ -1,4 +1,5 @@
 from PIL import Image
+import cv2
 import habitat_sim
 from matplotlib import pyplot as plt
 import numpy as np
@@ -101,13 +102,18 @@ def convert_points_to_topdown(pathfinder, points, meters_per_pix):
 
 
 def display_map(topdown_map, key_points=None):
-    """Display a topdown map with matplotlib."""
-    plt.figure(figsize=(12, 8))
-    ax = plt.subplot(1, 1, 1)
-    ax.axis("off")
-    plt.imshow(topdown_map)
-    # plot points on map
+    """Display a topdown map with OpenCV."""
+
     if key_points is not None:
         for pnt in key_points:
-            plt.plot(pnt[0], pnt[1], marker="o", markersize=10, alpha=0.8)
-    plt.show(block=False)
+            cv2.drawMarker(
+                img=topdown_map,
+                position=(int(pnt[0]), int(pnt[1])),
+                color=(0, 255, 0),
+                markerType=cv2.MARKER_DIAMOND,
+                markerSize=1,
+            )
+
+    cv2.imshow("map", topdown_map)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
