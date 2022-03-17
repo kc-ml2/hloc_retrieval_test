@@ -85,5 +85,5 @@ if __name__ == "__main__":
 
     vis_points = [nav_point]
     xy_vis_points = convert_points_to_topdown(sim.pathfinder, vis_points, meters_per_pixel)
-    print("\nDisplay the map with key_point overlay:")
+    print("Display the map with key_point overlay:")
     display_map(recolored_topdown_map, key_points=xy_vis_points)
