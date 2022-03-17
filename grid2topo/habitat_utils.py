@@ -114,6 +114,8 @@ def display_map(topdown_map, key_points=None):
                 markerSize=1,
             )
 
+    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("map", 1000, 1000)
     cv2.imshow("map", topdown_map)
     cv2.waitKey()
     cv2.destroyAllWindows()
