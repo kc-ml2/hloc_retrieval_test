@@ -74,9 +74,6 @@ if __name__ == "__main__":
     display_map(visual_binary_map)
 
     binary_map = convert_to_binarymap(topdown_map)
-    print("Displaying binary map:")
-    display_map(binary_map)
-
     skeletonized_map, graph = convert_to_topology(binary_map)
     print("Displaying skeleton map:")
     display_map(skeletonized_map)
