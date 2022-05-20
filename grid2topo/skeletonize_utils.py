@@ -30,7 +30,7 @@ def convert_to_binarymap(topdown_map):
 
 def convert_to_topology(binary_map):
     """Convert binary image to topology."""
-    skeleton = skeletonize(binary_map, method='lee').astype(np.uint8)
+    skeleton = skeletonize(binary_map, method="lee").astype(np.uint8)
     skeleton[skeleton > 0] = 255
 
     graph = sknw.build_sknw(skeleton)

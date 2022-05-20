@@ -35,8 +35,8 @@ def make_cfg(settings):
     agent_cfg.action_space = {
         "move_forward": habitat_sim.agent.ActionSpec("move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)),
         "move_backward": habitat_sim.agent.ActionSpec("move_backward", habitat_sim.agent.ActuationSpec(amount=0.25)),
-        "turn_left": habitat_sim.agent.ActionSpec("turn_left", habitat_sim.agent.ActuationSpec(amount=30.0)),
-        "turn_right": habitat_sim.agent.ActionSpec("turn_right", habitat_sim.agent.ActuationSpec(amount=30.0)),
+        "turn_left": habitat_sim.agent.ActionSpec("turn_left", habitat_sim.agent.ActuationSpec(amount=5.0)),
+        "turn_right": habitat_sim.agent.ActionSpec("turn_right", habitat_sim.agent.ActuationSpec(amount=5.0)),
     }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
@@ -87,6 +87,17 @@ def display_observation(rgb_obs, depth_obs=np.array([])):
         plt.imshow(data)
 
     plt.show(block=False)
+
+
+def display_opencv_cam(rgb_obs) -> int:
+    """Draw nodes and edges into map image."""
+    cv2.namedWindow("observation", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("observation", 1000, 1000)
+    cv2.imshow("observation", rgb_obs)
+    key = cv2.waitKey()
+    cv2.destroyAllWindows()
+
+    return key
 
 
 def convert_points_to_topdown(pathfinder, points, meters_per_pix):
