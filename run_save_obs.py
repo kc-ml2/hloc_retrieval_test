@@ -35,12 +35,6 @@ if __name__ == "__main__":
     cfg = make_cfg(sim_settings)
     sim = habitat_sim.Simulator(cfg)
 
-    # create and register new light setup:
-    my_scene_lighting_setup = [LightInfo(vector=[2.0, 1.0, 0.6, 0.0], model=LightPositionModel.Global)]
-    sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
-    cfg.sim_cfg.scene_light_setup = "my_scene_lighting"
-    sim.reconfigure(cfg)
-
     # The randomness is needed when choosing the actions
     random.seed(sim_settings["seed"])
     sim.seed(sim_settings["seed"])
