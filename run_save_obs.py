@@ -24,7 +24,7 @@ if __name__ == "__main__":
         "height": 512,
         "scene": test_scene,  # Scene path
         "default_agent": 0,
-        "sensor_height": 1.5,  # Height of sensors in meters
+        "sensor_height": 0.0,  # Height of sensors in meters
         "color_sensor": rgb_sensor,  # RGB sensor
         "depth_sensor": depth_sensor,  # Depth sensor
         "semantic_sensor": semantic_sensor,  # Semantic sensor
@@ -59,6 +59,7 @@ if __name__ == "__main__":
         observations = sim.get_sensor_observations()
         color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
         key = display_opencv_cam(color_img)
+        print(agent.get_state)
 
         if key == ord("w"):
             action = "move_forward"

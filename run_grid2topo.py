@@ -30,7 +30,7 @@ if __name__ == "__main__":
         "height": 256,
         "scene": test_scene,  # Scene path
         "default_agent": 0,
-        "sensor_height": 1.5,  # Height of sensors in meters
+        "sensor_height": 0,  # Height of sensors in meters
         "color_sensor": rgb_sensor,  # RGB sensor
         "depth_sensor": depth_sensor,  # Depth sensor
         "semantic_sensor": semantic_sensor,  # Semantic sensor

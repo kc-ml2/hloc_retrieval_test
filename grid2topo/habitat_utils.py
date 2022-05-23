@@ -1,8 +1,12 @@
 from PIL import Image
+from typing import Tuple, Dict
+
 import cv2
 import habitat_sim
+from habitat_sim.utils.common import d3_40_colors_rgb
 from matplotlib import pyplot as plt
 import numpy as np
+import quaternion
 
 
 def make_cfg(settings):
@@ -21,13 +25,21 @@ def make_cfg(settings):
     color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(color_sensor_spec)
 
-    depth_sensor_spec = habitat_sim.CameraSensorSpec()
-    depth_sensor_spec.uuid = "depth_sensor"
-    depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
-    depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-    depth_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-    depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-    sensor_specs.append(depth_sensor_spec)
+    # depth_sensor_spec = habitat_sim.CameraSensorSpec()
+    # depth_sensor_spec.uuid = "depth_sensor"
+    # depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
+    # depth_sensor_spec.resolution = [settings["height"], settings["width"]]
+    # depth_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
+    # depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    # sensor_specs.append(depth_sensor_spec)
+
+    # semantic_sensor_spec = habitat_sim.CameraSensorSpec()
+    # semantic_sensor_spec.uuid = "semantic_sensor"
+    # semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+    # semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
+    # semantic_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
+    # semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    # sensor_specs.append(semantic_sensor_spec)
 
     # Here you can specify the amount of displacement in a forward action and the turn angle
     agent_cfg = habitat_sim.agent.AgentConfiguration()
@@ -64,29 +76,26 @@ def print_scene_recur(scene, limit_output=10):
                     return
 
 
-def display_observation(rgb_obs, depth_obs=np.array([])):
+def display_observation(rgb_obs, semantic_obs, depth_obs):
     """Display sensor observation image."""
-    arr = []
-    titles = []
-
     rgb_img = Image.fromarray(rgb_obs, mode="RGBA")
-    arr.append(rgb_img)
-    titles.append("rgb")
 
-    if depth_obs.size != 0:
-        depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
-        arr.append(depth_img)
-        titles.append("depth")
+    semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
+    semantic_img.putpalette(d3_40_colors_rgb.flatten())
+    semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
+    semantic_img = semantic_img.convert("RGBA")
 
-    plt.figure(figsize=(20, 10))
+    depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
 
+    arr = [rgb_img, semantic_img, depth_img]
+    titles = ['rgb', 'semantic', 'depth']
+    plt.figure(figsize=(12 ,8))
     for i, data in enumerate(arr):
-        ax = plt.subplot(1, 3, i + 1)
-        ax.axis("off")
+        ax = plt.subplot(1, 3, i+1)
+        ax.axis('off')
         ax.set_title(titles[i])
         plt.imshow(data)
-
-    plt.show(block=False)
+    plt.show()
 
 
 def display_opencv_cam(rgb_obs) -> int:
@@ -130,3 +139,43 @@ def display_map(topdown_map, key_points=None):
     cv2.imshow("map", topdown_map)
     cv2.waitKey()
     cv2.destroyAllWindows()
+
+
+def convert_transmat_to_point_quaternion(trans_mat: np.ndarray):
+    """Convert transformation matrix into position & quaternion."""
+    position = trans_mat[:,-1][0:3]
+    angle_quaternion = quaternion.from_rotation_matrix(trans_mat[0:3,0:3])
+
+    return position, angle_quaternion
+
+
+def position_to_grid(position, img_shape, bounds):
+    min_bound = bounds[0]
+    max_bound = bounds[1]
+
+    grid_ratio = img_shape[0] / (max_bound[2] - min_bound[2])
+    grid_x = 0
+    grid_y = 0
+    return grid_x, grid_y
+
+
+def static_to_grid(
+    realworld_x: float,
+    realworld_y: float,
+    grid_resolution: Tuple[int, int],
+    bounds: Dict[str, Tuple[float, float]],
+) -> Tuple[int, int]:
+    """Return gridworld index of realworld coordinates assuming top-left
+    corner is the origin. The real world coordinates of lower left corner are
+    (coordinate_min, coordinate_min) and of top right corner are
+    (coordinate_max, coordinate_max). Same as the habitat-Lab maps.to_grid
+    function but with a static `bounds` instead of requiring a simulator or
+    pathfinder instance.
+    """
+    grid_size = (
+        abs(bounds["upper"][2] - bounds["lower"][2]) / grid_resolution[0],
+        abs(bounds["upper"][0] - bounds["lower"][0]) / grid_resolution[1],
+    )
+    grid_x = int((realworld_x - bounds["lower"][2]) / grid_size[0])
+    grid_y = int((realworld_y - bounds["lower"][0]) / grid_size[1])
+    return grid_x, grid_y
