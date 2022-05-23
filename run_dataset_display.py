@@ -8,10 +8,12 @@ from grid2topo.habitat_utils import convert_transmat_to_point_quaternion
 
 
 if __name__ == "__main__":
-    directory = "/data1/rxr_dataset/rxr-data/pose_traces/rxr_train/"
+    # directory = "/data1/rxr_dataset/rxr-data/pose_traces/rxr_train/"
+    directory = "../dataset/rxr-data/pose_traces/rxr_train/"
     file_list = os.listdir(directory)
 
-    train_gz_file = "/data1/rxr_dataset/rxr-data/rxr_train_guide.jsonl.gz"
+    train_gz_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
+    # train_gz_file = "/data1/rxr_dataset/rxr-data/rxr_train_guide.jsonl.gz"
     # train_gz_file = "/data1/rxr_dataset/rxr-data/rxr_train_follower.jsonl.gz"
 
 
@@ -33,8 +35,8 @@ if __name__ == "__main__":
     # Check English guide has multiple instructions in one seen
     jsonl_file = gzip.open(train_gz_file)
     reader = jsonlines.Reader(jsonl_file)
-    # scene = "1LXtFkjw3qL"
-    scene = "1pXnuDYAj8r"
+    scene = "1LXtFkjw3qL"
+    # scene = "1pXnuDYAj8r"
     for obj in reader:
         if obj["scan"] == scene and (obj["language"] == "en-IN" or obj["language"] == "en-US"):
             instruction_id = obj["instruction_id"]

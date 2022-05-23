@@ -147,35 +147,3 @@ def convert_transmat_to_point_quaternion(trans_mat: np.ndarray):
     angle_quaternion = quaternion.from_rotation_matrix(trans_mat[0:3,0:3])
 
     return position, angle_quaternion
-
-
-def position_to_grid(position, img_shape, bounds):
-    min_bound = bounds[0]
-    max_bound = bounds[1]
-
-    grid_ratio = img_shape[0] / (max_bound[2] - min_bound[2])
-    grid_x = 0
-    grid_y = 0
-    return grid_x, grid_y
-
-
-def static_to_grid(
-    realworld_x: float,
-    realworld_y: float,
-    grid_resolution: Tuple[int, int],
-    bounds: Dict[str, Tuple[float, float]],
-) -> Tuple[int, int]:
-    """Return gridworld index of realworld coordinates assuming top-left
-    corner is the origin. The real world coordinates of lower left corner are
-    (coordinate_min, coordinate_min) and of top right corner are
-    (coordinate_max, coordinate_max). Same as the habitat-Lab maps.to_grid
-    function but with a static `bounds` instead of requiring a simulator or
-    pathfinder instance.
-    """
-    grid_size = (
-        abs(bounds["upper"][2] - bounds["lower"][2]) / grid_resolution[0],
-        abs(bounds["upper"][0] - bounds["lower"][0]) / grid_resolution[1],
-    )
-    grid_x = int((realworld_x - bounds["lower"][2]) / grid_size[0])
-    grid_y = int((realworld_y - bounds["lower"][0]) / grid_size[1])
-    return grid_x, grid_y
