@@ -3,7 +3,6 @@ import random
 
 import cv2
 import habitat_sim
-from habitat_sim.gfx import LightInfo, LightPositionModel
 
 from grid2topo.habitat_utils import display_opencv_cam, make_cfg
 

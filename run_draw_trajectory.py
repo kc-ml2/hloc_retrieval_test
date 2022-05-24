@@ -1,18 +1,11 @@
 import argparse
 import random
-import os
-import gzip
 
-import cv2
-import habitat_sim
-from habitat_sim.gfx import LightInfo, LightPositionModel
-import numpy as np
-import jsonlines
 from habitat.utils.visualizations import maps
+import habitat_sim
+import numpy as np
 
-from grid2topo.habitat_utils import display_opencv_cam, display_observation, make_cfg, display_map
-from grid2topo.habitat_utils import convert_transmat_to_point_quaternion, convert_points_to_topdown
-
+from grid2topo.habitat_utils import convert_transmat_to_point_quaternion, display_map, make_cfg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -20,9 +13,12 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     test_scene = args.scene
 
+    directory = "../dataset/rxr-data/pose_traces/rxr_train/"
+    instruction_id_list = ["001279", "001364", "001456", "001679", "002324", "002947"]
+
     rgb_sensor = True
-    depth_sensor = True
-    semantic_sensor = True
+    depth_sensor = False
+    semantic_sensor = False
 
     meters_per_pixel = 0.1
 
@@ -31,7 +27,7 @@ if __name__ == "__main__":
         "height": 256,
         "scene": test_scene,  # Scene path
         "default_agent": 0,
-        "sensor_height": 0.5,  # Height of sensors in meters
+        "sensor_height": 0,  # Height of sensors in meters
         "color_sensor": rgb_sensor,  # RGB sensor
         "depth_sensor": depth_sensor,  # Depth sensor
         "semantic_sensor": semantic_sensor,  # Semantic sensor
@@ -62,15 +58,11 @@ if __name__ == "__main__":
     recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
     recolored_topdown_map = recolor_palette[topdown_map]
 
-    # directory = "/data1/rxr_dataset/rxr-data/pose_traces/rxr_train/"
-    directory = "../dataset/rxr-data/pose_traces/rxr_train/"
-    
     img_id = 0
-    instruction_id_list = ["001279", "001364", "001456", "001679", "002324", "002947"]
     trajectory_list = []
 
     for id in instruction_id_list:
-        npzfile = np.load(directory + id +"_guide_pose_trace.npz")
+        npzfile = np.load(directory + id + "_guide_pose_trace.npz")
         ext_trans_mat_list = npzfile["extrinsic_matrix"]
 
         nodes = []
