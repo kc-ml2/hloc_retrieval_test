@@ -57,7 +57,6 @@ if __name__ == "__main__":
     for level in semantics.levels:
         print(f"Level id:{level.id}")
 
-    height_list = []
     nav_point_list = []
     closest_level_list = []
     for i in range(300):
@@ -75,10 +74,11 @@ if __name__ == "__main__":
         nav_point_list.append(nav_point)
         closest_level_list.append(closest_level)
 
+    desired_level = 0
     for i, point in enumerate(nav_point_list):
         if not sim.pathfinder.is_navigable(point):
             print("Sampled point is not navigable")
-        if closest_level_list[i] == 0:
+        if closest_level_list[i] == desired_level:
             topdown_map = maps.get_topdown_map(sim.pathfinder, height=point[1], meters_per_pixel=meters_per_pixel)
             recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
             recolored_topdown_map = recolor_palette[topdown_map]
