@@ -32,12 +32,13 @@ if __name__ == "__main__":
     reader = jsonlines.Reader(jsonl_file)
     scene = "1LXtFkjw3qL"
     # scene = "1pXnuDYAj8r"
+    id_list = []
     for obj in reader:
         if obj["scan"] == scene and (obj["language"] == "en-IN" or obj["language"] == "en-US"):
             instruction_id = obj["instruction_id"]
-            print(instruction_id)
             print(obj["instruction"])
             input()
+            id_list.append(instruction_id)
 
     jsonl_file = gzip.open(train_gz_file)
     reader = jsonlines.Reader(jsonl_file)

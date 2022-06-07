@@ -129,9 +129,19 @@ def display_map(topdown_map, key_points=None, wait_for_key=False):
             cv2.drawMarker(
                 img=topdown_map,
                 position=(int(pnt[0]), int(pnt[1])),
-                color=(0, 255, 0),
+                color=(255, 0, 0),
                 markerType=cv2.MARKER_DIAMOND,
                 markerSize=1,
+            )
+
+    if key_points is not None and len(key_points) >= 2:
+        for i in range(len(key_points) - 1):
+            cv2.line(
+                img=topdown_map,
+                pt1=key_points[i],
+                pt2=key_points[i + 1],
+                color=(0, 255, 0),
+                thickness=1,
             )
 
     cv2.namedWindow("map", cv2.WINDOW_NORMAL)

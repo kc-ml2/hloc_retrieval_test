@@ -104,8 +104,6 @@ if __name__ == "__main__":
         recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
         recolored_topdown_map = recolor_palette[topdown_map]
         recolored_topdown_map_list.append(recolored_topdown_map)
-        display_map(recolored_topdown_map, wait_for_key=True)
-    cv2.destroyAllWindows()
 
     img_id = 0
     ext_trans_mat_list = pose_trace["extrinsic_matrix"]
