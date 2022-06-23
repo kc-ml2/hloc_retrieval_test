@@ -1,7 +1,11 @@
+import gzip
+
 from PIL import Image
 import cv2
+from habitat.utils.visualizations import maps
 import habitat_sim
 from habitat_sim.utils.common import d3_40_colors_rgb
+import jsonlines
 from matplotlib import pyplot as plt
 import numpy as np
 import quaternion
@@ -157,3 +161,85 @@ def convert_transmat_to_point_quaternion(trans_mat: np.ndarray):
     angle_quaternion = quaternion.from_rotation_matrix(trans_mat[0:3, 0:3])
 
     return position, angle_quaternion
+
+
+def get_scene_by_eng_guide(instruction_id, train_guide_file, scene_directory):
+    """Find & return scene glb file according to id of instruction."""
+    jsonl_file = gzip.open(train_guide_file)
+    reader = jsonlines.Reader(jsonl_file)
+
+    print("Finding out scene according to instruction id...")
+    for obj in reader:
+        if obj["instruction_id"] == instruction_id and (obj["language"] == "en-IN" or obj["language"] == "en-US"):
+            scene_number = obj["scan"]
+            scene = scene_directory + scene_number + "/" + scene_number + ".glb"
+            print("Found the scene.")
+
+    if not scene:
+        print("No scene found or the instruction is not in English.")
+
+    return scene
+
+
+def get_entire_maps_by_levels(sim, meters_per_pixel):
+    """Sample random maps & Get the largest map by levels."""
+    print("Sampling maps to get proper map...")
+    nav_point_list = []
+    closest_level_list = []
+    for i in range(300):
+        nav_point = sim.pathfinder.get_random_navigable_point()
+        distance_list = []
+        average_list = []
+        for level in sim.semantic_scene.levels:
+            for region in level.regions:
+                distance = abs(region.aabb.center[1] - (nav_point[1] + 0.5))
+                distance_list.append(distance)
+            average = sum(distance_list) / len(distance_list)
+            average_list.append(average)
+        closest_level = average_list.index(min(average_list))
+        nav_point_list.append(nav_point)
+        closest_level_list.append(closest_level)
+    print("Map sampling done.")
+
+    print("Selecting proper maps on desired level")
+    recolored_topdown_map_list = []
+    for level_id in range(len(sim.semantic_scene.levels)):
+        area_size_list = []
+        for i, point in enumerate(nav_point_list):
+            area_size = 0
+
+            if not sim.pathfinder.is_navigable(point):
+                print("Sampled point is not navigable")
+
+            if closest_level_list[i] == level_id:
+                topdown_map = maps.get_topdown_map(sim.pathfinder, height=point[1], meters_per_pixel=meters_per_pixel)
+                area_size = np.count_nonzero(topdown_map == 1)
+
+            area_size_list.append(area_size)
+
+        sample_id = area_size_list.index(max(area_size_list))
+        topdown_map = maps.get_topdown_map(
+            sim.pathfinder, height=nav_point_list[sample_id][1], meters_per_pixel=meters_per_pixel
+        )
+        recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
+        recolored_topdown_map = recolor_palette[topdown_map]
+        recolored_topdown_map_list.append(recolored_topdown_map)
+    print("Map selection done.")
+
+    return recolored_topdown_map_list
+
+
+def get_closest_map(sim, position, map_list):
+    """Find out which level the agent is on."""
+    distance_list = []
+    average_list = []
+    for level in sim.semantic_scene.levels:
+        for region in level.regions:
+            distance = abs(region.aabb.center[1] - position[1])
+            distance_list.append(distance)
+        average = sum(distance_list) / len(distance_list)
+        average_list.append(average)
+    closest_level = average_list.index(min(average_list))
+    recolored_topdown_map = map_list[closest_level]
+
+    return recolored_topdown_map

@@ -1,14 +1,20 @@
 import argparse
-import gzip
 import random
 
 import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
-import jsonlines
 import numpy as np
 
-from grid2topo.habitat_utils import convert_transmat_to_point_quaternion, display_map, display_opencv_cam, make_cfg
+from grid2topo.habitat_utils import (
+    convert_transmat_to_point_quaternion,
+    display_map,
+    display_opencv_cam,
+    get_closest_map,
+    get_entire_maps_by_levels,
+    get_scene_by_eng_guide,
+    make_cfg,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -18,15 +24,11 @@ if __name__ == "__main__":
 
     directory = "../dataset/rxr-data/pose_traces/rxr_train/"
     pose_trace = np.load(directory + str(instruction_id).zfill(6) + "_guide_pose_trace.npz")
-
     train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
     scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    jsonl_file = gzip.open(train_guide_file)
-    reader = jsonlines.Reader(jsonl_file)
-    for obj in reader:
-        if obj["instruction_id"] == instruction_id and (obj["language"] == "en-IN" or obj["language"] == "en-US"):
-            scene_number = obj["scan"]
-            scene = scene_directory + scene_number + "/" + scene_number + ".glb"
+
+    # Search for scene glb file according to trace-id
+    scene = get_scene_by_eng_guide(instruction_id, train_guide_file, scene_directory)
 
     rgb_sensor = True
     depth_sensor = False
@@ -63,64 +65,16 @@ if __name__ == "__main__":
     if not sim.pathfinder.is_loaded:
         print("Pathfinder not initialized")
     sim.pathfinder.seed(pathfinder_seed)
-    semantics = sim.semantic_scene
 
-    nav_point_list = []
-    closest_level_list = []
-    for i in range(300):
-        level_distance_dict = {}
-        nav_point = sim.pathfinder.get_random_navigable_point()
-        distance_list = []
-        average_list = []
-        for level in semantics.levels:
-            for region in level.regions:
-                distance = abs(region.aabb.center[1] - (nav_point[1] + 0.5))
-                distance_list.append(distance)
-            average = sum(distance_list) / len(distance_list)
-            average_list.append(average)
-        closest_level = average_list.index(min(average_list))
-        nav_point_list.append(nav_point)
-        closest_level_list.append(closest_level)
+    recolored_topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
 
-    recolored_topdown_map_list = []
-    for level_id in range(len(semantics.levels)):
-        area_size_list = []
-        for i, point in enumerate(nav_point_list):
-            area_size = 0
-
-            if not sim.pathfinder.is_navigable(point):
-                print("Sampled point is not navigable")
-
-            if closest_level_list[i] == level_id:
-                topdown_map = maps.get_topdown_map(sim.pathfinder, height=point[1], meters_per_pixel=meters_per_pixel)
-                area_size = np.count_nonzero(topdown_map == 1)
-
-            area_size_list.append(area_size)
-
-        sample_id = area_size_list.index(max(area_size_list))
-        topdown_map = maps.get_topdown_map(
-            sim.pathfinder, height=nav_point_list[sample_id][1], meters_per_pixel=meters_per_pixel
-        )
-        recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
-        recolored_topdown_map = recolor_palette[topdown_map]
-        recolored_topdown_map_list.append(recolored_topdown_map)
-
-    img_id = 0
     ext_trans_mat_list = pose_trace["extrinsic_matrix"]
     trans_mat = ext_trans_mat_list[0]
     position, _ = convert_transmat_to_point_quaternion(trans_mat)
 
-    distance_list = []
-    average_list = []
-    for level in semantics.levels:
-        for region in level.regions:
-            distance = abs(region.aabb.center[1] - position[1])
-            distance_list.append(distance)
-        average = sum(distance_list) / len(distance_list)
-        average_list.append(average)
-    closest_level = average_list.index(min(average_list))
-    recolored_topdown_map = recolored_topdown_map_list[closest_level]
+    recolored_topdown_map = get_closest_map(sim, position, recolored_topdown_map_list)
 
+    img_id = 0
     while True:
         nodes = []
         for i in range(0, len(ext_trans_mat_list), 100):
