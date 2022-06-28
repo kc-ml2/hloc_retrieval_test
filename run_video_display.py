@@ -6,13 +6,16 @@ from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 
+from grid2topo.cv_utils import draw_flow
 from grid2topo.habitat_utils import (
     convert_transmat_to_point_quaternion,
     display_map,
     display_opencv_cam,
+    extrinsic_mat_list_to_pos_angle_list,
     get_closest_map,
     get_entire_maps_by_levels,
     get_scene_by_eng_guide,
+    interpolate_discrete_path,
     make_cfg,
 )
 
@@ -33,6 +36,8 @@ if __name__ == "__main__":
     rgb_sensor = True
     depth_sensor = False
     semantic_sensor = False
+
+    optical_flow_overlay = True
 
     meters_per_pixel = 0.1
     translation_threshold = 0.5
@@ -83,31 +88,14 @@ if __name__ == "__main__":
     # TODO: Path interpolation must be implemented for translation variation
     # TODO: Backward translation...?
 
-    pos_trajectory = []
-    angle_trajectory = []
-
-    for trans_mat in ext_trans_mat_list:
-        position, angle_quaternion = convert_transmat_to_point_quaternion(trans_mat)
-        pos_trajectory.append(position)
-        angle_trajectory.append(angle_quaternion)
-
-    for i, position in enumerate(pos_trajectory):
-        if i + 1 < len(pos_trajectory):
-            next_position = pos_trajectory[i + 1]
-            next_angle = angle_trajectory[i + 1]
-
-        dist = np.sqrt(np.sum((next_position - position) ** 2, axis=0))
-        num_interpolation = int(dist // interpolation_interval)
-
-        interval_pos_list = []
-        if dist > translation_threshold:
-            interval_pos_list = np.linspace(position, next_position, num=num_interpolation)
-            for n, interval_pos in enumerate(interval_pos_list):
-                pos_trajectory.insert(i + n + 1, interval_pos)
-                angle_trajectory.insert(i + n + 1, angle_trajectory[i])
+    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list)
+    pos_trajectory, angle_trajectory = interpolate_discrete_path(
+        pos_trajectory, angle_trajectory, interpolation_interval, translation_threshold
+    )
 
     img_id = 0
     nodes = []
+    prev = None
 
     for i in range(0, len(pos_trajectory), 1):
         position = pos_trajectory[i]
@@ -119,6 +107,27 @@ if __name__ == "__main__":
         agent.set_state(agent_state)
         observations = sim.get_sensor_observations()
         color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+
+        if optical_flow_overlay:
+            gray = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
+            if prev is None:  # First frame
+                prev = gray
+            else:
+                flow = cv2.calcOpticalFlowFarneback(
+                    prev=prev,
+                    next=gray,
+                    flow=None,
+                    pyr_scale=0.5,
+                    levels=3,
+                    winsize=15,
+                    iterations=3,
+                    poly_n=5,
+                    poly_sigma=1.1,
+                    flags=cv2.OPTFLOW_FARNEBACK_GAUSSIAN,
+                )
+                draw_flow(color_img, flow)
+                prev = gray
+
         key = display_opencv_cam(color_img)
 
         if key == ord("o"):

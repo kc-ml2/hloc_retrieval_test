@@ -243,3 +243,35 @@ def get_closest_map(sim, position, map_list):
     recolored_topdown_map = map_list[closest_level]
 
     return recolored_topdown_map
+
+
+def extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list):
+    """Convert RxR dataset extrinsic matrix to Cartesian position & angle(quaternion) list."""
+    pos_trajectory = []
+    angle_trajectory = []
+
+    for trans_mat in ext_trans_mat_list:
+        position, angle_quaternion = convert_transmat_to_point_quaternion(trans_mat)
+        pos_trajectory.append(position)
+        angle_trajectory.append(angle_quaternion)
+
+    return pos_trajectory, angle_trajectory
+
+
+def interpolate_discrete_path(pos_trajectory, angle_trajectory, interpolation_interval, translation_threshold):
+    """Interpolate between two remote translation points."""
+    for i, position in enumerate(pos_trajectory):
+        if i + 1 < len(pos_trajectory):
+            next_position = pos_trajectory[i + 1]
+
+        dist = np.sqrt(np.sum((next_position - position) ** 2, axis=0))
+        num_interpolation = int(dist // interpolation_interval)
+
+        interval_pos_list = []
+        if dist > translation_threshold:
+            interval_pos_list = np.linspace(position, next_position, num=num_interpolation)
+            for n, interval_pos in enumerate(interval_pos_list):
+                pos_trajectory.insert(i + n + 1, interval_pos)
+                angle_trajectory.insert(i + n + 1, angle_trajectory[i])  # angle path is not interpolated
+
+    return pos_trajectory, angle_trajectory
