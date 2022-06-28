@@ -114,6 +114,7 @@ if __name__ == "__main__":
         angle_quaternion = angle_trajectory[i]
         agent_state.position = position
         print("Frame: ", i, "Position: ", position)
+        print("Angle diff: ", angle_quaternion - angle_trajectory[i + 1])
         agent_state.rotation = angle_quaternion
         agent.set_state(agent_state)
         observations = sim.get_sensor_observations()

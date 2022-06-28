@@ -75,27 +75,27 @@ if __name__ == "__main__":
     recolored_topdown_map = get_closest_map(sim, position, recolored_topdown_map_list)
 
     img_id = 0
-    while True:
-        nodes = []
-        for i in range(0, len(ext_trans_mat_list), 100):
-            trans_mat = ext_trans_mat_list[i]
-            position, angle_quaternion = convert_transmat_to_point_quaternion(trans_mat)
-            agent_state.position = position
-            print(position)
-            agent_state.rotation = angle_quaternion
-            agent.set_state(agent_state)
-            observations = sim.get_sensor_observations()
-            color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
-            key = display_opencv_cam(color_img)
+    nodes = []
 
-            if key == ord("o"):
-                print("save image")
-                cv2.imwrite(f"./output/query{img_id}.jpg", color_img)
-                cv2.imwrite(f"./output/db{img_id}.jpg", color_img)
-                img_id = img_id + 1
-                continue
+    for i in range(0, len(ext_trans_mat_list), 100):
+        trans_mat = ext_trans_mat_list[i]
+        position, angle_quaternion = convert_transmat_to_point_quaternion(trans_mat)
+        agent_state.position = position
+        print(position)
+        agent_state.rotation = angle_quaternion
+        agent.set_state(agent_state)
+        observations = sim.get_sensor_observations()
+        color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+        key = display_opencv_cam(color_img)
 
-            node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
-            transposed_point = (node_point[1], node_point[0])
-            nodes.append(transposed_point)
-            display_map(recolored_topdown_map, nodes)
+        if key == ord("o"):
+            print("save image")
+            cv2.imwrite(f"./output/query{img_id}.jpg", color_img)
+            cv2.imwrite(f"./output/db{img_id}.jpg", color_img)
+            img_id = img_id + 1
+            continue
+
+        node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
+        transposed_point = (node_point[1], node_point[0])
+        nodes.append(transposed_point)
+        display_map(recolored_topdown_map, nodes)
