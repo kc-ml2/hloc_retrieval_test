@@ -15,8 +15,9 @@ from grid2topo.habitat_utils import (
     get_closest_map,
     get_entire_maps_by_levels,
     get_scene_by_eng_guide,
-    interpolate_discrete_path,
+    interpolate_discrete_matrix,
     make_cfg,
+    print_pose_diff,
 )
 
 if __name__ == "__main__":
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     instruction_id = int(args.trace_id)
 
     directory = "../dataset/rxr-data/pose_traces/rxr_train/"
-    pose_trace = np.load(directory + str(instruction_id).zfill(6) + "_guide_pose_trace.npz")
+    pose_trace = np.load(directory + str(instruction_id).zfill(6) + "_follower_pose_trace.npz")
     train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
     scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     depth_sensor = False
     semantic_sensor = False
 
-    optical_flow_overlay = True
+    optical_flow_overlay = False
 
     meters_per_pixel = 0.1
     translation_threshold = 0.5
@@ -81,17 +82,10 @@ if __name__ == "__main__":
 
     recolored_topdown_map = get_closest_map(sim, position, recolored_topdown_map_list)
 
-    # Option 1
-    # TODO: Just use dataset from pose diff
-    # TODO: check the number of data (especially orientation)
-    # TODO: Only the amount of translation can be varied
-    # TODO: Path interpolation must be implemented for translation variation
-    # TODO: Backward translation...?
-
-    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list)
-    pos_trajectory, angle_trajectory = interpolate_discrete_path(
-        pos_trajectory, angle_trajectory, interpolation_interval, translation_threshold
+    ext_trans_mat_list = interpolate_discrete_matrix(
+        list(ext_trans_mat_list), interpolation_interval, translation_threshold
     )
+    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list)
 
     img_id = 0
     nodes = []
@@ -101,8 +95,15 @@ if __name__ == "__main__":
         position = pos_trajectory[i]
         angle_quaternion = angle_trajectory[i]
         agent_state.position = position
-        print("Frame: ", i, "Position: ", position)
-        print("Angle diff: ", angle_quaternion - angle_trajectory[i + 1])
+
+        if i == 0:
+            prev_position = pos_trajectory[i]
+            prev_angle = angle_trajectory[i]
+
+        print_pose_diff(i, position, prev_position, angle_quaternion, prev_angle)
+        prev_position = pos_trajectory[i]
+        prev_angle = angle_trajectory[i]
+
         agent_state.rotation = angle_quaternion
         agent.set_state(agent_state)
         observations = sim.get_sensor_observations()

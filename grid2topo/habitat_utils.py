@@ -1,4 +1,5 @@
 import gzip
+import math
 
 from PIL import Image
 import cv2
@@ -9,6 +10,7 @@ import jsonlines
 from matplotlib import pyplot as plt
 import numpy as np
 import quaternion
+from quaternion import as_euler_angles
 
 
 def make_cfg(settings):
@@ -106,7 +108,7 @@ def display_observation(rgb_obs, semantic_obs, depth_obs):
 def display_opencv_cam(rgb_obs) -> int:
     """Draw nodes and edges into map image."""
     cv2.namedWindow("observation", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("observation", 1000, 1000)
+    cv2.resizeWindow("observation", 768, 768)
     cv2.imshow("observation", rgb_obs)
     key = cv2.waitKey()
 
@@ -149,7 +151,7 @@ def display_map(topdown_map, key_points=None, wait_for_key=False):
             )
 
     cv2.namedWindow("map", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("map", 1000, 1000)
+    cv2.resizeWindow("map", 768, 768)
     cv2.imshow("map", topdown_map)
     if wait_for_key:
         cv2.waitKey()
@@ -258,6 +260,28 @@ def extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list):
     return pos_trajectory, angle_trajectory
 
 
+def interpolate_discrete_matrix(extrinsic_mat_list, interpolation_interval, translation_threshold):
+    """Interpolate between two remote translation points."""
+    for i, mat in enumerate(extrinsic_mat_list):
+        if i + 1 < len(extrinsic_mat_list):
+            next_mat = extrinsic_mat_list[i + 1]
+
+        position = mat[:-1, 3]
+        next_position = next_mat[:-1, 3]
+        dist = np.sqrt(np.sum((next_position - position) ** 2, axis=0))
+        num_interpolation = int(dist // interpolation_interval)
+
+        interval_pos_list = []
+        if dist > translation_threshold:
+            interval_pos_list = np.linspace(position, next_position, num=num_interpolation)
+            for n, interval_pos in enumerate(interval_pos_list):
+                interval_mat = np.copy(mat)
+                interval_mat[:-1, 3] = interval_pos
+                extrinsic_mat_list.insert(i + n + 1, interval_mat)  # angle path is not interpolated
+
+    return extrinsic_mat_list
+
+
 def interpolate_discrete_path(pos_trajectory, angle_trajectory, interpolation_interval, translation_threshold):
     """Interpolate between two remote translation points."""
     for i, position in enumerate(pos_trajectory):
@@ -275,3 +299,26 @@ def interpolate_discrete_path(pos_trajectory, angle_trajectory, interpolation_in
                 angle_trajectory.insert(i + n + 1, angle_trajectory[i])  # angle path is not interpolated
 
     return pos_trajectory, angle_trajectory
+
+
+def print_pose_diff(idx, position, prev_position, angle_quaternion, prev_angle):
+    """Print position & angle diff."""
+    print("Frame: ", idx)
+    print("Position: ", position)
+    print("Angle(quaternion): ", angle_quaternion)
+    print("Angle(euler[deg]): ", as_euler_angles(angle_quaternion) * 180.0 / math.pi)
+    print("Pos diff: ", position - prev_position)
+    print("Angle diff(quaternion): ", angle_quaternion - prev_angle)
+    print(
+        "Angle diff(euler[deg]): ",
+        as_euler_angles(angle_quaternion) * 180.0 / math.pi - as_euler_angles(prev_angle) * 180.0 / math.pi,
+    )
+
+
+def cal_inverse_transform_mat(trans_mat):
+    """Calculate inverse matirix of transformation matrix. It only works for transformation matrix."""
+    inverse_mat = np.zeros([4, 4])
+    inverse_mat[:3, :3] = trans_mat[:3, :3].transpose()
+    inverse_mat[:-1, 3] = np.matmul(trans_mat[:3, :3].transpose() * (-1), trans_mat[:-1, 3])
+    inverse_mat[3, 3] = 1.0
+    return inverse_mat
