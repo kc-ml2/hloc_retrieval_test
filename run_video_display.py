@@ -97,12 +97,10 @@ if __name__ == "__main__":
         agent_state.position = position
 
         if i == 0:
-            prev_position = pos_trajectory[i]
-            prev_angle = angle_trajectory[i]
+            prev_trans_mat = ext_trans_mat_list[i]
 
-        print_pose_diff(i, position, prev_position, angle_quaternion, prev_angle)
-        prev_position = pos_trajectory[i]
-        prev_angle = angle_trajectory[i]
+        print_pose_diff(i, ext_trans_mat_list[i], prev_trans_mat)
+        prev_trans_mat = ext_trans_mat_list[i]
 
         agent_state.rotation = angle_quaternion
         agent.set_state(agent_state)

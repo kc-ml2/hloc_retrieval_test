@@ -1,5 +1,4 @@
 import gzip
-import math
 
 from PIL import Image
 import cv2
@@ -10,7 +9,7 @@ import jsonlines
 from matplotlib import pyplot as plt
 import numpy as np
 import quaternion
-from quaternion import as_euler_angles
+from scipy.spatial.transform import Rotation as R
 
 
 def make_cfg(settings):
@@ -301,24 +300,25 @@ def interpolate_discrete_path(pos_trajectory, angle_trajectory, interpolation_in
     return pos_trajectory, angle_trajectory
 
 
-def print_pose_diff(idx, position, prev_position, angle_quaternion, prev_angle):
+def print_pose_diff(idx, trans_mat, prev_trans_mat):
     """Print position & angle diff."""
+    inverse_mat = cal_inverse_transform_mat(prev_trans_mat)
+    projected_mat = np.matmul(inverse_mat, trans_mat)
+    position, angle_quaternion = convert_transmat_to_point_quaternion(projected_mat)
+    rotation_mat = R.from_matrix(
+        projected_mat[:3, :3]
+    )  # Due to the gimbal lock, conversion from quaternion does not work properly
+
     print("Frame: ", idx)
-    print("Position: ", position)
-    print("Angle(quaternion): ", angle_quaternion)
-    print("Angle(euler[deg]): ", as_euler_angles(angle_quaternion) * 180.0 / math.pi)
-    print("Pos diff: ", position - prev_position)
-    print("Angle diff(quaternion): ", angle_quaternion - prev_angle)
-    print(
-        "Angle diff(euler[deg]): ",
-        as_euler_angles(angle_quaternion) * 180.0 / math.pi - as_euler_angles(prev_angle) * 180.0 / math.pi,
-    )
+    print("Position diff: ", position)
+    print("Angle diff (quaternion): ", angle_quaternion)
+    print("Angle diff (euler[deg]): ", rotation_mat.as_euler("zyx", degrees=True))
 
 
 def cal_inverse_transform_mat(trans_mat):
     """Calculate inverse matirix of transformation matrix. It only works for transformation matrix."""
     inverse_mat = np.zeros([4, 4])
     inverse_mat[:3, :3] = trans_mat[:3, :3].transpose()
-    inverse_mat[:-1, 3] = np.matmul(trans_mat[:3, :3].transpose() * (-1), trans_mat[:-1, 3])
+    inverse_mat[:-1, 3] = (-1) * np.matmul(trans_mat[:3, :3].transpose(), trans_mat[:-1, 3])
     inverse_mat[3, 3] = 1.0
     return inverse_mat
