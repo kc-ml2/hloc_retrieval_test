@@ -8,6 +8,7 @@ import numpy as np
 
 from utils.cv_utils import draw_flow
 from utils.habitat_utils import (
+    cal_pose_diff,
     convert_transmat_to_point_quaternion,
     display_map,
     display_opencv_cam,
@@ -17,7 +18,6 @@ from utils.habitat_utils import (
     get_scene_by_eng_guide,
     interpolate_discrete_matrix,
     make_cfg,
-    print_pose_diff,
 )
 
 if __name__ == "__main__":
@@ -38,6 +38,8 @@ if __name__ == "__main__":
     depth_sensor = False
     semantic_sensor = False
 
+    display_observation = True
+    display_path_map = True
     optical_flow_overlay = False
 
     meters_per_pixel = 0.1
@@ -99,8 +101,15 @@ if __name__ == "__main__":
         if i == 0:
             prev_trans_mat = ext_trans_mat_list[i]
 
-        print_pose_diff(i, ext_trans_mat_list[i], prev_trans_mat)
+        position_diff, _, rotation_diff = cal_pose_diff(ext_trans_mat_list[i], prev_trans_mat)
         prev_trans_mat = ext_trans_mat_list[i]
+
+        if (position_diff == [0.0, 0.0, 0.0]).all() and (rotation_diff == [0.0, 0.0, 0.0]).all():
+            continue
+
+        print("Frame: ", i)
+        print("Position diff: ", position_diff)
+        print("Angle diff (euler[deg]): ", rotation_diff)
 
         agent_state.rotation = angle_quaternion
         agent.set_state(agent_state)
@@ -127,16 +136,17 @@ if __name__ == "__main__":
                 draw_flow(color_img, flow)
                 prev = gray
 
-        key = display_opencv_cam(color_img)
+        if display_observation:
+            key = display_opencv_cam(color_img)
+            if key == ord("o"):
+                print("save image")
+                cv2.imwrite(f"./output/query{img_id}.jpg", color_img)
+                cv2.imwrite(f"./output/db{img_id}.jpg", color_img)
+                img_id = img_id + 1
+                continue
 
-        if key == ord("o"):
-            print("save image")
-            cv2.imwrite(f"./output/query{img_id}.jpg", color_img)
-            cv2.imwrite(f"./output/db{img_id}.jpg", color_img)
-            img_id = img_id + 1
-            continue
-
-        node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
-        transposed_point = (node_point[1], node_point[0])
-        nodes.append(transposed_point)
-        display_map(recolored_topdown_map, nodes)
+        if display_path_map:
+            node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
+            transposed_point = (node_point[1], node_point[0])
+            nodes.append(transposed_point)
+            display_map(recolored_topdown_map, nodes)

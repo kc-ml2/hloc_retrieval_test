@@ -300,19 +300,17 @@ def interpolate_discrete_path(pos_trajectory, angle_trajectory, interpolation_in
     return pos_trajectory, angle_trajectory
 
 
-def print_pose_diff(idx, trans_mat, prev_trans_mat):
+def cal_pose_diff(trans_mat, prev_trans_mat):
     """Print position & angle diff."""
     inverse_mat = cal_inverse_transform_mat(prev_trans_mat)
     projected_mat = np.matmul(inverse_mat, trans_mat)
-    position, angle_quaternion = convert_transmat_to_point_quaternion(projected_mat)
-    rotation_mat = R.from_matrix(
-        projected_mat[:3, :3]
-    )  # Due to the gimbal lock, conversion from quaternion does not work properly
+    position_diff, quaternion_diff = convert_transmat_to_point_quaternion(projected_mat)
+    # Due to gimbal lock, conversion from quaternion to euler angle does not work properly.
+    # So we used scipy Rotation to get euler angle from rotation matirix.
+    rotation_mat = R.from_matrix(projected_mat[:3, :3])
+    rotation_diff = rotation_mat.as_euler("zyx", degrees=True)
 
-    print("Frame: ", idx)
-    print("Position diff: ", position)
-    print("Angle diff (quaternion): ", angle_quaternion)
-    print("Angle diff (euler[deg]): ", rotation_mat.as_euler("zyx", degrees=True))
+    return position_diff, quaternion_diff, rotation_diff
 
 
 def cal_inverse_transform_mat(trans_mat):
@@ -322,3 +320,13 @@ def cal_inverse_transform_mat(trans_mat):
     inverse_mat[:-1, 3] = (-1) * np.matmul(trans_mat[:3, :3].transpose(), trans_mat[:-1, 3])
     inverse_mat[3, 3] = 1.0
     return inverse_mat
+
+
+def remove_duplicate_matrix(extrinsic_mat_list):
+    """Remove duplicate records to exculde stop motion."""
+    print(extrinsic_mat_list)
+
+
+def generate_pose_diff_data(output_directory):
+    """Generate image & position diff data for S3D pre-trained weight."""
+    print(output_directory)
