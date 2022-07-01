@@ -324,9 +324,22 @@ def cal_inverse_transform_mat(trans_mat):
 
 def remove_duplicate_matrix(extrinsic_mat_list):
     """Remove duplicate records to exculde stop motion."""
-    print(extrinsic_mat_list)
+    deduplicated_mat_list = []
+    for i, ext_trans_mat in enumerate(extrinsic_mat_list):
+        if i == 0:
+            prev_trans_mat = ext_trans_mat
+        position_diff, _, rotation_diff = cal_pose_diff(ext_trans_mat, prev_trans_mat)
+        prev_trans_mat = ext_trans_mat
+
+        if (position_diff == [0.0, 0.0, 0.0]).all() and (rotation_diff == [0.0, 0.0, 0.0]).all():
+            continue
+
+        deduplicated_mat_list.append(ext_trans_mat)
+
+    return deduplicated_mat_list
 
 
 def generate_pose_diff_data(output_directory):
     """Generate image & position diff data for S3D pre-trained weight."""
+
     print(output_directory)

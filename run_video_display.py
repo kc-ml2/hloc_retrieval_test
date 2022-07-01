@@ -18,6 +18,7 @@ from utils.habitat_utils import (
     get_scene_by_eng_guide,
     interpolate_discrete_matrix,
     make_cfg,
+    remove_duplicate_matrix,
 )
 
 if __name__ == "__main__":
@@ -84,10 +85,11 @@ if __name__ == "__main__":
 
     recolored_topdown_map = get_closest_map(sim, position, recolored_topdown_map_list)
 
-    ext_trans_mat_list = interpolate_discrete_matrix(
-        list(ext_trans_mat_list), interpolation_interval, translation_threshold
+    deduplicated_mat_list = remove_duplicate_matrix(ext_trans_mat_list)
+    deduplicated_mat_list = interpolate_discrete_matrix(
+        list(deduplicated_mat_list), interpolation_interval, translation_threshold
     )
-    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list)
+    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(deduplicated_mat_list)
 
     img_id = 0
     nodes = []
@@ -99,13 +101,10 @@ if __name__ == "__main__":
         agent_state.position = position
 
         if i == 0:
-            prev_trans_mat = ext_trans_mat_list[i]
+            prev_trans_mat = deduplicated_mat_list[i]
 
-        position_diff, _, rotation_diff = cal_pose_diff(ext_trans_mat_list[i], prev_trans_mat)
-        prev_trans_mat = ext_trans_mat_list[i]
-
-        if (position_diff == [0.0, 0.0, 0.0]).all() and (rotation_diff == [0.0, 0.0, 0.0]).all():
-            continue
+        position_diff, _, rotation_diff = cal_pose_diff(deduplicated_mat_list[i], prev_trans_mat)
+        prev_trans_mat = deduplicated_mat_list[i]
 
         print("Frame: ", i)
         print("Position diff: ", position_diff)
