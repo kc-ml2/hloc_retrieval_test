@@ -6,8 +6,8 @@ from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 
-from grid2topo.cv_utils import draw_flow
-from grid2topo.habitat_utils import (
+from utils.cv_utils import draw_flow
+from utils.habitat_utils import (
     convert_transmat_to_point_quaternion,
     display_map,
     display_opencv_cam,

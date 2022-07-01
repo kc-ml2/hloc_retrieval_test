@@ -5,8 +5,8 @@ from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 
-from grid2topo.habitat_utils import convert_points_to_topdown, display_map, make_cfg
-from grid2topo.skeletonize_utils import (
+from utils.habitat_utils import convert_points_to_topdown, display_map, make_cfg
+from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_topology,
     convert_to_visual_binarymap,

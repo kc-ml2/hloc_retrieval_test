@@ -4,7 +4,7 @@ import os
 import jsonlines
 import numpy as np
 
-from grid2topo.habitat_utils import convert_transmat_to_point_quaternion
+from utils.habitat_utils import convert_transmat_to_point_quaternion
 
 if __name__ == "__main__":
     # directory = "/data1/rxr_dataset/rxr-data/pose_traces/rxr_train/"

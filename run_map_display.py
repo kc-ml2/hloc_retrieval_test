@@ -6,7 +6,7 @@ from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 
-from grid2topo.habitat_utils import (
+from utils.habitat_utils import (
     convert_transmat_to_point_quaternion,
     display_map,
     display_opencv_cam,

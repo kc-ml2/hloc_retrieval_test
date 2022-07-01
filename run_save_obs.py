@@ -4,7 +4,7 @@ import random
 import cv2
 import habitat_sim
 
-from grid2topo.habitat_utils import display_opencv_cam, make_cfg
+from utils.habitat_utils import display_opencv_cam, make_cfg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
