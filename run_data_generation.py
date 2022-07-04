@@ -24,11 +24,14 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     output_path = args.output_path
 
-    directory = "../dataset/rxr-data/pose_traces/rxr_train/"
-    pose_file_list = [f for f in listdir(directory) if isfile(join(directory, f))]
+    directory = "/data1/chlee/rxr_dataset/rxr-data/pose_traces/rxr_train/"
+    # directory = "../dataset/rxr-data/pose_traces/rxr_train/"
+    pose_file_list = [f for f in sorted(listdir(directory)) if isfile(join(directory, f))]
 
-    train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
-    scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    train_guide_file = "/data1/chlee/rxr_dataset/rxr-data/rxr_train_guide.jsonl.gz"
+    # train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
+    scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
 
     jsonl_file = gzip.open(train_guide_file)
     reader = jsonlines.Reader(jsonl_file)
@@ -90,6 +93,11 @@ if __name__ == "__main__":
         agent = sim.initialize_agent(sim_settings["default_agent"])
         agent_state = habitat_sim.AgentState()
 
+        ext_trans_mat_list = []
+        deduplicated_mat_list = []
+        pos_trajectory = []
+        angle_trajectory = []
+
         ext_trans_mat_list = pose_trace["extrinsic_matrix"]
         deduplicated_mat_list = remove_duplicate_matrix(ext_trans_mat_list)
         deduplicated_mat_list = interpolate_discrete_matrix(
@@ -98,12 +106,16 @@ if __name__ == "__main__":
         pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(deduplicated_mat_list)
 
         for k in range(sampling_number):
-            idx = random.randint(0, len(pos_trajectory) - 1)
+            try:
+                idx = random.randint(0, len(pos_trajectory) - 1)
+            except ValueError:
+                print(len(pos_trajectory))
+                continue
+
             diff_interval = random.randint((-1) * sampling_interval, sampling_interval)
             idx_diff = idx + diff_interval
 
-            if idx_diff < 0:
-                idx_diff = 0
+            idx_diff = max(idx_diff, 0)
             if idx_diff >= len(pos_trajectory):
                 idx_diff = len(pos_trajectory) - 1
 
@@ -116,7 +128,7 @@ if __name__ == "__main__":
                 diff_data[f"{str(instruction_id).zfill(6)}_follwer_{k}"] = [list(position_diff), list(rotation_diff)]
             else:
                 diff_data[f"{str(instruction_id).zfill(6)}_guide_{k}"] = [list(position_diff), list(rotation_diff)]
-            with open("./output/diff_data.json", "w") as diff_json:
+            with open("/data1/chlee/output/diff_data.json", "w") as diff_json:  # pylint: disable=unspecified-encoding
                 json.dump(diff_data, diff_json, indent=4)
 
             position = pos_trajectory[idx]
@@ -127,9 +139,9 @@ if __name__ == "__main__":
             observations = sim.get_sensor_observations()
             color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
             if is_follower:
-                cv2.imwrite(f"./output/i/{str(instruction_id).zfill(6)}_follwer_{k}.jpg", color_img)
+                cv2.imwrite(f"/data1/chlee/output/i/{str(instruction_id).zfill(6)}_follwer_{k}.jpg", color_img)
             else:
-                cv2.imwrite(f"./output/i/{str(instruction_id).zfill(6)}_guide_{k}.jpg", color_img)
+                cv2.imwrite(f"/data1/chlee/output/i/{str(instruction_id).zfill(6)}_guide_{k}.jpg", color_img)
 
             position = pos_trajectory[idx_diff]
             angle_quaternion = angle_trajectory[idx_diff]
@@ -139,8 +151,8 @@ if __name__ == "__main__":
             observations = sim.get_sensor_observations()
             color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
             if is_follower:
-                cv2.imwrite(f"./output/i_diff/{str(instruction_id).zfill(6)}_follwer_{k}.jpg", color_img)
+                cv2.imwrite(f"/data1/chlee/output/i_diff/{str(instruction_id).zfill(6)}_follwer_{k}.jpg", color_img)
             else:
-                cv2.imwrite(f"./output/i_diff/{str(instruction_id).zfill(6)}_guide_{k}.jpg", color_img)
+                cv2.imwrite(f"/data1/chlee/output/i_diff/{str(instruction_id).zfill(6)}_guide_{k}.jpg", color_img)
 
         sim.close()
