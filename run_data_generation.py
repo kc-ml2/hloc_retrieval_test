@@ -1,6 +1,7 @@
 import argparse
 import gzip
 import json
+import os
 from os import listdir
 from os.path import isfile, join
 import random
@@ -48,7 +49,11 @@ if __name__ == "__main__":
     pose_file_list = entire_pose_file_list[0:len(entire_pose_file_list)]
     diff_json_path = "/data1/chlee/output/diff_data.json"
 
+    total_instruction_num = 0
+    total_sampling_num = 0
     for i, pose_file in enumerate(pose_file_list):
+        print("Total instruction number: ", total_instruction_num)
+        print("Total sampling number: ", total_sampling_num)
         print(i, "/", len(pose_file_list))
         print(pose_file)
         is_follower = "follower" in pose_file
@@ -58,6 +63,11 @@ if __name__ == "__main__":
         if is_eng is not True:
             continue
 
+        if is_follower:
+            os.makedirs(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_follwer")
+        else:
+            os.makedirs(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_guide")
+
         scene = scene_directory + eng_scene_dict[instruction_id] + "/" + eng_scene_dict[instruction_id] + ".glb"
         pose_trace = np.load(directory + pose_file)
 
@@ -65,12 +75,11 @@ if __name__ == "__main__":
         depth_sensor = False
         semantic_sensor = False
 
-        remove_small_value = False
         meters_per_pixel = 0.1
         translation_threshold = 0.5
         interpolation_interval = 0.02
-        sampling_interval = 30
-        sampling_number = 20
+        sampling_frames = 40
+        sampling_number = 5
 
         sim_settings = {
             "width": 256,  # Spatial resolution of the observations
@@ -110,52 +119,35 @@ if __name__ == "__main__":
 
         for k in range(sampling_number):
             try:
-                idx = random.randint(0, len(pos_trajectory) - 1)
+                idx = random.randint(0, len(pos_trajectory) - sampling_frames)
             except ValueError:
                 print(len(pos_trajectory))
                 continue
 
-            diff_interval = random.randint((-1) * sampling_interval, sampling_interval)
-            idx_diff = idx + diff_interval
+            video_frames_mat = []
+            for j in range(sampling_frames):
+                video_frames_mat.append(deduplicated_mat_list[idx + j].tolist())
 
-            idx_diff = max(idx_diff, 0)
-            if idx_diff >= len(pos_trajectory):
-                idx_diff = len(pos_trajectory) - 1
-
-            position_diff, _, rotation_diff = cal_pose_diff(deduplicated_mat_list[idx], deduplicated_mat_list[idx_diff])
-            if remove_small_value:
-                position_diff[abs(position_diff) < 0.0001] = 0.0
-                rotation_diff[abs(rotation_diff) < 0.0001] = 0.0
+                position = pos_trajectory[idx + j]
+                angle_quaternion = angle_trajectory[idx + j]
+                agent_state.position = position
+                agent_state.rotation = angle_quaternion
+                agent.set_state(agent_state)
+                observations = sim.get_sensor_observations()
+                color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+                if is_follower:
+                    cv2.imwrite(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_follwer/{k}_{str(j).zfill(2)}.jpg", color_img)
+                else:
+                    cv2.imwrite(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_guide/{k}_{str(j).zfill(2)}.jpg", color_img)
 
             if is_follower:
-                diff_data[f"{str(instruction_id).zfill(6)}_follwer_{k}"] = [list(position_diff), list(rotation_diff)]
+                diff_data[f"{str(instruction_id).zfill(6)}_follwer_{k}"] = video_frames_mat
             else:
-                diff_data[f"{str(instruction_id).zfill(6)}_guide_{k}"] = [list(position_diff), list(rotation_diff)]
+                diff_data[f"{str(instruction_id).zfill(6)}_guide_{k}"] = video_frames_mat
             with open(diff_json_path, "w") as diff_json:  # pylint: disable=unspecified-encoding
                 json.dump(diff_data, diff_json, indent=4)
 
-            position = pos_trajectory[idx]
-            angle_quaternion = angle_trajectory[idx]
-            agent_state.position = position
-            agent_state.rotation = angle_quaternion
-            agent.set_state(agent_state)
-            observations = sim.get_sensor_observations()
-            color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
-            if is_follower:
-                cv2.imwrite(f"/data1/chlee/output/i/{str(instruction_id).zfill(6)}_follwer_{k}.jpg", color_img)
-            else:
-                cv2.imwrite(f"/data1/chlee/output/i/{str(instruction_id).zfill(6)}_guide_{k}.jpg", color_img)
-
-            position = pos_trajectory[idx_diff]
-            angle_quaternion = angle_trajectory[idx_diff]
-            agent_state.position = position
-            agent_state.rotation = angle_quaternion
-            agent.set_state(agent_state)
-            observations = sim.get_sensor_observations()
-            color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
-            if is_follower:
-                cv2.imwrite(f"/data1/chlee/output/i_diff/{str(instruction_id).zfill(6)}_follwer_{k}.jpg", color_img)
-            else:
-                cv2.imwrite(f"/data1/chlee/output/i_diff/{str(instruction_id).zfill(6)}_guide_{k}.jpg", color_img)
-
+            total_sampling_num = total_sampling_num + 1
+        
         sim.close()
+        total_instruction_num = total_instruction_num + 1
