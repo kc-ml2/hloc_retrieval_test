@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     directory = "/data1/chlee/rxr_dataset/rxr-data/pose_traces/rxr_train/"
     # directory = "../dataset/rxr-data/pose_traces/rxr_train/"
-    pose_file_list = [f for f in sorted(listdir(directory)) if isfile(join(directory, f))]
+    entire_pose_file_list = [f for f in sorted(listdir(directory)) if isfile(join(directory, f))]
 
     train_guide_file = "/data1/chlee/rxr_dataset/rxr-data/rxr_train_guide.jsonl.gz"
     # train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
@@ -44,6 +44,9 @@ if __name__ == "__main__":
         language_dict[obj["instruction_id"]] = obj["language"]
         if obj["language"] == "en-IN" or obj["language"] == "en-US":
             eng_scene_dict[obj["instruction_id"]] = obj["scan"]
+
+    pose_file_list = entire_pose_file_list[0:len(entire_pose_file_list)]
+    diff_json_path = "/data1/chlee/output/diff_data.json"
 
     for i, pose_file in enumerate(pose_file_list):
         print(i, "/", len(pose_file_list))
@@ -128,7 +131,7 @@ if __name__ == "__main__":
                 diff_data[f"{str(instruction_id).zfill(6)}_follwer_{k}"] = [list(position_diff), list(rotation_diff)]
             else:
                 diff_data[f"{str(instruction_id).zfill(6)}_guide_{k}"] = [list(position_diff), list(rotation_diff)]
-            with open("/data1/chlee/output/diff_data.json", "w") as diff_json:  # pylint: disable=unspecified-encoding
+            with open(diff_json_path, "w") as diff_json:  # pylint: disable=unspecified-encoding
                 json.dump(diff_data, diff_json, indent=4)
 
             position = pos_trajectory[idx]

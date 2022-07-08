@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     meters_per_pixel = 0.1
     translation_threshold = 0.5
-    interpolation_interval = 0.1
+    interpolation_interval = 0.02
 
     sim_settings = {
         "width": 256,  # Spatial resolution of the observations
