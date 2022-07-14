@@ -79,7 +79,7 @@ if __name__ == "__main__":
         translation_threshold = 0.5
         interpolation_interval = 0.02
         sampling_frames = 40
-        sampling_number = 5
+        sampling_number = 2
 
         sim_settings = {
             "width": 256,  # Spatial resolution of the observations
