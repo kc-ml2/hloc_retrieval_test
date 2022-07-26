@@ -126,7 +126,7 @@ def convert_points_to_topdown(pathfinder, points, meters_per_pix):
     return points_topdown
 
 
-def display_map(topdown_map, key_points=None, wait_for_key=False):
+def display_map(topdown_map, window_name="map", key_points=None, wait_for_key=False):
     """Display a topdown map with OpenCV."""
 
     if key_points is not None:
@@ -149,9 +149,9 @@ def display_map(topdown_map, key_points=None, wait_for_key=False):
                 thickness=1,
             )
 
-    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("map", 768, 768)
-    cv2.imshow("map", topdown_map)
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window_name, 1152, 1152)
+    cv2.imshow(window_name, topdown_map)
     if wait_for_key:
         cv2.waitKey()
 
@@ -204,6 +204,7 @@ def get_entire_maps_by_levels(sim, meters_per_pixel):
 
     print("Selecting proper maps on desired level")
     recolored_topdown_map_list = []
+    topdown_map_list = []
     for level_id in range(len(sim.semantic_scene.levels)):
         area_size_list = []
         for i, point in enumerate(nav_point_list):
@@ -222,12 +223,13 @@ def get_entire_maps_by_levels(sim, meters_per_pixel):
         topdown_map = maps.get_topdown_map(
             sim.pathfinder, height=nav_point_list[sample_id][1], meters_per_pixel=meters_per_pixel
         )
+        topdown_map_list.append(topdown_map)
         recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
         recolored_topdown_map = recolor_palette[topdown_map]
         recolored_topdown_map_list.append(recolored_topdown_map)
     print("Map selection done.")
 
-    return recolored_topdown_map_list
+    return recolored_topdown_map_list, topdown_map_list
 
 
 def get_closest_map(sim, position, map_list):
@@ -243,7 +245,7 @@ def get_closest_map(sim, position, map_list):
     closest_level = average_list.index(min(average_list))
     recolored_topdown_map = map_list[closest_level]
 
-    return recolored_topdown_map
+    return recolored_topdown_map, closest_level
 
 
 def extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list):

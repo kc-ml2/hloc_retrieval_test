@@ -28,7 +28,7 @@ if __name__ == "__main__":
     instruction_id = int(args.trace_id)
 
     directory = "../dataset/rxr-data/pose_traces/rxr_train/"
-    pose_trace = np.load(directory + str(instruction_id).zfill(6) + "_follower_pose_trace.npz")
+    pose_trace = np.load(directory + str(instruction_id).zfill(6) + "_guide_pose_trace.npz")
     train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
     scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
 
@@ -41,7 +41,11 @@ if __name__ == "__main__":
 
     display_observation = True
     display_path_map = True
+    display_semantic_object = True
     optical_flow_overlay = False
+
+    remove_duplicate_frames = True
+    interpolate_translation = True
 
     meters_per_pixel = 0.1
     translation_threshold = 0.5
@@ -77,19 +81,43 @@ if __name__ == "__main__":
         print("Pathfinder not initialized")
     sim.pathfinder.seed(pathfinder_seed)
 
-    recolored_topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
+    recolored_topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
 
     ext_trans_mat_list = pose_trace["extrinsic_matrix"]
     trans_mat = ext_trans_mat_list[0]
     position, _ = convert_transmat_to_point_quaternion(trans_mat)
 
-    recolored_topdown_map = get_closest_map(sim, position, recolored_topdown_map_list)
+    recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
 
-    deduplicated_mat_list = remove_duplicate_matrix(ext_trans_mat_list)
-    deduplicated_mat_list = interpolate_discrete_matrix(
-        list(deduplicated_mat_list), interpolation_interval, translation_threshold
-    )
-    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(deduplicated_mat_list)
+    if display_semantic_object:
+        level = sim.semantic_scene.levels[closest_level]
+
+        door_pos_list = []
+        for region in level.regions:
+            for obj in region.objects:
+                if obj.category.name() == "sofa":
+                    door_point = maps.to_grid(
+                        obj.aabb.center[2], obj.aabb.center[0], recolored_topdown_map.shape[0:2], sim
+                    )
+                    transposed_point = (door_point[1], door_point[0])
+
+                    cv2.drawMarker(
+                        img=recolored_topdown_map,
+                        position=(int(transposed_point[0]), int(transposed_point[1])),
+                        color=(0, 0, 255),
+                        markerType=cv2.MARKER_DIAMOND,
+                        markerSize=2,
+                    )
+
+    if remove_duplicate_frames:
+        ext_trans_mat_list = remove_duplicate_matrix(ext_trans_mat_list)
+
+    if interpolate_translation:
+        ext_trans_mat_list = interpolate_discrete_matrix(
+            list(ext_trans_mat_list), interpolation_interval, translation_threshold
+        )
+
+    pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list)
 
     img_id = 0
     nodes = []
@@ -101,10 +129,10 @@ if __name__ == "__main__":
         agent_state.position = position
 
         if i == 0:
-            prev_trans_mat = deduplicated_mat_list[i]
+            prev_trans_mat = ext_trans_mat_list[i]
 
-        position_diff, _, rotation_diff = cal_pose_diff(deduplicated_mat_list[i], prev_trans_mat)
-        prev_trans_mat = deduplicated_mat_list[i]
+        position_diff, _, rotation_diff = cal_pose_diff(ext_trans_mat_list[i], prev_trans_mat)
+        prev_trans_mat = ext_trans_mat_list[i]
 
         print("Frame: ", i)
         print("Position diff: ", position_diff)
@@ -142,7 +170,6 @@ if __name__ == "__main__":
                 cv2.imwrite(f"./output/query{img_id}.jpg", color_img)
                 cv2.imwrite(f"./output/db{img_id}.jpg", color_img)
                 img_id = img_id + 1
-                continue
 
         if display_path_map:
             node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)

@@ -1,86 +1,92 @@
 import argparse
 import random
 
-from habitat.utils.visualizations import maps
+import cv2
 import habitat_sim
 import numpy as np
 
-from utils.habitat_utils import convert_points_to_topdown, display_map, make_cfg
+from utils.habitat_utils import display_map, get_entire_maps_by_levels, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_topology,
     convert_to_visual_binarymap,
     display_graph,
+    generate_map_image,
 )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene")
+    parser.add_argument("--scene-list-file")
     args, _ = parser.parse_known_args()
-    test_scene = args.scene
+    scene_list_file = args.scene_list_file
 
     rgb_sensor = True
     depth_sensor = True
-    semantic_sensor = True
+    semantic_sensor = False
 
     meters_per_pixel = 0.1
 
-    sim_settings = {
-        "width": 256,  # Spatial resolution of the observations
-        "height": 256,
-        "scene": test_scene,  # Scene path
-        "default_agent": 0,
-        "sensor_height": 0,  # Height of sensors in meters
-        "color_sensor": rgb_sensor,  # RGB sensor
-        "depth_sensor": depth_sensor,  # Depth sensor
-        "semantic_sensor": semantic_sensor,  # Semantic sensor
-        "seed": 1,  # used in the random navigation
-        "enable_physics": False,  # kinematics only
-    }
+    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
+        scene_list = f.read().splitlines()
 
-    cfg = make_cfg(sim_settings)
-    sim = habitat_sim.Simulator(cfg)
+    for scene_number in scene_list:
+        scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+        scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
-    # The randomness is needed when choosing the actions
-    random.seed(sim_settings["seed"])
-    sim.seed(sim_settings["seed"])
-    pathfinder_seed = 1
+        sim_settings = {
+            "width": 256,  # Spatial resolution of the observations
+            "height": 256,
+            "scene": scene,  # Scene path
+            "default_agent": 0,
+            "sensor_height": 0,  # Height of sensors in meters
+            "color_sensor": rgb_sensor,  # RGB sensor
+            "depth_sensor": depth_sensor,  # Depth sensor
+            "semantic_sensor": semantic_sensor,  # Semantic sensor
+            "seed": 1,  # used in the random navigation
+            "enable_physics": False,  # kinematics only
+        }
 
-    # Set agent state
-    agent = sim.initialize_agent(sim_settings["default_agent"])
-    agent_state = habitat_sim.AgentState()
-    agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
-    agent.set_state(agent_state)
+        cfg = make_cfg(sim_settings)
+        sim = habitat_sim.Simulator(cfg)
 
-    if not sim.pathfinder.is_loaded:
-        print("Pathfinder not initialized")
+        # The randomness is needed when choosing the actions
+        random.seed(sim_settings["seed"])
+        sim.seed(sim_settings["seed"])
+        pathfinder_seed = 1
 
-    print("The NavMesh bounds are: " + str(sim.pathfinder.get_bounds()))
-    sim.pathfinder.seed(pathfinder_seed)
-    nav_point = sim.pathfinder.get_random_navigable_point()
+        # Set agent state
+        agent = sim.initialize_agent(sim_settings["default_agent"])
+        agent_state = habitat_sim.AgentState()
+        agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
+        agent.set_state(agent_state)
 
-    if not sim.pathfinder.is_navigable(nav_point):
-        print("Sampled point is not navigable")
+        if not sim.pathfinder.is_loaded:
+            print("Pathfinder not initialized")
+        sim.pathfinder.seed(pathfinder_seed)
 
-    topdown_map = maps.get_topdown_map(sim.pathfinder, height=nav_point[1], meters_per_pixel=meters_per_pixel)
-    recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
-    recolored_topdown_map = recolor_palette[topdown_map]
+        recolored_topdown_map_list, topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
 
-    print("Displaying recolored map:")
-    display_map(recolored_topdown_map)
+        for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
+            print("scene: ", scene_number, "    level: ", i)
+            topdown_map = topdown_map_list[i]
 
-    visual_binary_map = convert_to_visual_binarymap(topdown_map)
-    print("Displaying visual binary map:")
-    display_map(visual_binary_map)
+            print("Displaying recolored map:")
+            display_map(recolored_topdown_map, window_name="colored_map", wait_for_key=True)
 
-    binary_map = convert_to_binarymap(topdown_map)
-    skeletonized_map, graph = convert_to_topology(binary_map)
-    print("Displaying skeleton map:")
-    display_map(skeletonized_map)
-    print("Displaying graph:")
-    display_graph(visual_binary_map, graph)
+            visual_binary_map = convert_to_visual_binarymap(topdown_map)
+            print("Displaying visual binary map:")
+            display_map(visual_binary_map, wait_for_key=True)
 
-    vis_points = [nav_point]
-    xy_vis_points = convert_points_to_topdown(sim.pathfinder, vis_points, meters_per_pixel)
-    print("Display the map with key_point overlay:")
-    display_map(recolored_topdown_map, key_points=xy_vis_points)
+            binary_map = convert_to_binarymap(topdown_map)
+            skeletonized_map, graph = convert_to_topology(binary_map)
+
+            print("Displaying skeleton map:")
+            display_map(skeletonized_map, window_name="skeleton")
+            print("Displaying graph:")
+            display_graph(visual_binary_map, graph)
+
+            map_img = generate_map_image(visual_binary_map, graph)
+
+            cv2.imwrite(f"./output/medial/{scene_number}_{i}.jpg", map_img)
+
+            sim.close()
