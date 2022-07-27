@@ -12,7 +12,6 @@ import jsonlines
 import numpy as np
 
 from utils.habitat_utils import (
-    cal_pose_diff,
     extrinsic_mat_list_to_pos_angle_list,
     interpolate_discrete_matrix,
     make_cfg,
@@ -46,7 +45,7 @@ if __name__ == "__main__":
         if obj["language"] == "en-IN" or obj["language"] == "en-US":
             eng_scene_dict[obj["instruction_id"]] = obj["scan"]
 
-    pose_file_list = entire_pose_file_list[0:len(entire_pose_file_list)]
+    pose_file_list = entire_pose_file_list[0 : len(entire_pose_file_list)]
     diff_json_path = "/data1/chlee/output/diff_data.json"
 
     total_instruction_num = 0
@@ -136,9 +135,15 @@ if __name__ == "__main__":
                 observations = sim.get_sensor_observations()
                 color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
                 if is_follower:
-                    cv2.imwrite(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_follwer/{k}_{str(j).zfill(2)}.jpg", color_img)
+                    cv2.imwrite(
+                        f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_follwer/{k}_{str(j).zfill(2)}.jpg",
+                        color_img,
+                    )
                 else:
-                    cv2.imwrite(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_guide/{k}_{str(j).zfill(2)}.jpg", color_img)
+                    cv2.imwrite(
+                        f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_guide/{k}_{str(j).zfill(2)}.jpg",
+                        color_img,
+                    )
 
             if is_follower:
                 diff_data[f"{str(instruction_id).zfill(6)}_follwer_{k}"] = video_frames_mat
@@ -148,6 +153,6 @@ if __name__ == "__main__":
                 json.dump(diff_data, diff_json, indent=4)
 
             total_sampling_num = total_sampling_num + 1
-        
+
         sim.close()
         total_instruction_num = total_instruction_num + 1
