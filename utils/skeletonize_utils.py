@@ -83,12 +83,30 @@ def display_graph(map_image, graph, window_name="graph", line_edge=False, wait_f
         cv2.waitKey()
 
 
-def generate_map_image(map_image, graph):
+def generate_map_image(map_image, graph, line_edge=False):
     map_image = cv2.cvtColor(map_image, cv2.COLOR_GRAY2BGR)
 
-    for (s, e) in graph.edges():
-        for pnt in graph[s][e]["pts"]:
-            map_image[int(pnt[0])][int(pnt[1])] = (255, 0, 0)
+    if line_edge:
+        for (s, e) in graph.edges():
+            cv2.line(
+                img=map_image,
+                pt1=(int(graph.nodes[s]["o"][1]), int(graph.nodes[s]["o"][0])),
+                pt2=(int(graph.nodes[e]["o"][1]), int(graph.nodes[e]["o"][0])),
+                color=(255, 0, 0),
+                thickness=1,
+            )
+    else:
+        for (s, e) in graph.edges():
+            for pnt in graph[s][e]["pts"]:
+                map_image[int(pnt[0])][int(pnt[1])] = (255, 0, 0)
+            if graph[s][e]["pts"] == []:
+                cv2.line(
+                    img=map_image,
+                    pt1=(int(graph.nodes[s]["o"][1]), int(graph.nodes[s]["o"][0])),
+                    pt2=(int(graph.nodes[e]["o"][1]), int(graph.nodes[e]["o"][0])),
+                    color=(255, 0, 0),
+                    thickness=1,
+                )
 
     node_points = np.array([graph.nodes()[i]["o"] for i in graph.nodes()])
 
