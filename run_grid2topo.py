@@ -133,4 +133,4 @@ if __name__ == "__main__":
             # map_img = generate_map_image(visual_binary_map, graph, line_edge=True)
             # cv2.imwrite(f"./output/pruned/{scene_number}_{i}.jpg", map_img)
 
-            sim.close()
+        sim.close()
