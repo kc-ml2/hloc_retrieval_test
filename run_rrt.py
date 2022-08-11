@@ -4,7 +4,7 @@ import random
 import cv2
 import numpy as np
 
-from rrt import RRT
+from algorithms.rrt import RRT
 from utils.habitat_utils import display_map
 
 if __name__ == "__main__":
