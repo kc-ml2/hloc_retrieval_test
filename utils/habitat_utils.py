@@ -107,7 +107,7 @@ def display_observation(rgb_obs, semantic_obs, depth_obs):
 def display_opencv_cam(rgb_obs) -> int:
     """Draw nodes and edges into map image."""
     cv2.namedWindow("observation", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("observation", 768, 768)
+    cv2.resizeWindow("observation", 1152, 1152)
     cv2.imshow("observation", rgb_obs)
     key = cv2.waitKey()
 
