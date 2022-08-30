@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from algorithms.rrt import RRT
-from utils.habitat_utils import display_map
+from utils.habitat_utils import display_map, init_map_display
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -22,6 +22,8 @@ if __name__ == "__main__":
 
     N_iter = 500
     StepSize = 3
+
+    init_map_display()
 
     recolored_topdown_map = cv2.imread("./output/recolored_topdown/SN83YJsR3w2_1.bmp", cv2.IMREAD_GRAYSCALE)
     topdown_map = cv2.imread("./output/topdown/SN83YJsR3w2_1.bmp", cv2.IMREAD_GRAYSCALE)

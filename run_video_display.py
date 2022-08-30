@@ -16,6 +16,8 @@ from utils.habitat_utils import (
     get_closest_map,
     get_entire_maps_by_levels,
     get_scene_by_eng_guide,
+    init_map_display,
+    init_opencv_cam,
     interpolate_discrete_matrix,
     make_cfg,
     remove_duplicate_matrix,
@@ -123,6 +125,12 @@ if __name__ == "__main__":
     nodes = []
     prev = None
 
+    if display_observation:
+        init_opencv_cam()
+
+    if display_path_map:
+        init_map_display()
+
     for i in range(0, len(pos_trajectory), 1):
         position = pos_trajectory[i]
         angle_quaternion = angle_trajectory[i]
@@ -175,4 +183,4 @@ if __name__ == "__main__":
             node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
             transposed_point = (node_point[1], node_point[0])
             nodes.append(transposed_point)
-            display_map(recolored_topdown_map, nodes)
+            display_map(recolored_topdown_map, key_points=nodes)

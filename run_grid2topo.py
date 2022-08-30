@@ -5,7 +5,7 @@ import cv2
 import habitat_sim
 import numpy as np
 
-from utils.habitat_utils import display_map, get_entire_maps_by_levels, make_cfg
+from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
 from utils.skeletonize_utils import convert_to_topology, convert_to_visual_binarymap, display_graph
 
 if __name__ == "__main__":
@@ -66,6 +66,9 @@ if __name__ == "__main__":
 
         recolored_topdown_map_list, topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
 
+        init_map_display(window_name="colored_map")
+        init_map_display(window_name="visual_binary_map")
+
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", i)
             topdown_map = topdown_map_list[i]
@@ -75,7 +78,7 @@ if __name__ == "__main__":
 
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
             print("Displaying visual binary map:")
-            display_map(visual_binary_map, wait_for_key=True)
+            display_map(visual_binary_map, window_name="visual_binary_map", wait_for_key=True)
 
             topdown_map = cv2.erode(topdown_map, kernel, iterations=1)
             topdown_map = cv2.dilate(topdown_map, kernel, iterations=1)

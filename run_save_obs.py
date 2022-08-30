@@ -5,7 +5,15 @@ import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
 
-from utils.habitat_utils import display_map, display_opencv_cam, get_closest_map, get_entire_maps_by_levels, make_cfg
+from utils.habitat_utils import (
+    display_map,
+    display_opencv_cam,
+    get_closest_map,
+    get_entire_maps_by_levels,
+    init_map_display,
+    init_opencv_cam,
+    make_cfg,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -13,10 +21,12 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
-    rgb_sensor = True
+    rgb_sensor = False
+    rgb_360_sensor = True
     depth_sensor = True
     semantic_sensor = True
 
+    display_observation = True
     display_path_map = True
 
     meters_per_pixel = 0.1
@@ -36,6 +46,7 @@ if __name__ == "__main__":
         "default_agent": 0,
         "sensor_height": 0.5,  # Height of sensors in meters
         "color_sensor": rgb_sensor,  # RGB sensor
+        "color_360_sensor": rgb_360_sensor,
         "depth_sensor": depth_sensor,  # Depth sensor
         "semantic_sensor": semantic_sensor,  # Semantic sensor
         "seed": 1,  # used in the random navigation
@@ -67,10 +78,19 @@ if __name__ == "__main__":
 
     img_id = 0
 
+    if display_observation:
+        init_opencv_cam()
+
+    if display_path_map:
+        init_map_display()
+
     while True:
         observations = sim.get_sensor_observations()
-        color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
-        key = display_opencv_cam(color_img)
+        color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
+
+        if display_observation:
+            key = display_opencv_cam(color_img)
+
         current_state = agent.get_state()
         position = current_state.position
 

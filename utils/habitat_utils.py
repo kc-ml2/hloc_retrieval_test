@@ -29,6 +29,15 @@ def make_cfg(settings):
         color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
         sensor_specs.append(color_sensor_spec)
 
+    if settings["color_360_sensor"] is True:
+        color_360_sensor_spec = habitat_sim.EquirectangularSensorSpec()
+        color_360_sensor_spec.uuid = "color_360_sensor"
+        color_360_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        color_360_sensor_spec.resolution = [settings["height"], settings["width"]]
+        color_360_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
+        color_360_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.EQUIRECTANGULAR
+        sensor_specs.append(color_360_sensor_spec)
+
     if settings["depth_sensor"] is True:
         depth_sensor_spec = habitat_sim.CameraSensorSpec()
         depth_sensor_spec.uuid = "depth_sensor"
@@ -104,26 +113,24 @@ def display_observation(rgb_obs, semantic_obs, depth_obs):
     plt.show()
 
 
+def init_opencv_cam(x_size=1152, y_size=1152):
+    """Create image window for observation."""
+    cv2.namedWindow("observation", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("observation", x_size, y_size)
+
+
 def display_opencv_cam(rgb_obs) -> int:
     """Draw nodes and edges into map image."""
-    cv2.namedWindow("observation", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("observation", 1152, 1152)
     cv2.imshow("observation", rgb_obs)
     key = cv2.waitKey()
 
     return key
 
 
-def convert_points_to_topdown(pathfinder, points, meters_per_pix):
-    """Convert 3d points to 2d topdown coordinates."""
-    points_topdown = []
-    bounds = pathfinder.get_bounds()
-    for pnt in points:
-        # convert 3D x,z to topdown x,y
-        px = (pnt[0] - bounds[0][0]) / meters_per_pix
-        py = (pnt[2] - bounds[0][2]) / meters_per_pix
-        points_topdown.append(np.array([px, py]))
-    return points_topdown
+def init_map_display(window_name="map", x_size=1152, y_size=1152):
+    """Create image window for map."""
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window_name, x_size, y_size)
 
 
 def display_map(topdown_map, window_name="map", key_points=None, wait_for_key=False):
@@ -149,11 +156,21 @@ def display_map(topdown_map, window_name="map", key_points=None, wait_for_key=Fa
                 thickness=1,
             )
 
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(window_name, 1152, 1152)
     cv2.imshow(window_name, topdown_map)
     if wait_for_key:
         cv2.waitKey()
+
+
+def convert_points_to_topdown(pathfinder, points, meters_per_pix):
+    """Convert 3d points to 2d topdown coordinates."""
+    points_topdown = []
+    bounds = pathfinder.get_bounds()
+    for pnt in points:
+        # convert 3D x,z to topdown x,y
+        px = (pnt[0] - bounds[0][0]) / meters_per_pix
+        py = (pnt[2] - bounds[0][2]) / meters_per_pix
+        points_topdown.append(np.array([px, py]))
+    return points_topdown
 
 
 def convert_transmat_to_point_quaternion(trans_mat: np.ndarray):
