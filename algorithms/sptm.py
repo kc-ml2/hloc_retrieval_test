@@ -48,36 +48,10 @@ class InputProcessor:
                 self.top_network = resnet.ResnetBuilder.build_top_network(self.edge_model)
             else:
                 self.siamese = False
-        elif EDGE_NETWORK == PIXEL_COMPARISON_NETWORK:
-            self.edge_model = PIXEL_COMPARISON_NETWORK(
-                (2 * PIXEL_COMPARISON_CHANNELS, PIXEL_COMPARISON_HEIGHT, PIXEL_COMPARISON_WIDTH)
-            )
-            self.siamese = False
         else:
             raise Exception("Unknown architecture")
 
-    def prepare_for_pixel_comparison(self, frame):
-        frame = color2gray(frame)
-        downsampled = downsample(frame, PIXEL_COMPARISON_DOWNSAMPLING_FACTOR)
-        if PIXEL_COMPARISON_LOCAL_NORMALIZATION:
-            zero_steps = downsampled.shape[0] / PIXEL_COMPARISON_LOCAL_WINDOW
-            one_steps = downsampled.shape[1] / PIXEL_COMPARISON_LOCAL_WINDOW
-            for zero in range(zero_steps):
-                for one in range(one_steps):
-                    zero_start = zero * PIXEL_COMPARISON_LOCAL_WINDOW
-                    zero_end = (zero + 1) * PIXEL_COMPARISON_LOCAL_WINDOW
-                    one_start = one * PIXEL_COMPARISON_LOCAL_WINDOW
-                    one_end = (one + 1) * PIXEL_COMPARISON_LOCAL_WINDOW
-                    crop = downsampled[zero_start:zero_end, one_start:one_end]
-                    mean = np.mean(crop)
-                    std = np.std(crop)
-                    downsampled[zero_start:zero_end, one_start:one_end] = (crop - mean) / (std + 0.00000001)
-        # cv2.imwrite('to_check.png', downsampled)
-        return np.expand_dims(downsampled, axis=2)
-
     def set_memory_buffer(self, keyframes):
-        if EDGE_NETWORK == PIXEL_COMPARISON_NETWORK:
-            keyframes = [self.prepare_for_pixel_comparison(frame) for frame in keyframes]
         if not self.siamese:
             list_to_predict = []
             for keyframe in keyframes:
@@ -93,8 +67,6 @@ class InputProcessor:
             self.tensor_to_predict = np.array(list_to_predict)
 
     def append_to_memory_buffer(self, keyframe):
-        if EDGE_NETWORK == PIXEL_COMPARISON_NETWORK:
-            keyframe = self.prepare_for_pixel_comparison(keyframe)
         expanded_keyframe = np.expand_dims(keyframe, axis=0)
         if not self.siamese:
             x = np.concatenate((expanded_keyframe, expanded_keyframe), axis=3)
@@ -104,8 +76,6 @@ class InputProcessor:
         self.tensor_to_predict = np.concatenate((self.tensor_to_predict, x), axis=0)
 
     def predict_single_input(self, input):
-        if EDGE_NETWORK == PIXEL_COMPARISON_NETWORK:
-            input = self.prepare_for_pixel_comparison(input)
         if not self.siamese:
             for index in range(self.tensor_to_predict.shape[0]):
                 self.tensor_to_predict[index][:, :, : (input.shape[2])] = input
@@ -259,3 +229,20 @@ class SPTM:
             return nn, probabilities, nns
         else:
             return None, probabilities, nns
+
+    def find_nn_threshold(self, input, threshold):
+        nn, probability, probabilities = self.find_nn(input)
+        if probability < threshold:
+            return None, None
+        else:
+            return nn, probabilities
+
+    def find_smoothed_nn(self, input):
+        nn = None
+        if SMOOTHED_LOCALIZATION:
+            nn, probabilities = self.find_nn_on_last_shortest_path(input)
+        if nn is None:
+            nn, probabilities, _ = self.find_knn_median_threshold(
+                input, NUMBER_OF_NEAREST_NEIGHBOURS, INTERMEDIATE_REACHABLE_GOAL_THRESHOLD
+            )
+        return nn, probabilities

@@ -315,19 +315,3 @@ class ResnetBuilder:
         # output = Concatenate([negated_result, result])
 
         return Model(inputs=input, outputs=output)
-
-    @staticmethod
-    def build_pixel_comparison_network(input_shape):
-        channels, height, width = input_shape
-        input = Input(shape=(height, width, channels))
-        first = Flatten()(Lambda(lambda x: x[:, :, :, :1])(input))
-        second = Flatten()(Lambda(lambda x: x[:, :, :, 1:])(input))
-        # second = Lambda(lambda x: -x)(second)
-        # difference = Add([first, second])
-        # raw_result = Lambda(lambda x: K.mean(K.abs(x), axis=1, keepdims=True))(difference)
-        # prob_zero = Lambda(lambda x: x / 255.0)(raw_result)
-        # prob_one = Lambda(lambda x: 1.0 - x)(prob_zero)
-        prob_one = Dot([first, second], axes=1, normalize=True)
-        prob_zero = Lambda(lambda x: 1.0 - x)(prob_one)
-        output = Concatenate([prob_zero, prob_one])
-        return Model(inputs=input, outputs=output)

@@ -4,41 +4,22 @@ import os.path
 
 from algorithms import resnet
 
-
-def get_from_env(name, type, default):
-    value = os.environ.get(name)
-    if value:
-        if type in [str, int, float]:
-            returned_value = type(value)
-        elif type == bool:
-            returned_value = eval(value)
-        else:
-            raise Exception("Unknown constant type!")
-    else:
-        returned_value = default
-    print(name, "=", returned_value)
-    return returned_value
-
-
 # loaded from environment
-SMOOTHED_LOCALIZATION = get_from_env("SMOOTHED_LOCALIZATION", bool, True)
-MEMORY_SUBSAMPLING = get_from_env("MEMORY_SUBSAMPLING", int, 4)
-MIN_SHORTCUT_DISTANCE = get_from_env("MIN_SHORTCUT_DISTANCE", int, 5)
-MEMORY_MAX_FRAMES = get_from_env("MEMORY_MAX_FRAMES", int, None)
-ACTION_EXPERIMENT_ID = get_from_env("ACTION_EXPERIMENT_ID", str, "0102_L")
-EDGE_EXPERIMENT_ID = get_from_env("EDGE_EXPERIMENT_ID", str, "0103_R")
-EXPERIMENT_OUTPUT_FOLDER = get_from_env("EXPERIMENT_OUTPUT_FOLDER", str, "default_experiment")
-WEAK_INTERMEDIATE_REACHABLE_GOAL_THRESHOLD = get_from_env("WEAK_INTERMEDIATE_REACHABLE_GOAL_THRESHOLD", float, 0.7)
-INTERMEDIATE_REACHABLE_GOAL_THRESHOLD = get_from_env("INTERMEDIATE_REACHABLE_GOAL_THRESHOLD", float, 0.95)
-SMALL_SHORTCUTS_NUMBER = get_from_env("SMALL_SHORTCUTS_NUMBER", int, 2000)
-SHORTCUT_WINDOW = get_from_env("SHORTCUT_WINDOW", int, 10)
-MIN_LOOK_AHEAD = get_from_env("MIN_LOOK_AHEAD", int, 1)
-MAX_LOOK_AHEAD = get_from_env("MAX_LOOK_AHEAD", int, 7)
-NUMBER_OF_TRIALS = get_from_env("NUMBER_OF_TRIALS", int, 6)
-EDGE_ARCHITECTURE = get_from_env(
-    "EDGE_ARCHITECTURE", str, "SIAMESE_NETWORK"
-)  # other option is PIXEL_COMPARISON_NETWORK
-PIXEL_COMPARISON_LOCAL_NORMALIZATION = get_from_env("PIXEL_COMPARISON_LOCAL_NORMALIZATION", bool, False)
+SMOOTHED_LOCALIZATION = True
+MEMORY_SUBSAMPLING = 4
+MIN_SHORTCUT_DISTANCE = 5
+MEMORY_MAX_FRAMES = None
+ACTION_EXPERIMENT_ID = "0102_L"
+EDGE_EXPERIMENT_ID = "0103_R"
+EXPERIMENT_OUTPUT_FOLDER = "default_experiment"
+WEAK_INTERMEDIATE_REACHABLE_GOAL_THRESHOLD = 0.7
+INTERMEDIATE_REACHABLE_GOAL_THRESHOLD = 0.95
+SMALL_SHORTCUTS_NUMBER = 2000
+SHORTCUT_WINDOW = 10
+MIN_LOOK_AHEAD = 1
+MAX_LOOK_AHEAD = 7
+NUMBER_OF_TRIALS = 6
+EDGE_ARCHITECTURE = "SIAMESE_NETWORK"
 
 # training
 DEFAULT_RANDOM_SEED = 100
@@ -64,7 +45,6 @@ ACTION_MAX_YIELD_COUNT_BEFORE_RESTART = int(20 * 100 * 64 / BATCH_SIZE)
 TEST_REPEAT = TRAIN_REPEAT
 JOINT_NETWORK = resnet.ResnetBuilder.build_resnet_18
 SIAMESE_NETWORK = resnet.ResnetBuilder.build_siamese_resnet_18
-PIXEL_COMPARISON_NETWORK = resnet.ResnetBuilder.build_pixel_comparison_network
 EDGE_NETWORK = eval(EDGE_ARCHITECTURE)
 ACTION_NETWORK = resnet.ResnetBuilder.build_resnet_18
 DEEP_NET_ACTIONS = 1
@@ -99,21 +79,7 @@ EVALUATION_PATH = EVALUATION_PATH_TEMPLATE % EXPERIMENT_OUTPUT_FOLDER
 SHORTCUTS_OUTPUT_PATH = os.path.join(EVALUATION_PATH, "graph_shortcuts")
 SHORTCUTS_CACHE_FILE_TEMPLATE = os.path.join(SHORTCUTS_OUTPUT_PATH, "%s_skip%d_max%d_shortcuts.npy")
 
-# pixel comparison baseline
+# input size
 NET_WIDTH = 160
 NET_HEIGHT = 120
 NET_CHANNELS = 3
-PIXEL_COMPARISON_DOWNSAMPLING_FACTOR = 2
-DOWNSAMPLING = 2**PIXEL_COMPARISON_DOWNSAMPLING_FACTOR
-assert NET_HEIGHT % DOWNSAMPLING == 0
-assert NET_WIDTH % DOWNSAMPLING == 0
-PIXEL_COMPARISON_HEIGHT = NET_HEIGHT / DOWNSAMPLING  # 28
-PIXEL_COMPARISON_WIDTH = NET_WIDTH / DOWNSAMPLING  # 37
-PIXEL_COMPARISON_CHANNELS = 1
-PIXEL_COMPARISON_LOCAL_WINDOW = 10
-if PIXEL_COMPARISON_LOCAL_NORMALIZATION:
-    assert PIXEL_COMPARISON_HEIGHT % PIXEL_COMPARISON_LOCAL_WINDOW == 0
-    assert PIXEL_COMPARISON_WIDTH % PIXEL_COMPARISON_LOCAL_WINDOW == 0
-
-# teach and repeat
-TEACH_AND_REPEAT_RANDOMIZATION = 0.1
