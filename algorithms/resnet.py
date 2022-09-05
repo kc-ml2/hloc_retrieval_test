@@ -4,7 +4,7 @@
 from __future__ import division
 
 from keras import backend as K
-from keras.layers import Activation, Add, BatchNormalization, Concatenate, Dense, Dot, Flatten, Input
+from keras.layers import Activation, Add, BatchNormalization, Concatenate, Dense, Flatten, Input
 from keras.layers.convolutional import AveragePooling2D, Conv2D, MaxPooling2D
 from keras.layers.core import Lambda
 from keras.models import Model
@@ -14,6 +14,15 @@ import six
 NUM_EMBEDDING = 512  # 256 #512 #1024 #256 #1024 #256
 TOP_HIDDEN = 4  # 1 #4
 NORMALIZATION_ON = False  # True #False #True
+
+if K.image_dim_ordering() == "tf":
+    ROW_AXIS = 1
+    COL_AXIS = 2
+    CHANNEL_AXIS = 3
+else:
+    CHANNEL_AXIS = 1
+    ROW_AXIS = 2
+    COL_AXIS = 3
 
 
 def _bn_relu(input):
@@ -167,25 +176,11 @@ def bottleneck(filters, init_strides=(1, 1), is_first_block_of_first_layer=False
     return f
 
 
-def _handle_dim_ordering():
-    global ROW_AXIS
-    global COL_AXIS
-    global CHANNEL_AXIS
-    if K.image_dim_ordering() == "tf":
-        ROW_AXIS = 1
-        COL_AXIS = 2
-        CHANNEL_AXIS = 3
-    else:
-        CHANNEL_AXIS = 1
-        ROW_AXIS = 2
-        COL_AXIS = 3
-
-
 def _get_block(identifier):
     if isinstance(identifier, six.string_types):
         res = globals().get(identifier)
         if not res:
-            raise ValueError("Invalid {}".format(identifier))
+            raise ValueError(f"Invalid {identifier}")
         return res
     return identifier
 
@@ -218,7 +213,6 @@ class ResnetBuilder:
         Returns:
             The keras `Model`.
         """
-        _handle_dim_ordering()
         if len(input_shape) != 3:
             raise Exception("Input shape should be a tuple (nb_channels, nb_rows, nb_cols)")
 
@@ -259,22 +253,6 @@ class ResnetBuilder:
         return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2], is_classification)
 
     @staticmethod
-    def build_resnet_34(input_shape, num_outputs):
-        return ResnetBuilder.build(input_shape, num_outputs, basic_block, [3, 4, 6, 3])
-
-    @staticmethod
-    def build_resnet_50(input_shape, num_outputs):
-        return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 4, 6, 3])
-
-    @staticmethod
-    def build_resnet_101(input_shape, num_outputs):
-        return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 4, 23, 3])
-
-    @staticmethod
-    def build_resnet_152(input_shape, num_outputs):
-        return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
-
-    @staticmethod
     def build_top_network(edge_model):
         number_of_top_layers = 3 + TOP_HIDDEN * 3
         input = Input(shape=(2 * NUM_EMBEDDING,))
@@ -294,7 +272,7 @@ class ResnetBuilder:
         return Model(inputs=input, outputs=output)
 
     @staticmethod
-    def build_siamese_resnet_18(input_shape, num_outputs):
+    def build_siamese_resnet_18(input_shape):
         channels, height, width = input_shape
         branch_channels = 3  # channels / 2
         branch_input_shape = (branch_channels, height, width)
@@ -308,10 +286,5 @@ class ResnetBuilder:
 
         raw_result = Concatenate([first_branch, second_branch])
         output = _top_network(raw_result)
-
-        # raw_result = dot([first_branch, second_branch], axes=1)
-        # result = Lambda(lambda x: (K.clip(x, 0.5, 1) - 0.5) * 2.0)(raw_result)
-        # negated_result = Lambda(lambda x: 1 - x)(result)
-        # output = Concatenate([negated_result, result])
 
         return Model(inputs=input, outputs=output)

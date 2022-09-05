@@ -5,12 +5,15 @@ import numpy as np
 from numpy import mean, median
 
 from algorithms import resnet
-from algorithms.constants import *
-from algorithms.sptm_utils import color2gray, downsample, get_distance
+from algorithms.constants import EnvConstant, NetworkConstant, PathConstant
+from algorithms.sptm_utils import get_distance
 
 
 def load_keras_model(number_of_input_frames, number_of_actions, path, load_method=resnet.ResnetBuilder.build_resnet_18):
-    result = load_method((number_of_input_frames * NET_CHANNELS, NET_HEIGHT, NET_WIDTH), number_of_actions)
+    result = load_method(
+        (number_of_input_frames * NetworkConstant.NET_CHANNELS, NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH),
+        number_of_actions,
+    )
     result.load_weights(path)
     result.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
     return result
@@ -38,53 +41,32 @@ def sieve(shortcuts, top_number):
 
 class InputProcessor:
     def __init__(self):
-        if EDGE_NETWORK in [SIAMESE_NETWORK, JOINT_NETWORK]:
-            self.edge_model = load_keras_model(2, 2, EDGE_MODEL_WEIGHTS_PATH, EDGE_NETWORK)
-            if EDGE_NETWORK == SIAMESE_NETWORK:
-                self.siamese = True
-                self.bottom_network = resnet.ResnetBuilder.build_bottom_network(
-                    self.edge_model, (NET_CHANNELS, NET_HEIGHT, NET_WIDTH)
-                )
-                self.top_network = resnet.ResnetBuilder.build_top_network(self.edge_model)
-            else:
-                self.siamese = False
-        else:
-            raise Exception("Unknown architecture")
+        self.edge_model = load_keras_model(2, 2, PathConstant.EDGE_MODEL_WEIGHTS, NetworkConstant.SIAMESE_NETWORK)
+        self.bottom_network = resnet.ResnetBuilder.build_bottom_network(
+            self.edge_model, (NetworkConstant.NET_CHANNELS, NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH)
+        )
+        self.top_network = resnet.ResnetBuilder.build_top_network(self.edge_model)
+        self.tensor_to_predict = np.array([])
 
     def set_memory_buffer(self, keyframes):
-        if not self.siamese:
-            list_to_predict = []
-            for keyframe in keyframes:
-                x = np.concatenate((keyframes[0], keyframe), axis=2)
-                list_to_predict.append(x)
-            self.tensor_to_predict = np.array(list_to_predict)
-        else:
-            memory_codes = self.bottom_network.predict(np.array(keyframes))
-            list_to_predict = []
-            for index in range(len(keyframes)):
-                x = np.concatenate((memory_codes[0], memory_codes[index]), axis=0)
-                list_to_predict.append(x)
-            self.tensor_to_predict = np.array(list_to_predict)
+        memory_codes = self.bottom_network.predict(np.array(keyframes))
+        list_to_predict = []
+        for index in range(len(keyframes)):
+            x = np.concatenate((memory_codes[0], memory_codes[index]), axis=0)
+            list_to_predict.append(x)
+        self.tensor_to_predict = np.array(list_to_predict)
 
     def append_to_memory_buffer(self, keyframe):
         expanded_keyframe = np.expand_dims(keyframe, axis=0)
-        if not self.siamese:
-            x = np.concatenate((expanded_keyframe, expanded_keyframe), axis=3)
-        else:
-            memory_code = self.bottom_network.predict(expanded_keyframe)
-            x = np.concatenate((memory_code, memory_code), axis=1)
+        memory_code = self.bottom_network.predict(expanded_keyframe)
+        x = np.concatenate((memory_code, memory_code), axis=1)
         self.tensor_to_predict = np.concatenate((self.tensor_to_predict, x), axis=0)
 
     def predict_single_input(self, input):
-        if not self.siamese:
-            for index in range(self.tensor_to_predict.shape[0]):
-                self.tensor_to_predict[index][:, :, : (input.shape[2])] = input
-            probabilities = self.edge_model.predict(self.tensor_to_predict, batch_size=TESTING_BATCH_SIZE)
-        else:
-            input_code = np.squeeze(self.bottom_network.predict(np.expand_dims(input, axis=0), batch_size=1))
-            for index in range(self.tensor_to_predict.shape[0]):
-                self.tensor_to_predict[index][0 : (input_code.shape[0])] = input_code
-            probabilities = self.top_network.predict(self.tensor_to_predict, batch_size=TESTING_BATCH_SIZE)
+        input_code = np.squeeze(self.bottom_network.predict(np.expand_dims(input, axis=0), batch_size=1))
+        for index in range(self.tensor_to_predict.shape[0]):
+            self.tensor_to_predict[index][0 : (input_code.shape[0])] = input_code
+        probabilities = self.top_network.predict(self.tensor_to_predict, batch_size=NetworkConstant.TESTING_BATCH_SIZE)
         return probabilities[:, 1]
 
     def get_memory_size(self):
@@ -94,14 +76,11 @@ class InputProcessor:
 class SPTM:
     def __init__(self):
         self.input_processor = InputProcessor()
-
-    def set_shortcuts_cache_file(self, environment):
-        # if no limit, MEMORY_MAX_FRAMES is None
-        if MEMORY_MAX_FRAMES is None:
-            max_frames = -1
-        else:
-            max_frames = MEMORY_MAX_FRAMES
-        self.shortcuts_cache_file = SHORTCUTS_CACHE_FILE_TEMPLATE % (environment, MEMORY_SUBSAMPLING, max_frames)
+        self.graph = nx.Graph()
+        self.shortest_paths = []
+        self.shortest_distances = []
+        self.shortcuts = np.array([])
+        self.shortcuts_cache_file = PathConstant.SHORTCUTS_CACHE_FILE
 
     def set_memory_buffer(self, keyframes):
         self.input_processor.set_memory_buffer(keyframes)
@@ -123,25 +102,21 @@ class SPTM:
         self.graph.add_edge(first, second)
         self.graph.add_edge(second, first, {"weight": 1000000000})
 
-    def smooth_shortcuts_matrix(self, shortcuts_matrix, keyframe_coordinates):
-        for first in range(len(shortcuts_matrix)):
+    @staticmethod
+    def smooth_shortcuts_matrix(shortcuts_matrix, keyframe_coordinates):
+        for first, _ in enumerate(shortcuts_matrix):
             for second in range(first + 1, len(shortcuts_matrix)):
                 shortcuts_matrix[first][second] = (
                     shortcuts_matrix[first][second] + shortcuts_matrix[second][first]
                 ) / 2.0
         shortcuts = []
         for first in range(len(shortcuts_matrix)):
-            for second in range(first + 1 + MIN_SHORTCUT_DISTANCE, len(shortcuts_matrix)):
+            for second in range(first + 1 + EnvConstant.MIN_SHORTCUT_DISTANCE, len(shortcuts_matrix)):
                 values = []
-                for shift in range(-SHORTCUT_WINDOW, SHORTCUT_WINDOW + 1):
+                for shift in range(-EnvConstant.SHORTCUT_WINDOW, EnvConstant.SHORTCUT_WINDOW + 1):
                     first_shifted = first + shift
                     second_shifted = second + shift
-                    if (
-                        first_shifted < len(shortcuts_matrix)
-                        and second_shifted < len(shortcuts_matrix)
-                        and first_shifted >= 0
-                        and second_shifted >= 0
-                    ):
+                    if 0 <= first_shifted < len(shortcuts_matrix) and 0 <= second_shifted < len(shortcuts_matrix):
                         values.append(shortcuts_matrix[first_shifted][second_shifted])
                 quality = median(values)
                 distance = get_distance(keyframe_coordinates[first], keyframe_coordinates[second])
@@ -152,16 +127,16 @@ class SPTM:
         self.set_memory_buffer(keyframes)
         if not os.path.isfile(self.shortcuts_cache_file):
             shortcuts_matrix = []
-            for first in range(len(keyframes)):
+            for first, _ in enumerate(keyframes):
                 probabilities = self.predict_single_input(keyframes[first])
                 shortcuts_matrix.append(probabilities)
                 print("Finished:", float(first * 100) / float(len(keyframes)), "%")
             shortcuts = self.smooth_shortcuts_matrix(shortcuts_matrix, keyframe_coordinates)
-            shortcuts = sieve(shortcuts, LARGE_SHORTCUTS_NUMBER)
+            shortcuts = sieve(shortcuts, NetworkConstant.LARGE_SHORTCUTS_NUMBER)
             np.save(self.shortcuts_cache_file, shortcuts)
         else:
             shortcuts = np.load(self.shortcuts_cache_file)
-        self.shortcuts = sieve(shortcuts, SMALL_SHORTCUTS_NUMBER)
+        self.shortcuts = sieve(shortcuts, NetworkConstant.SMALL_SHORTCUTS_NUMBER)
 
     def get_number_of_shortcuts(self):
         return len(self.shortcuts)
@@ -175,7 +150,6 @@ class SPTM:
     def build_graph(self, keyframes, keyframe_coordinates):
         self.set_memory_buffer(keyframes)
         memory_size = self.get_memory_size()
-        self.graph = nx.Graph()
         self.graph.add_nodes_from(range(memory_size))
         for first in range(memory_size - 1):
             # self.add_double_forward_biased_edge(first, first + 1)
@@ -184,7 +158,7 @@ class SPTM:
         for index in range(self.get_number_of_shortcuts()):
             edge = self.get_shortcut(index)
             first, second = edge
-            assert abs(first - second) > MIN_SHORTCUT_DISTANCE
+            assert abs(first - second) > EnvConstant.MIN_SHORTCUT_DISTANCE
             self.add_double_sided_edge(*edge)
 
     def find_nn(self, input):
@@ -202,7 +176,8 @@ class SPTM:
     def get_shortest_paths_and_distances(self):
         return self.shortest_paths, self.shortest_distances
 
-    def _find_neighbours_by_threshold(self, threshold, probabilities):
+    @staticmethod
+    def _find_neighbours_by_threshold(threshold, probabilities):
         nns = []
         for index, probability in enumerate(probabilities):
             if probability >= threshold:
@@ -225,7 +200,8 @@ class SPTM:
         nns = self._find_neighbours_by_threshold(final_threshold, probabilities)
         nns.sort()
         if nns:
-            nn = nns[len(nns) / 2]
+            # nn = nns[len(nns) / 2]
+            nn = nns[int(len(nns) / 2)]
             return nn, probabilities, nns
         else:
             return None, probabilities, nns
@@ -239,10 +215,10 @@ class SPTM:
 
     def find_smoothed_nn(self, input):
         nn = None
-        if SMOOTHED_LOCALIZATION:
+        if EnvConstant.SMOOTHED_LOCALIZATION:
             nn, probabilities = self.find_nn_on_last_shortest_path(input)
         if nn is None:
             nn, probabilities, _ = self.find_knn_median_threshold(
-                input, NUMBER_OF_NEAREST_NEIGHBOURS, INTERMEDIATE_REACHABLE_GOAL_THRESHOLD
+                input, NetworkConstant.NUMBER_OF_NEAREST_NEIGHBOURS, EnvConstant.INTERMEDIATE_REACHABLE_GOAL_THRESHOLD
             )
         return nn, probabilities
