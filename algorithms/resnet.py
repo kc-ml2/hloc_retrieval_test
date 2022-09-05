@@ -204,7 +204,7 @@ def _top_network(input):
     return output
 
 
-class ResnetBuilder(object):
+class ResnetBuilder:
     @staticmethod
     def build(input_shape, num_outputs, block_fn, repetitions, is_classification):
         """Builds a custom ResNet like architecture.
