@@ -71,6 +71,7 @@ if __name__ == "__main__":
         pose_trace = np.load(directory + pose_file)
 
         rgb_sensor = True
+        rgb_360_sensor = False
         depth_sensor = False
         semantic_sensor = False
 
@@ -87,10 +88,15 @@ if __name__ == "__main__":
             "default_agent": 0,
             "sensor_height": 0,  # Height of sensors in meters
             "color_sensor": rgb_sensor,  # RGB sensor
+            "color_360_sensor": rgb_360_sensor,
             "depth_sensor": depth_sensor,  # Depth sensor
             "semantic_sensor": semantic_sensor,  # Semantic sensor
             "seed": 1,  # used in the random navigation
             "enable_physics": False,  # kinematics only
+            "forward_amount": 0.25,
+            "backward_amount": 0.25,
+            "turn_left_amount": 5.0,
+            "turn_right_amount": 5.0,
         }
 
         cfg = make_cfg(sim_settings)

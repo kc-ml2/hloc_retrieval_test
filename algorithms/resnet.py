@@ -15,7 +15,7 @@ NUM_EMBEDDING = 512  # 256 #512 #1024 #256 #1024 #256
 TOP_HIDDEN = 4  # 1 #4
 NORMALIZATION_ON = False  # True #False #True
 
-if K.image_dim_ordering() == "tf":
+if K.image_data_format() == "tf":
     ROW_AXIS = 1
     COL_AXIS = 2
     CHANNEL_AXIS = 3

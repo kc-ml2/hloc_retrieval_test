@@ -60,10 +60,18 @@ def make_cfg(settings):
     agent_cfg = habitat_sim.agent.AgentConfiguration()
     agent_cfg.sensor_specifications = sensor_specs
     agent_cfg.action_space = {
-        "move_forward": habitat_sim.agent.ActionSpec("move_forward", habitat_sim.agent.ActuationSpec(amount=0.25)),
-        "move_backward": habitat_sim.agent.ActionSpec("move_backward", habitat_sim.agent.ActuationSpec(amount=0.25)),
-        "turn_left": habitat_sim.agent.ActionSpec("turn_left", habitat_sim.agent.ActuationSpec(amount=5.0)),
-        "turn_right": habitat_sim.agent.ActionSpec("turn_right", habitat_sim.agent.ActuationSpec(amount=5.0)),
+        "move_forward": habitat_sim.agent.ActionSpec(
+            "move_forward", habitat_sim.agent.ActuationSpec(amount=settings["forward_amount"])
+        ),
+        "move_backward": habitat_sim.agent.ActionSpec(
+            "move_backward", habitat_sim.agent.ActuationSpec(amount=settings["backward_amount"])
+        ),
+        "turn_left": habitat_sim.agent.ActionSpec(
+            "turn_left", habitat_sim.agent.ActuationSpec(amount=settings["turn_left_amount"])
+        ),
+        "turn_right": habitat_sim.agent.ActionSpec(
+            "turn_right", habitat_sim.agent.ActuationSpec(amount=settings["turn_right_amount"])
+        ),
     }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])

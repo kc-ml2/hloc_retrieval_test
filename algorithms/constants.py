@@ -16,6 +16,8 @@ class EnvConstant:
     MIN_LOOK_AHEAD = 1
     MAX_LOOK_AHEAD = 7
     NUMBER_OF_TRIALS = 6
+    NUMBER_OF_EPISODES = 10
+    MAX_EXPLORATION_PER_EPISODE = 1000
 
 
 # Training

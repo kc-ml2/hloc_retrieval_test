@@ -51,6 +51,10 @@ if __name__ == "__main__":
         "semantic_sensor": semantic_sensor,  # Semantic sensor
         "seed": 1,  # used in the random navigation
         "enable_physics": False,  # kinematics only
+        "forward_amount": 0.25,
+        "backward_amount": 0.25,
+        "turn_left_amount": 5.0,
+        "turn_right_amount": 5.0,
     }
 
     cfg = make_cfg(sim_settings)
@@ -71,18 +75,17 @@ if __name__ == "__main__":
     sim.pathfinder.seed(pathfinder_seed)
     nav_point = sim.pathfinder.get_random_navigable_point()
 
-    recolored_topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
-
     agent_state.position = nav_point  # world space
     agent.set_state(agent_state)
 
     img_id = 0
 
+    if display_path_map:
+        recolored_topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
+        init_map_display()
+
     if display_observation:
         init_opencv_cam()
-
-    if display_path_map:
-        init_map_display()
 
     while True:
         observations = sim.get_sensor_observations()
@@ -93,8 +96,6 @@ if __name__ == "__main__":
 
         current_state = agent.get_state()
         position = current_state.position
-
-        recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
 
         if key == ord("w"):
             action = "move_forward"
@@ -116,6 +117,7 @@ if __name__ == "__main__":
         sim.step(action)
 
         if display_path_map:
+            recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
             node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
             transposed_point = (node_point[1], node_point[0])
             display_map(recolored_topdown_map, key_points=[transposed_point])

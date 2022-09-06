@@ -6,7 +6,13 @@ import habitat_sim
 import numpy as np
 
 from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
-from utils.skeletonize_utils import convert_to_topology, convert_to_visual_binarymap, display_graph
+from utils.skeletonize_utils import (
+    convert_to_binarymap,
+    convert_to_topology,
+    convert_to_visual_binarymap,
+    display_graph,
+    generate_map_image,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -15,13 +21,17 @@ if __name__ == "__main__":
     scene_list_file = args.scene_list_file
 
     rgb_sensor = True
+    rgb_360_sensor = False
     depth_sensor = True
     semantic_sensor = False
 
     meters_per_pixel = 0.1
+    display_path_map = True
+    save_path_map = True
+    erode_path_map = False
 
     check_radius = 3
-    prune_iteration = 2
+    prune_iteration = 0
     noise_removal_threshold = 2
 
     kernel = np.ones((5, 5), np.uint8)
@@ -40,10 +50,15 @@ if __name__ == "__main__":
             "default_agent": 0,
             "sensor_height": 0,  # Height of sensors in meters
             "color_sensor": rgb_sensor,  # RGB sensor
+            "color_360_sensor": rgb_360_sensor,
             "depth_sensor": depth_sensor,  # Depth sensor
             "semantic_sensor": semantic_sensor,  # Semantic sensor
             "seed": 1,  # used in the random navigation
             "enable_physics": False,  # kinematics only
+            "forward_amount": 0.25,
+            "backward_amount": 0.25,
+            "turn_left_amount": 5.0,
+            "turn_right_amount": 5.0,
         }
 
         cfg = make_cfg(sim_settings)
@@ -66,37 +81,36 @@ if __name__ == "__main__":
 
         recolored_topdown_map_list, topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
 
-        init_map_display(window_name="colored_map")
-        init_map_display(window_name="visual_binary_map")
+        if display_path_map:
+            init_map_display(window_name="colored_map")
+            init_map_display(window_name="visual_binary_map")
 
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", i)
             topdown_map = topdown_map_list[i]
-
-            print("Displaying recolored map:")
-            display_map(recolored_topdown_map, window_name="colored_map", wait_for_key=True)
-
+            binary_map = convert_to_binarymap(topdown_map)
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
-            print("Displaying visual binary map:")
-            display_map(visual_binary_map, window_name="visual_binary_map", wait_for_key=True)
 
-            topdown_map = cv2.erode(topdown_map, kernel, iterations=1)
-            topdown_map = cv2.dilate(topdown_map, kernel, iterations=1)
+            if erode_path_map:
+                topdown_map = cv2.erode(topdown_map, kernel, iterations=1)
+                topdown_map = cv2.dilate(topdown_map, kernel, iterations=1)
+                contours, hierarchy = cv2.findContours(topdown_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                for contour in contours:
+                    if cv2.contourArea(contour) < noise_removal_threshold:
+                        cv2.fillPoly(topdown_map, [contour], 0)
 
-            contours, hierarchy = cv2.findContours(topdown_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            for contour in contours:
-                if cv2.contourArea(contour) < noise_removal_threshold:
-                    cv2.fillPoly(topdown_map, [contour], 0)
+            _, graph = convert_to_topology(binary_map)
 
-            skeletonized_map, graph = convert_to_topology(topdown_map)
-
-            print("Displaying original graph:")
-            display_graph(visual_binary_map, graph, window_name="original graph", wait_for_key=True)
-
-            # map_img = generate_map_image(visual_binary_map, graph, line_edge=False)
-            # cv2.imwrite(f"./output/skeleton/{scene_number}_{i}.jpg", map_img)
+            if display_path_map:
+                print("Displaying recolored map:")
+                display_map(recolored_topdown_map, window_name="colored_map", wait_for_key=True)
+                print("Displaying visual binary map:")
+                display_map(visual_binary_map, window_name="visual_binary_map", wait_for_key=True)
+                print("Displaying graph:")
+                display_graph(visual_binary_map, graph, window_name="original graph", wait_for_key=True)
 
             for _ in range(prune_iteration):
+                print("Pruning graph")
                 end_node_list = []
                 isolated_node_list = []
                 root_node_list = []
@@ -130,10 +144,13 @@ if __name__ == "__main__":
                     graph.add_edge(branch[0], branch[1])
                     graph.edges[branch[0], branch[1]]["pts"] = []
 
-            print("Displaying pruned graph:")
-            display_graph(visual_binary_map, graph, window_name="pruned_graph", wait_for_key=True, line_edge=True)
+            if display_path_map and prune_iteration:
+                print("Displaying pruned graph:")
+                display_graph(visual_binary_map, graph, window_name="pruned_graph", wait_for_key=True, line_edge=True)
 
-            # map_img = generate_map_image(visual_binary_map, graph, line_edge=True)
-            # cv2.imwrite(f"./output/pruned/{scene_number}_{i}.jpg", map_img)
+            if save_path_map:
+                map_img = generate_map_image(visual_binary_map, graph, line_edge=False)
+                cv2.imwrite(f"./output/skeleton/{scene_number}_{i}.bmp", map_img)
 
+        cv2.destroyAllWindows()
         sim.close()
