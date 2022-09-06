@@ -12,6 +12,8 @@ from utils.skeletonize_utils import (
     convert_to_visual_binarymap,
     display_graph,
     generate_map_image,
+    prune_graph,
+    remove_isolated_area,
 )
 
 if __name__ == "__main__":
@@ -26,13 +28,14 @@ if __name__ == "__main__":
     semantic_sensor = False
 
     meters_per_pixel = 0.1
-    display_path_map = True
+    display_path_map = False
     save_path_map = True
     erode_path_map = False
+    remove_isolated = True
 
     check_radius = 3
     prune_iteration = 0
-    noise_removal_threshold = 2
+    noise_removal_threshold = 1000
 
     kernel = np.ones((5, 5), np.uint8)
 
@@ -88,17 +91,16 @@ if __name__ == "__main__":
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", i)
             topdown_map = topdown_map_list[i]
-            binary_map = convert_to_binarymap(topdown_map)
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
             if erode_path_map:
                 topdown_map = cv2.erode(topdown_map, kernel, iterations=1)
                 topdown_map = cv2.dilate(topdown_map, kernel, iterations=1)
-                contours, hierarchy = cv2.findContours(topdown_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                for contour in contours:
-                    if cv2.contourArea(contour) < noise_removal_threshold:
-                        cv2.fillPoly(topdown_map, [contour], 0)
 
+            if remove_isolated:
+                topdown_map = remove_isolated_area(topdown_map)
+
+            binary_map = convert_to_binarymap(topdown_map)
             _, graph = convert_to_topology(binary_map)
 
             if display_path_map:
@@ -111,38 +113,7 @@ if __name__ == "__main__":
 
             for _ in range(prune_iteration):
                 print("Pruning graph")
-                end_node_list = []
-                isolated_node_list = []
-                root_node_list = []
-
-                for node in graph.nodes:
-                    if len(list(graph.neighbors(node))) == 1:
-                        end_node_list.append(node)
-                    if len(list(graph.neighbors(node))) == 0:
-                        isolated_node_list.append(node)
-
-                for isolated_node in isolated_node_list:
-                    graph.remove_node(isolated_node)
-
-                for end_node in end_node_list:
-                    pnt = [int(graph.nodes[end_node]["o"][0]), int(graph.nodes[end_node]["o"][1])]
-                    check_patch = topdown_map[
-                        pnt[0] - check_radius : pnt[0] + check_radius, pnt[1] - check_radius : pnt[1] + check_radius
-                    ]
-                    if (2 in check_patch) or (0 in check_patch):
-                        graph.remove_node(end_node)
-
-                for node in graph.nodes:
-                    if len(list(graph.neighbors(node))) == 2:
-                        root_node_list.append(node)
-
-                for root_node in root_node_list:
-                    branch = list(graph.neighbors(root_node))
-                    if len(branch) != 2:
-                        continue
-                    graph.remove_node(root_node)
-                    graph.add_edge(branch[0], branch[1])
-                    graph.edges[branch[0], branch[1]]["pts"] = []
+                graph = prune_graph(graph, topdown_map, check_radius)
 
             if display_path_map and prune_iteration:
                 print("Displaying pruned graph:")
@@ -150,7 +121,7 @@ if __name__ == "__main__":
 
             if save_path_map:
                 map_img = generate_map_image(visual_binary_map, graph, line_edge=False)
-                cv2.imwrite(f"./output/skeleton/{scene_number}_{i}.bmp", map_img)
+                cv2.imwrite(f"./output/pruned/{scene_number}_{i}.bmp", map_img)
 
         cv2.destroyAllWindows()
         sim.close()

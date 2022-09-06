@@ -120,3 +120,49 @@ def generate_map_image(map_image, graph, line_edge=False):
         )
 
     return map_image
+
+
+def remove_isolated_area(topdown_map, removal_threshold=1000):
+    contours, _ = cv2.findContours(topdown_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    for contour in contours:
+        if cv2.contourArea(contour) < removal_threshold:
+            cv2.fillPoly(topdown_map, [contour], 0)
+
+    return topdown_map
+
+
+def prune_graph(graph, topdown_map, check_radius):
+    end_node_list = []
+    isolated_node_list = []
+    root_node_list = []
+
+    for node in graph.nodes:
+        if len(list(graph.neighbors(node))) == 1:
+            end_node_list.append(node)
+        if len(list(graph.neighbors(node))) == 0:
+            isolated_node_list.append(node)
+
+    for isolated_node in isolated_node_list:
+        graph.remove_node(isolated_node)
+
+    for end_node in end_node_list:
+        pnt = [int(graph.nodes[end_node]["o"][0]), int(graph.nodes[end_node]["o"][1])]
+        check_patch = topdown_map[
+            pnt[0] - check_radius : pnt[0] + check_radius, pnt[1] - check_radius : pnt[1] + check_radius
+        ]
+        if (2 in check_patch) or (0 in check_patch):
+            graph.remove_node(end_node)
+
+    for node in graph.nodes:
+        if len(list(graph.neighbors(node))) == 2:
+            root_node_list.append(node)
+
+    for root_node in root_node_list:
+        branch = list(graph.neighbors(root_node))
+        if len(branch) != 2:
+            continue
+        graph.remove_node(root_node)
+        graph.add_edge(branch[0], branch[1])
+        graph.edges[branch[0], branch[1]]["pts"] = []
+
+    return graph
