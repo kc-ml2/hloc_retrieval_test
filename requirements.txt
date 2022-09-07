@@ -1,12 +1,16 @@
 # Module for lint
-black
-isort
-flake8
-pylint
-pytest
-pytest-pylint
-pytest-flake8
+black == 22.3.0
+isort == 5.10.1
+flake8 == 4.0.1
+pylint == 2.13.9
+pytest == 7.1.2
+pytest-pylint == 0.18.0
+pytest-flake8 == 1.1.1
 
 # Module for images
-scikit-image
-sknw
+scikit-image == 0.19.2
+sknw == 0.14
+networkx == 2.6.3
+numpy == 1.21.6
+tensorflow
+opencv-python == 4.5.5

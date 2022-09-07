@@ -3,17 +3,19 @@ import random
 
 import cv2
 import habitat_sim
+import networkx as nx
 import numpy as np
 
 from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
-    convert_to_topology,
+    convert_to_dense_topology,
     convert_to_visual_binarymap,
     display_graph,
     generate_map_image,
     prune_graph,
     remove_isolated_area,
+    visualize_path,
 )
 
 if __name__ == "__main__":
@@ -22,14 +24,15 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
-    rgb_sensor = True
-    rgb_360_sensor = False
+    rgb_sensor = False
+    rgb_360_sensor = True
     depth_sensor = True
     semantic_sensor = False
 
     meters_per_pixel = 0.1
-    display_path_map = False
-    save_path_map = True
+    display_path_map = True
+    save_path_map = False
+    is_dense_graph = True
     erode_path_map = False
     remove_isolated = True
 
@@ -47,7 +50,7 @@ if __name__ == "__main__":
         scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
         sim_settings = {
-            "width": 256,  # Spatial resolution of the observations
+            "width": 512,  # Spatial resolution of the observations
             "height": 256,
             "scene": scene,  # Scene path
             "default_agent": 0,
@@ -101,7 +104,16 @@ if __name__ == "__main__":
                 topdown_map = remove_isolated_area(topdown_map)
 
             binary_map = convert_to_binarymap(topdown_map)
-            _, graph = convert_to_topology(binary_map)
+            _, graph = convert_to_dense_topology(binary_map)
+
+            node_list = None
+            while node_list is None:
+                try:
+                    start = random.choice(list(graph.nodes))
+                    end = random.choice(list(graph.nodes))
+                    node_list = nx.shortest_path(graph, start, end)
+                except nx.NetworkXNoPath:
+                    pass
 
             if display_path_map:
                 print("Displaying recolored map:")
@@ -109,7 +121,11 @@ if __name__ == "__main__":
                 print("Displaying visual binary map:")
                 display_map(visual_binary_map, window_name="visual_binary_map", wait_for_key=True)
                 print("Displaying graph:")
-                display_graph(visual_binary_map, graph, window_name="original graph", wait_for_key=True)
+                display_graph(
+                    visual_binary_map, graph, window_name="original graph", node_only=is_dense_graph, wait_for_key=True
+                )
+                print("Displaying path:")
+                visualize_path(visual_binary_map, graph, node_list, wait_for_key=True)
 
             for _ in range(prune_iteration):
                 print("Pruning graph")
@@ -120,8 +136,8 @@ if __name__ == "__main__":
                 display_graph(visual_binary_map, graph, window_name="pruned_graph", wait_for_key=True, line_edge=True)
 
             if save_path_map:
-                map_img = generate_map_image(visual_binary_map, graph, line_edge=False)
-                cv2.imwrite(f"./output/pruned/{scene_number}_{i}.bmp", map_img)
+                map_img = generate_map_image(visual_binary_map, graph, node_only=is_dense_graph, line_edge=False)
+                cv2.imwrite(f"./output/test/{scene_number}_{i}.bmp", map_img)
 
         cv2.destroyAllWindows()
         sim.close()
