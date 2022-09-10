@@ -1,3 +1,5 @@
+import random
+
 import cv2
 import numpy as np
 from skimage.morphology import skeletonize
@@ -67,6 +69,32 @@ def convert_to_dense_topology(binary_map):
         graph.remove_edge(s, e)
 
     return skeleton, graph
+
+
+def get_one_random_directed_adjacent_node(graph, node, previous_node):
+    """Choice one node among adjacent nodes. Excluding previous node."""
+    adjacent_nodes = list(graph.adj[node])
+    next_node = None
+    error_code = 0
+
+    if len(adjacent_nodes) == 0:  # isolated node
+        print("Agent is on isolated node")
+        error_code = 1
+        next_node = node
+    if len(adjacent_nodes) == 1:  # end node
+        print("Agent has reached end node")
+        next_node = node
+        error_code = 0
+    if len(adjacent_nodes) >= 2:  # node on edge or bifurcation
+        while next_node is None:
+            candidate = random.choice(adjacent_nodes)
+            if candidate == previous_node:
+                adjacent_nodes.remove(candidate)
+            else:
+                next_node = candidate
+        error_code = 0
+
+    return next_node, error_code
 
 
 def display_graph(map_image, graph, window_name="graph", line_edge=False, node_only=False, wait_for_key=False):
@@ -139,6 +167,7 @@ def visualize_path(map_image, graph, node_list, window_name="path", wait_for_key
 
 
 def generate_map_image(map_image, graph, node_only=False, line_edge=False):
+    """Same code with display graph method. Only excluding cv2.imshow"""
     map_image = cv2.cvtColor(map_image, cv2.COLOR_GRAY2BGR)
     node_points = np.array([graph.nodes()[i]["o"] for i in graph.nodes()])
 
