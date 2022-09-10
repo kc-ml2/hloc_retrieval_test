@@ -230,6 +230,7 @@ def get_entire_maps_by_levels(sim, meters_per_pixel):
     print("Selecting proper maps on desired level")
     recolored_topdown_map_list = []
     topdown_map_list = []
+    height_points = []
     for level_id in range(len(sim.semantic_scene.levels)):
         area_size_list = []
         for i, point in enumerate(nav_point_list):
@@ -248,13 +249,14 @@ def get_entire_maps_by_levels(sim, meters_per_pixel):
         topdown_map = maps.get_topdown_map(
             sim.pathfinder, height=nav_point_list[sample_id][1], meters_per_pixel=meters_per_pixel
         )
+        height_points.append(nav_point_list[sample_id][1])
         topdown_map_list.append(topdown_map)
         recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
         recolored_topdown_map = recolor_palette[topdown_map]
         recolored_topdown_map_list.append(recolored_topdown_map)
     print("Map selection done.")
 
-    return recolored_topdown_map_list, topdown_map_list
+    return recolored_topdown_map_list, topdown_map_list, height_points
 
 
 def get_closest_map(sim, position, map_list):

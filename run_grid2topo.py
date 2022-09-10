@@ -13,7 +13,6 @@ from utils.skeletonize_utils import (
     convert_to_visual_binarymap,
     display_graph,
     generate_map_image,
-    prune_graph,
     remove_isolated_area,
     visualize_path,
 )
@@ -37,7 +36,6 @@ if __name__ == "__main__":
     remove_isolated = True
 
     check_radius = 3
-    prune_iteration = 0
     noise_removal_threshold = 1000
 
     kernel = np.ones((5, 5), np.uint8)
@@ -126,14 +124,6 @@ if __name__ == "__main__":
                 )
                 print("Displaying path:")
                 visualize_path(visual_binary_map, graph, node_list, wait_for_key=True)
-
-            for _ in range(prune_iteration):
-                print("Pruning graph")
-                graph = prune_graph(graph, topdown_map, check_radius)
-
-            if display_path_map and prune_iteration:
-                print("Displaying pruned graph:")
-                display_graph(visual_binary_map, graph, window_name="pruned_graph", wait_for_key=True, line_edge=True)
 
             if save_path_map:
                 map_img = generate_map_image(visual_binary_map, graph, node_only=is_dense_graph, line_edge=False)
