@@ -32,13 +32,7 @@ if __name__ == "__main__":
     display_path_map = True
     save_path_map = False
     is_dense_graph = True
-    erode_path_map = False
     remove_isolated = True
-
-    check_radius = 3
-    noise_removal_threshold = 1000
-
-    kernel = np.ones((5, 5), np.uint8)
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
@@ -83,7 +77,7 @@ if __name__ == "__main__":
             print("Pathfinder not initialized")
         sim.pathfinder.seed(pathfinder_seed)
 
-        recolored_topdown_map_list, topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
+        recolored_topdown_map_list, topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
 
         if display_path_map:
             init_map_display(window_name="colored_map")
@@ -93,10 +87,6 @@ if __name__ == "__main__":
             print("scene: ", scene_number, "    level: ", i)
             topdown_map = topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
-
-            if erode_path_map:
-                topdown_map = cv2.erode(topdown_map, kernel, iterations=1)
-                topdown_map = cv2.dilate(topdown_map, kernel, iterations=1)
 
             if remove_isolated:
                 topdown_map = remove_isolated_area(topdown_map)

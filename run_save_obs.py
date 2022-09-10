@@ -81,7 +81,7 @@ if __name__ == "__main__":
     img_id = 0
 
     if display_path_map:
-        recolored_topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
+        recolored_topdown_map_list, _, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
         init_map_display()
 
     if display_observation:

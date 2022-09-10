@@ -89,7 +89,7 @@ if __name__ == "__main__":
         print("Pathfinder not initialized")
     sim.pathfinder.seed(pathfinder_seed)
 
-    recolored_topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
+    recolored_topdown_map_list, _, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
 
     ext_trans_mat_list = pose_trace["extrinsic_matrix"]
     trans_mat = ext_trans_mat_list[0]

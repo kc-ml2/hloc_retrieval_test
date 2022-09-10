@@ -82,7 +82,6 @@ def get_one_random_directed_adjacent_node(graph, node, previous_node):
         error_code = 1
         next_node = node
     if len(adjacent_nodes) == 1:  # end node
-        print("Agent has reached end node")
         next_node = node
         error_code = 0
     if len(adjacent_nodes) >= 2:  # node on edge or bifurcation

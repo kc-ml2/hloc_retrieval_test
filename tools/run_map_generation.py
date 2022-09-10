@@ -1,4 +1,5 @@
 import argparse
+import json
 import random
 
 import cv2
@@ -21,6 +22,9 @@ if __name__ == "__main__":
     meters_per_pixel = 0.1
 
     generated_scene_num = 0
+
+    height_json_path = "./output/map_height.json"
+    height = {}
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
@@ -68,13 +72,18 @@ if __name__ == "__main__":
         sim.pathfinder.seed(pathfinder_seed)
         position = sim.pathfinder.get_random_navigable_point()
 
-        recolored_topdown_map_list, topdown_map_list = get_entire_maps_by_levels(sim, meters_per_pixel)
+        recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(sim, meters_per_pixel)
 
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             topdown_map = topdown_map_list[i]
 
             cv2.imwrite(f"./output/topdown/{scene_number}_{i}.bmp", topdown_map)
             cv2.imwrite(f"./output/recolored_topdown/{scene_number}_{i}.bmp", recolored_topdown_map)
+
+            height[f"{scene_number}_{i}"] = float(height_list[i])
+
+            with open(height_json_path, "w") as label_json:  # pylint: disable=unspecified-encoding
+                json.dump(height, label_json, indent=4)
 
         sim.close()
         generated_scene_num = generated_scene_num + 1
