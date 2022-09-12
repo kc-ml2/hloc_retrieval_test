@@ -15,19 +15,14 @@ NUM_EMBEDDING = 512  # 256 #512 #1024 #256 #1024 #256
 TOP_HIDDEN = 4  # 1 #4
 NORMALIZATION_ON = False  # True #False #True
 
-if K.image_data_format() == "tf":
-    ROW_AXIS = 1
-    COL_AXIS = 2
-    CHANNEL_AXIS = 3
-else:
-    CHANNEL_AXIS = 1
-    ROW_AXIS = 2
-    COL_AXIS = 3
+ROW_AXIS = 1
+COL_AXIS = 2
+CHANNEL_AXIS = 3
 
 
 def _bn_relu(input):
     """Helper to build a BN -> relu block"""
-    norm = BatchNormalization(axis=CHANNEL_AXIS)(input)
+    norm = BatchNormalization()(input)
     return Activation("relu")(norm)
 
 
@@ -102,7 +97,7 @@ def _shortcut(input, residual):
             kernel_regularizer=l2(0.0001),
         )(input)
 
-    return Add([shortcut, residual])
+    return Add()([shortcut, residual])
 
 
 def _residual_block(block_function, filters, repetitions, is_first_layer=False):
@@ -186,7 +181,7 @@ def _get_block(identifier):
 
 
 def _bn_relu_for_dense(input):
-    norm = BatchNormalization(axis=1)(input)
+    norm = BatchNormalization()(input)
     return Activation("relu")(norm)
 
 
@@ -215,10 +210,6 @@ class ResnetBuilder:
         """
         if len(input_shape) != 3:
             raise Exception("Input shape should be a tuple (nb_channels, nb_rows, nb_cols)")
-
-        # Permute dimension order if necessary
-        if K.image_dim_ordering() == "tf":
-            input_shape = (input_shape[1], input_shape[2], input_shape[0])
 
         # Load function from str if needed.
         block_fn = _get_block(block_fn)
@@ -263,28 +254,22 @@ class ResnetBuilder:
 
     @staticmethod
     def build_bottom_network(edge_model, input_shape):
-        channels, height, width = input_shape
+        height, width, channels = input_shape
         input = Input(shape=(height, width, channels))
         branch = edge_model.layers[3]
         output = branch(input)
-        if NORMALIZATION_ON:
-            output = Lambda(lambda x: K.l2_normalize(x, axis=1))(output)
         return Model(inputs=input, outputs=output)
 
     @staticmethod
     def build_siamese_resnet_18(input_shape):
-        channels, height, width = input_shape
-        branch_channels = 3  # channels / 2
-        branch_input_shape = (branch_channels, height, width)
-        branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False)
+        height, width, channels = input_shape
         input = Input(shape=(height, width, channels))
+        branch_channels = 3  # channels / 2
+        branch_input_shape = (height, width, branch_channels)
+        branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False)
         first_branch = branch(Lambda(lambda x: x[:, :, :, :3])(input))
         second_branch = branch(Lambda(lambda x: x[:, :, :, 3:])(input))
-        if NORMALIZATION_ON:
-            first_branch = Lambda(lambda x: K.l2_normalize(x, axis=1))(first_branch)
-            second_branch = Lambda(lambda x: K.l2_normalize(x, axis=1))(second_branch)
-
-        raw_result = Concatenate([first_branch, second_branch])
+        raw_result = Concatenate(axis=1)([first_branch, second_branch])
         output = _top_network(raw_result)
 
         return Model(inputs=input, outputs=output)

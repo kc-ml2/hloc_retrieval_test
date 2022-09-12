@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     display = False
 
-    num_sampling_per_level = 400
+    num_sampling_per_level = 3000
 
     label_json_path = "./output/images/label.json"
     label = {}
