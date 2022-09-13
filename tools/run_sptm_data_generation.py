@@ -37,9 +37,9 @@ if __name__ == "__main__":
 
     display = False
 
-    num_sampling_per_level = 3000
+    num_sampling_per_level = 500
 
-    label_json_path = "./output/images/label.json"
+    label_json_path = "./output/label.json"
     label = {}
 
     total_scene_num = 0
@@ -53,7 +53,8 @@ if __name__ == "__main__":
         scene_list = f.read().splitlines()
 
     for scene_number in scene_list:
-        scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+        # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+        scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
         scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
         num_levels = 0
@@ -189,15 +190,16 @@ if __name__ == "__main__":
                     color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
 
                     cv2.imwrite(f"./output/images/{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
-                    label[f"{scene_number}_{i:06d}_{k:06d}_{j}"] = [
-                        [float(pos[1]), float(height_list[i]), float(pos[0])],
-                        random_rotation,
-                    ]
+                    label_pos = {
+                        f"{scene_number}_{i:06d}_{k:06d}_{j}": [
+                            [float(pos[1]), float(height_list[i]), float(pos[0])],
+                            random_rotation,
+                        ]
+                    }
+                    label.update(label_pos)
 
-                label[f"{scene_number}_{i:06d}_{k:06d}_similarity"] = y
-
-                with open(label_json_path, "w") as label_json:  # pylint: disable=unspecified-encoding
-                    json.dump(label, label_json, indent=4)
+                label_similarity = {f"{scene_number}_{i:06d}_{k:06d}_similarity": y}
+                label.update(label_similarity)
 
                 if display:
                     display_opencv_cam(color_img)
@@ -206,3 +208,6 @@ if __name__ == "__main__":
 
         cv2.destroyAllWindows()
         sim.close()
+
+        with open(label_json_path, "w") as label_json:  # pylint: disable=unspecified-encoding
+            json.dump(label, label_json, indent=4)
