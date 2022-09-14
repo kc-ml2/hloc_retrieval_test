@@ -8,8 +8,8 @@ import tensorflow as tf
 
 from algorithms.constants import NetworkConstant, TrainingConstant
 
-file_directory = "./output/images/"
-label_directory = "./output/label.json"
+file_directory = "/data1/chlee/siamese_dataset/images/"
+label_directory = "./output/label_all.json"
 sorted_image_file = sorted(os.listdir(file_directory))
 with open(label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
     label_data = json.load(label_json)
@@ -44,26 +44,28 @@ for image_name in image_name_list:
     label_value = label_data[image_name + "_similarity"]
     y_list.append(keras.utils.to_categorical(np.array(label_value), num_classes=2))
 
-dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
-dataset = dataset.map(preprocess_image)
+with tf.device("/device:GPU:1"):
 
-# for x, y in dataset.take(1):
-#     print(np.shape(x))
-#     print(y)
-#     input()
+    dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
+    dataset = dataset.map(preprocess_image)
 
-val_dataset = dataset.take(1000)
-train_dataset = dataset.skip(1000)
+    # for x, y in dataset.take(1):
+    #     print(np.shape(x))
+    #     print(y)
+    #     input()
 
-train_dataset = train_dataset.batch(64)
-val_dataset = val_dataset.batch(64)
+    val_dataset = dataset.take(10000)
+    train_dataset = dataset.skip(10000)
 
-siamese = NetworkConstant.SIAMESE_NETWORK
-model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
-adam = keras.optimizers.Adam(
-    learning_rate=TrainingConstant.LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0
-)
-checkpointer = ModelCheckpoint(filepath="model.weights.best.hdf5", verbose=1, save_best_only=True)
-model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
-model.summary()
-model.fit(x=train_dataset, epochs=10000, validation_data=val_dataset, callbacks=[checkpointer])
+    train_dataset = train_dataset.batch(128)
+    val_dataset = val_dataset.batch(128)
+
+    siamese = NetworkConstant.SIAMESE_NETWORK
+    model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+    adam = keras.optimizers.Adam(
+        learning_rate=TrainingConstant.LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.000001
+    )
+    checkpointer = ModelCheckpoint(filepath="model.weights.best.hdf5", verbose=1, save_best_only=True)
+    model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
+    model.summary()
+    model.fit(x=train_dataset, epochs=10000, validation_data=val_dataset, callbacks=[checkpointer])

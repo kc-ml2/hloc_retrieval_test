@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     num_sampling_per_level = 500
 
-    label_json_path = "./output/label.json"
+    label_json_path = "./output/label1.json"
     label = {}
 
     total_scene_num = 0
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
-    for scene_number in scene_list:
+    for scene_number in scene_list[10:20]:
         # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
         scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
         scene = scene_directory + scene_number + "/" + scene_number + ".glb"

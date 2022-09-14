@@ -22,7 +22,7 @@ class EnvConstant:
 
 # Training
 class TrainingConstant:
-    LEARNING_RATE = 1e-04
+    LEARNING_RATE = 0.0001
     MODEL_CHECKPOINT_PERIOD = 100
     BATCH_SIZE = 64
     DUMP_AFTER_BATCHES = 100
