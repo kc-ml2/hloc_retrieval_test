@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-from algorithms import resnet
-
-
 # Loaded from environment
 class EnvConstant:
     SMOOTHED_LOCALIZATION = True
