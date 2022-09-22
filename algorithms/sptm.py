@@ -4,12 +4,12 @@ import networkx as nx
 import numpy as np
 from numpy import mean, median
 
-from algorithms import resnet
 from algorithms.constants import EnvConstant, NetworkConstant, PathConstant
+from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import get_distance
 
 
-def load_keras_model(number_of_input_frames, number_of_actions, path, load_method=resnet.ResnetBuilder.build_resnet_18):
+def load_keras_model(number_of_input_frames, number_of_actions, path, load_method=ResnetBuilder.build_resnet_18):
     result = load_method(
         (number_of_input_frames * NetworkConstant.NET_CHANNELS, NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH),
         number_of_actions,
@@ -41,11 +41,11 @@ def sieve(shortcuts, top_number):
 
 class InputProcessor:
     def __init__(self):
-        self.edge_model = load_keras_model(2, 2, PathConstant.EDGE_MODEL_WEIGHTS, NetworkConstant.SIAMESE_NETWORK)
-        self.bottom_network = resnet.ResnetBuilder.build_bottom_network(
+        self.edge_model = load_keras_model(2, 2, PathConstant.EDGE_MODEL_WEIGHTS, ResnetBuilder.build_siamese_resnet_18)
+        self.bottom_network = ResnetBuilder.build_bottom_network(
             self.edge_model, (NetworkConstant.NET_CHANNELS, NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH)
         )
-        self.top_network = resnet.ResnetBuilder.build_top_network(self.edge_model)
+        self.top_network = ResnetBuilder.build_top_network(self.edge_model)
         self.tensor_to_predict = np.array([])
 
     def set_memory_buffer(self, keyframes):

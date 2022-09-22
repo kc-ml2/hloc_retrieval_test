@@ -4,4 +4,4 @@ __pycache__/
 pytest
 output
 note
-model.weights*
+model_weights*

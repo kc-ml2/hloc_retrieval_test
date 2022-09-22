@@ -24,7 +24,7 @@ class EnvConstant:
 class TrainingConstant:
     LEARNING_RATE = 0.0001
     MODEL_CHECKPOINT_PERIOD = 100
-    BATCH_SIZE = 64
+    BATCH_SIZE = 128
     DUMP_AFTER_BATCHES = 100
     INF_EPOCHS = 1000000000
     EDGE_MAX_EPOCHS = 10000
@@ -36,9 +36,6 @@ class TrainingConstant:
 
 # Testing
 class NetworkConstant:
-    JOINT_NETWORK = resnet.ResnetBuilder.build_resnet_18
-    SIAMESE_NETWORK = resnet.ResnetBuilder.build_siamese_resnet_18
-    ACTION_NETWORK = resnet.ResnetBuilder.build_resnet_18
     TESTING_BATCH_SIZE = 1024
     NUMBER_OF_NEAREST_NEIGHBOURS = 5
     SMALL_SHORTCUTS_NUMBER = 2000

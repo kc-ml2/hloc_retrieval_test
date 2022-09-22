@@ -180,16 +180,11 @@ def _get_block(identifier):
     return identifier
 
 
-def _bn_relu_for_dense(input):
-    norm = BatchNormalization()(input)
-    return Activation("relu")(norm)
-
-
 def _top_network(input):
-    raw_result = _bn_relu_for_dense(input)
+    raw_result = _bn_relu(input)
     for _ in range(TOP_HIDDEN):
         raw_result = Dense(units=NUM_EMBEDDING, kernel_initializer="he_normal")(raw_result)
-        raw_result = _bn_relu_for_dense(raw_result)
+        raw_result = _bn_relu(raw_result)
     output = Dense(units=2, activation="softmax", kernel_initializer="he_normal")(raw_result)
     return output
 
