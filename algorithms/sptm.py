@@ -66,7 +66,9 @@ class InputProcessor:
         input_code = np.squeeze(self.bottom_network.predict(np.expand_dims(input, axis=0), batch_size=1))
         for index in range(self.tensor_to_predict.shape[0]):
             self.tensor_to_predict[index][0 : (input_code.shape[0])] = input_code
-        probabilities = self.top_network.predict(self.tensor_to_predict, batch_size=NetworkConstant.TESTING_BATCH_SIZE)
+        probabilities = self.top_network.predict(
+            self.tensor_to_predict, batch_size=NetworkConstant.PREDICTION_BATCH_SIZE
+        )
         return probabilities[:, 1]
 
     def get_memory_size(self):

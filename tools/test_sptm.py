@@ -29,10 +29,7 @@ if __name__ == "__main__":
         dataset = dataset.map(lambda x, y: preprocess_image(x, y, file_directory))
 
         val_dataset = dataset.take(10000)
-        train_dataset = dataset.skip(10000)
-
         val_dataset = val_dataset.batch(TrainingConstant.BATCH_SIZE)
-        train_dataset = train_dataset.batch(TrainingConstant.BATCH_SIZE)
 
         # Test
         model = keras.models.load_model("./model_weights/model0916.weights.best.hdf5")
