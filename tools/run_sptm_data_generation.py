@@ -23,8 +23,14 @@ from utils.skeletonize_utils import (
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file")
+    parser.add_argument("--map-height-json", default="./data/map_height.json")
+    parser.add_argument("--output-image-path")
+    parser.add_argument("--output-label-file")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
+    height_json_path = args.map_height_json
+    output_image_path = args.output_image_path
+    label_json_file = args.output_label_file
 
     rgb_sensor = False
     rgb_360_sensor = True
@@ -39,20 +45,17 @@ if __name__ == "__main__":
 
     num_sampling_per_level = 500
 
-    label_json_path = "./data/label1.json"
     label = {}
-
     total_scene_num = 0
     recolored_directory = "./data/recolored_topdown/"
     topdown_directory = "./data/topdown/"
-    height_json_path = "./data/map_height_train.json"
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
         height_data = json.load(height_json)
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
-    for scene_number in scene_list[10:20]:
+    for scene_number in scene_list:
         # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
         scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
         scene = scene_directory + scene_number + "/" + scene_number + ".glb"
@@ -189,7 +192,7 @@ if __name__ == "__main__":
                     observations = sim.get_sensor_observations()
                     color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
 
-                    cv2.imwrite(f"./output/images/{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
+                    cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
                     label_pos = {
                         f"{scene_number}_{i:06d}_{k:06d}_{j}": [
                             [float(pos[1]), float(height_list[i]), float(pos[0])],
@@ -209,5 +212,5 @@ if __name__ == "__main__":
         cv2.destroyAllWindows()
         sim.close()
 
-        with open(label_json_path, "w") as label_json:  # pylint: disable=unspecified-encoding
+        with open(label_json_file, "w") as label_json:  # pylint: disable=unspecified-encoding
             json.dump(label, label_json, indent=4)

@@ -11,7 +11,7 @@ from utils.habitat_utils import get_entire_maps_by_levels, make_cfg
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file")
-    parser.add_argument("--map-height-json")
+    parser.add_argument("--map-height-json", default="./data/map_height.json")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json

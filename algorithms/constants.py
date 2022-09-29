@@ -13,7 +13,7 @@ class EnvConstant:
 # Training
 class TrainingConstant:
     LEARNING_RATE = 0.0001
-    BATCH_SIZE = 128
+    BATCH_SIZE = 32
     POSITIVE_SAMPLE_DISTANCE = 10
     NEGATIVE_SAMPLE_MULTIPLIER = 5
 
