@@ -96,8 +96,6 @@ if __name__ == "__main__":
             val_seen_scan_list.append(obj["scan"])
             # eng_instruction_list_by_scan.append([obj["instruction"]])
         # len_eng_obj = len_eng_obj + 1
-    # print(len_eng_obj)
-    # input()
     print(len(val_seen_scan_list))
     input()
     print(val_seen_scan_list)
@@ -146,9 +144,3 @@ if __name__ == "__main__":
     input()
     print(test_scan_list)
     input()
-
-    n = 0
-    for scan in train_gz_file:
-        if scan in val_seen_scan_list:
-            n = n + 1
-    print(n)

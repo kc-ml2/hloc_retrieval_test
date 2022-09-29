@@ -25,8 +25,8 @@ if __name__ == "__main__":
 
     init_map_display()
 
-    recolored_topdown_map = cv2.imread("./output/recolored_topdown/SN83YJsR3w2_1.bmp", cv2.IMREAD_GRAYSCALE)
-    topdown_map = cv2.imread("./output/topdown/SN83YJsR3w2_1.bmp", cv2.IMREAD_GRAYSCALE)
+    recolored_topdown_map = cv2.imread("./data/recolored_topdown/SN83YJsR3w2_1.bmp", cv2.IMREAD_GRAYSCALE)
+    topdown_map = cv2.imread("./data/topdown/SN83YJsR3w2_1.bmp", cv2.IMREAD_GRAYSCALE)
 
     obstacles_pnt = np.where(topdown_map == 2)
     obstacles_list = []

@@ -11,8 +11,10 @@ from utils.habitat_utils import get_entire_maps_by_levels, make_cfg
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file")
+    parser.add_argument("--map-height-json")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
+    height_json_path = args.map_height_json
 
     rgb_sensor = True
     rgb_360_sensor = False
@@ -22,8 +24,6 @@ if __name__ == "__main__":
     meters_per_pixel = 0.1
 
     generated_scene_num = 0
-
-    height_json_path = "./output/map_height.json"
     height = {}
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
@@ -77,8 +77,8 @@ if __name__ == "__main__":
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             topdown_map = topdown_map_list[i]
 
-            cv2.imwrite(f"./output/topdown/{scene_number}_{i}.bmp", topdown_map)
-            cv2.imwrite(f"./output/recolored_topdown/{scene_number}_{i}.bmp", recolored_topdown_map)
+            cv2.imwrite(f"./data/topdown/{scene_number}_{i}.bmp", topdown_map)
+            cv2.imwrite(f"./data/recolored_topdown/{scene_number}_{i}.bmp", recolored_topdown_map)
 
             height[f"{scene_number}_{i}"] = float(height_list[i])
 

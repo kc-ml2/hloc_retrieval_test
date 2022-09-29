@@ -39,13 +39,13 @@ if __name__ == "__main__":
 
     num_sampling_per_level = 500
 
-    label_json_path = "./output/label1.json"
+    label_json_path = "./data/label1.json"
     label = {}
 
     total_scene_num = 0
-    recolored_directory = "./output/recolored_topdown/"
-    topdown_directory = "./output/topdown/"
-    height_json_path = "./output/map_height.json"
+    recolored_directory = "./data/recolored_topdown/"
+    topdown_directory = "./data/topdown/"
+    height_json_path = "./data/map_height_train.json"
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
         height_data = json.load(height_json)
 

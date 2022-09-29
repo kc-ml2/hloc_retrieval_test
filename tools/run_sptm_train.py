@@ -12,7 +12,7 @@ from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_ima
 if __name__ == "__main__":
     file_directory = "/data1/chlee/siamese_dataset/images/"
     # file_directory = "./output/images/"
-    label_directory = "./output/label_all.json"
+    label_directory = "./data/label_all.json"
     sorted_image_file = sorted(os.listdir(file_directory))
     with open(label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
         label_data = json.load(label_json)
