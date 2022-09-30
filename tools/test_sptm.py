@@ -18,6 +18,7 @@ if __name__ == "__main__":
     loaded_model = args.load_model
     GENERATE_IMG = args.generate_img
 
+    os.makedirs("./output/test/")
     file_directory = "/data1/chlee/siamese_dataset/test_images/"
     label_directory = "./data/label_test.json"
     sorted_image_file = sorted(os.listdir(file_directory))

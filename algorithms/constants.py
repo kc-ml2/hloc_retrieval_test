@@ -1,4 +1,3 @@
-# Loaded from environment
 class EnvConstant:
     SMOOTHED_LOCALIZATION = True
     MEMORY_SUBSAMPLING = 4
@@ -10,7 +9,6 @@ class EnvConstant:
     MAX_LOOK_AHEAD = 7
 
 
-# Training
 class TrainingConstant:
     LEARNING_RATE = 0.0001
     BATCH_SIZE = 32
@@ -18,7 +16,6 @@ class TrainingConstant:
     NEGATIVE_SAMPLE_MULTIPLIER = 5
 
 
-# Testing
 class NetworkConstant:
     PREDICTION_BATCH_SIZE = 1024
     NUMBER_OF_NEAREST_NEIGHBOURS = 5
@@ -31,7 +28,6 @@ class NetworkConstant:
     NET_CHANNELS = 3
 
 
-# Paths
 class PathConstant:
     EDGE_MODEL_WEIGHTS = ""
     SHORTCUTS_CACHE_FILE = ""

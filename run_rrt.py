@@ -13,13 +13,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
-    rgb_sensor = True
-    depth_sensor = True
-    semantic_sensor = False
-
-    meters_per_pixel = 0.1
     obstacle_radius = 2
-
     N_iter = 500
     StepSize = 3
 

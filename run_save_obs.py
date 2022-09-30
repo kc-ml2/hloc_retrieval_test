@@ -1,10 +1,12 @@
 import argparse
+import os
 import random
 
 import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
 
+from config.env_config import ActionConfig, Cam360Config, DataConfig
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
@@ -21,16 +23,10 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
-    rgb_sensor = False
-    rgb_360_sensor = True
-    depth_sensor = True
-    semantic_sensor = True
-
     display_observation = True
     display_path_map = True
 
-    meters_per_pixel = 0.1
-
+    os.makedirs("./output/images/")
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
@@ -40,21 +36,21 @@ if __name__ == "__main__":
     scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
     sim_settings = {
-        "width": 256,  # Spatial resolution of the observations
-        "height": 256,
-        "scene": scene,  # Scene path
+        "width": Cam360Config.WIDTH,
+        "height": Cam360Config.HEIGHT,
+        "scene": scene,
         "default_agent": 0,
-        "sensor_height": 0.5,  # Height of sensors in meters
-        "color_sensor": rgb_sensor,  # RGB sensor
-        "color_360_sensor": rgb_360_sensor,
-        "depth_sensor": depth_sensor,  # Depth sensor
-        "semantic_sensor": semantic_sensor,  # Semantic sensor
-        "seed": 1,  # used in the random navigation
-        "enable_physics": False,  # kinematics only
-        "forward_amount": 0.25,
-        "backward_amount": 0.25,
-        "turn_left_amount": 5.0,
-        "turn_right_amount": 5.0,
+        "sensor_height": Cam360Config.SENSOR_HEIGHT,
+        "color_sensor": Cam360Config.RGB_SENSOR,
+        "color_360_sensor": Cam360Config.RGB_360_SENSOR,
+        "depth_sensor": Cam360Config.DEPTH_SENSOR,
+        "semantic_sensor": Cam360Config.SEMANTIC_SENSOR,
+        "seed": 1,
+        "enable_physics": False,
+        "forward_amount": ActionConfig.FORWARD_AMOUNT,
+        "backward_amount": ActionConfig.BACKWARD_AMOUNT,
+        "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
+        "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
     }
 
     cfg = make_cfg(sim_settings)
@@ -81,7 +77,7 @@ if __name__ == "__main__":
     img_id = 0
 
     if display_path_map:
-        recolored_topdown_map_list, _, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
+        recolored_topdown_map_list, _, _ = get_entire_maps_by_levels(sim, DataConfig.METERS_PER_PIXEL)
         init_map_display()
 
     if display_observation:

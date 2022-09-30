@@ -11,6 +11,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from algorithms.constants import TrainingConstant
+from config.env_config import ActionConfig, Cam360Config, DataConfig, DisplayOffConfig
 from utils.habitat_utils import display_opencv_cam, init_opencv_cam, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
@@ -31,17 +32,6 @@ if __name__ == "__main__":
     height_json_path = args.map_height_json
     output_image_path = args.output_image_path
     label_json_file = args.output_label_file
-
-    rgb_sensor = False
-    rgb_360_sensor = True
-    depth_sensor = True
-    semantic_sensor = False
-
-    meters_per_pixel = 0.1
-    is_dense_graph = True
-    remove_isolated = True
-
-    display = False
 
     num_sampling_per_level = 500
 
@@ -81,21 +71,21 @@ if __name__ == "__main__":
             topdown_map_list.append(searched_topdown_map)
 
         sim_settings = {
-            "width": 512,  # Spatial resolution of the observations
-            "height": 256,
-            "scene": scene,  # Scene path
+            "width": Cam360Config.WIDTH,
+            "height": Cam360Config.HEIGHT,
+            "scene": scene,
             "default_agent": 0,
-            "sensor_height": 0.5,  # Height of sensors in meters
-            "color_sensor": rgb_sensor,  # RGB sensor
-            "color_360_sensor": rgb_360_sensor,
-            "depth_sensor": depth_sensor,  # Depth sensor
-            "semantic_sensor": semantic_sensor,  # Semantic sensor
-            "seed": 1,  # used in the random navigation
-            "enable_physics": False,  # kinematics only
-            "forward_amount": 0.25,
-            "backward_amount": 0.25,
-            "turn_left_amount": 5.0,
-            "turn_right_amount": 5.0,
+            "sensor_height": Cam360Config.SENSOR_HEIGHT,
+            "color_sensor": Cam360Config.RGB_SENSOR,
+            "color_360_sensor": Cam360Config.RGB_360_SENSOR,
+            "depth_sensor": Cam360Config.DEPTH_SENSOR,
+            "semantic_sensor": Cam360Config.SEMANTIC_SENSOR,
+            "seed": 1,
+            "enable_physics": False,
+            "forward_amount": ActionConfig.FORWARD_AMOUNT,
+            "backward_amount": ActionConfig.BACKWARD_AMOUNT,
+            "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
+            "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
         }
 
         cfg = make_cfg(sim_settings)
@@ -116,7 +106,7 @@ if __name__ == "__main__":
             print("Pathfinder not initialized")
         sim.pathfinder.seed(pathfinder_seed)
 
-        if display:
+        if DisplayOffConfig.DISPLAY_OBSERVATION:
             init_opencv_cam()
 
         print("total scene: ", total_scene_num)
@@ -126,7 +116,7 @@ if __name__ == "__main__":
             topdown_map = topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
-            if remove_isolated:
+            if DataConfig.REMOVE_ISOLATED:
                 topdown_map = remove_isolated_area(topdown_map)
 
             binary_map = convert_to_binarymap(topdown_map)
@@ -204,7 +194,7 @@ if __name__ == "__main__":
                 label_similarity = {f"{scene_number}_{i:06d}_{k:06d}_similarity": y}
                 label.update(label_similarity)
 
-                if display:
+                if DisplayOffConfig.DISPLAY_OBSERVATION:
                     display_opencv_cam(color_img)
 
         total_scene_num = total_scene_num + 1

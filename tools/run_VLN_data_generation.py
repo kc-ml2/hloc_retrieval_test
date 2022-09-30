@@ -11,6 +11,7 @@ import habitat_sim
 import jsonlines
 import numpy as np
 
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig
 from utils.habitat_utils import (
     extrinsic_mat_list_to_pos_angle_list,
     interpolate_discrete_matrix,
@@ -70,33 +71,25 @@ if __name__ == "__main__":
         scene = scene_directory + eng_scene_dict[instruction_id] + "/" + eng_scene_dict[instruction_id] + ".glb"
         pose_trace = np.load(directory + pose_file)
 
-        rgb_sensor = True
-        rgb_360_sensor = False
-        depth_sensor = False
-        semantic_sensor = False
-
-        meters_per_pixel = 0.1
-        translation_threshold = 0.5
-        interpolation_interval = 0.02
         sampling_frames = 40
         sampling_number = 2
 
         sim_settings = {
-            "width": 256,  # Spatial resolution of the observations
-            "height": 256,
-            "scene": scene,  # Scene path
+            "width": CamNormalConfig.WIDTH,
+            "height": CamNormalConfig.HEIGHT,
+            "scene": scene,
             "default_agent": 0,
-            "sensor_height": 0,  # Height of sensors in meters
-            "color_sensor": rgb_sensor,  # RGB sensor
-            "color_360_sensor": rgb_360_sensor,
-            "depth_sensor": depth_sensor,  # Depth sensor
-            "semantic_sensor": semantic_sensor,  # Semantic sensor
-            "seed": 1,  # used in the random navigation
-            "enable_physics": False,  # kinematics only
-            "forward_amount": 0.25,
-            "backward_amount": 0.25,
-            "turn_left_amount": 5.0,
-            "turn_right_amount": 5.0,
+            "sensor_height": CamNormalConfig.SENSOR_HEIGHT,
+            "color_sensor": CamNormalConfig.RGB_SENSOR,
+            "color_360_sensor": CamNormalConfig.RGB_360_SENSOR,
+            "depth_sensor": CamNormalConfig.DEPTH_SENSOR,
+            "semantic_sensor": CamNormalConfig.SEMANTIC_SENSOR,
+            "seed": 1,
+            "enable_physics": False,
+            "forward_amount": ActionConfig.FORWARD_AMOUNT,
+            "backward_amount": ActionConfig.BACKWARD_AMOUNT,
+            "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
+            "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
         }
 
         cfg = make_cfg(sim_settings)
@@ -118,7 +111,7 @@ if __name__ == "__main__":
         ext_trans_mat_list = pose_trace["extrinsic_matrix"]
         deduplicated_mat_list = remove_duplicate_matrix(ext_trans_mat_list)
         deduplicated_mat_list = interpolate_discrete_matrix(
-            list(deduplicated_mat_list), interpolation_interval, translation_threshold
+            list(deduplicated_mat_list), DataConfig.INTERPOLATION_INTERVAL, DataConfig.TRANSLATION_THRESHOLD
         )
         pos_trajectory, angle_trajectory = extrinsic_mat_list_to_pos_angle_list(deduplicated_mat_list)
 

@@ -6,6 +6,7 @@ import habitat_sim
 import networkx as nx
 import numpy as np
 
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayOnConfig, OutputConfig
 from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
@@ -23,17 +24,6 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
-    rgb_sensor = False
-    rgb_360_sensor = True
-    depth_sensor = True
-    semantic_sensor = False
-
-    meters_per_pixel = 0.1
-    display_path_map = True
-    save_path_map = False
-    is_dense_graph = True
-    remove_isolated = True
-
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
@@ -42,21 +32,21 @@ if __name__ == "__main__":
         scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
         sim_settings = {
-            "width": 512,  # Spatial resolution of the observations
-            "height": 256,
-            "scene": scene,  # Scene path
+            "width": CamNormalConfig.WIDTH,
+            "height": CamNormalConfig.HEIGHT,
+            "scene": scene,
             "default_agent": 0,
-            "sensor_height": 0,  # Height of sensors in meters
-            "color_sensor": rgb_sensor,  # RGB sensor
-            "color_360_sensor": rgb_360_sensor,
-            "depth_sensor": depth_sensor,  # Depth sensor
-            "semantic_sensor": semantic_sensor,  # Semantic sensor
-            "seed": 1,  # used in the random navigation
-            "enable_physics": False,  # kinematics only
-            "forward_amount": 0.25,
-            "backward_amount": 0.25,
-            "turn_left_amount": 5.0,
-            "turn_right_amount": 5.0,
+            "sensor_height": CamNormalConfig.SENSOR_HEIGHT,
+            "color_sensor": CamNormalConfig.RGB_SENSOR,
+            "color_360_sensor": CamNormalConfig.RGB_360_SENSOR,
+            "depth_sensor": CamNormalConfig.DEPTH_SENSOR,
+            "semantic_sensor": CamNormalConfig.SEMANTIC_SENSOR,
+            "seed": 1,
+            "enable_physics": False,
+            "forward_amount": ActionConfig.FORWARD_AMOUNT,
+            "backward_amount": ActionConfig.BACKWARD_AMOUNT,
+            "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
+            "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
         }
 
         cfg = make_cfg(sim_settings)
@@ -77,9 +67,9 @@ if __name__ == "__main__":
             print("Pathfinder not initialized")
         sim.pathfinder.seed(pathfinder_seed)
 
-        recolored_topdown_map_list, topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
+        recolored_topdown_map_list, topdown_map_list, _ = get_entire_maps_by_levels(sim, DataConfig.METERS_PER_PIXEL)
 
-        if display_path_map:
+        if DisplayOnConfig.DISPLAY_PATH_MAP:
             init_map_display(window_name="colored_map")
             init_map_display(window_name="visual_binary_map")
 
@@ -88,7 +78,7 @@ if __name__ == "__main__":
             topdown_map = topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
-            if remove_isolated:
+            if DataConfig.REMOVE_ISOLATED:
                 topdown_map = remove_isolated_area(topdown_map)
 
             binary_map = convert_to_binarymap(topdown_map)
@@ -103,20 +93,26 @@ if __name__ == "__main__":
                 except nx.NetworkXNoPath:
                     pass
 
-            if display_path_map:
+            if DisplayOnConfig.DISPLAY_PATH_MAP:
                 print("Displaying recolored map:")
                 display_map(recolored_topdown_map, window_name="colored_map", wait_for_key=True)
                 print("Displaying visual binary map:")
                 display_map(visual_binary_map, window_name="visual_binary_map", wait_for_key=True)
                 print("Displaying graph:")
                 display_graph(
-                    visual_binary_map, graph, window_name="original graph", node_only=is_dense_graph, wait_for_key=True
+                    visual_binary_map,
+                    graph,
+                    window_name="original graph",
+                    node_only=DataConfig.IS_DENSE_GRAPH,
+                    wait_for_key=True,
                 )
                 print("Displaying path:")
                 visualize_path(visual_binary_map, graph, node_list, wait_for_key=True)
 
-            if save_path_map:
-                map_img = generate_map_image(visual_binary_map, graph, node_only=is_dense_graph, line_edge=False)
+            if OutputConfig.SAVE_PATH_MAP:
+                map_img = generate_map_image(
+                    visual_binary_map, graph, node_only=DataConfig.IS_DENSE_GRAPH, line_edge=False
+                )
                 cv2.imwrite(f"./output/test/{scene_number}_{i}.bmp", map_img)
 
         cv2.destroyAllWindows()

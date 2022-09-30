@@ -1,27 +1,25 @@
 import argparse
 import json
+import os
 import random
 
 import cv2
 import habitat_sim
 import numpy as np
 
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig
 from utils.habitat_utils import get_entire_maps_by_levels, make_cfg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file")
+    parser.add_argument("--scene-list-file", default="./data/scene_list_total.txt")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
 
-    rgb_sensor = True
-    rgb_360_sensor = False
-    depth_sensor = True
-    semantic_sensor = False
-
-    meters_per_pixel = 0.1
+    os.makedirs("./data/topdown/")
+    os.makedirs("./data/recolored_topdown/")
 
     generated_scene_num = 0
     height = {}
@@ -36,21 +34,21 @@ if __name__ == "__main__":
         print(generated_scene_num)
 
         sim_settings = {
-            "width": 256,  # Spatial resolution of the observations
-            "height": 256,
-            "scene": scene,  # Scene path
+            "width": CamNormalConfig.WIDTH,
+            "height": CamNormalConfig.HEIGHT,
+            "scene": scene,
             "default_agent": 0,
-            "sensor_height": 0,  # Height of sensors in meters
-            "color_sensor": rgb_sensor,  # RGB sensor
-            "color_360_sensor": rgb_360_sensor,
-            "depth_sensor": depth_sensor,  # Depth sensor
-            "semantic_sensor": semantic_sensor,  # Semantic sensor
-            "seed": 1,  # used in the random navigation
-            "enable_physics": False,  # kinematics only
-            "forward_amount": 0.25,
-            "backward_amount": 0.25,
-            "turn_left_amount": 5.0,
-            "turn_right_amount": 5.0,
+            "sensor_height": CamNormalConfig.SENSOR_HEIGHT,
+            "color_sensor": CamNormalConfig.RGB_SENSOR,
+            "color_360_sensor": CamNormalConfig.RGB_360_SENSOR,
+            "depth_sensor": CamNormalConfig.DEPTH_SENSOR,
+            "semantic_sensor": CamNormalConfig.SEMANTIC_SENSOR,
+            "seed": 1,
+            "enable_physics": False,
+            "forward_amount": ActionConfig.FORWARD_AMOUNT,
+            "backward_amount": ActionConfig.BACKWARD_AMOUNT,
+            "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
+            "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
         }
 
         cfg = make_cfg(sim_settings)
@@ -72,7 +70,9 @@ if __name__ == "__main__":
         sim.pathfinder.seed(pathfinder_seed)
         position = sim.pathfinder.get_random_navigable_point()
 
-        recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(sim, meters_per_pixel)
+        recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(
+            sim, DataConfig.METERS_PER_PIXEL
+        )
 
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             topdown_map = topdown_map_list[i]
