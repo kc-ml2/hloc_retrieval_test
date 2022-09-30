@@ -6,7 +6,7 @@ import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
 
-from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
+from config.env_config import ActionConfig, Cam360Config, DataConfig, DisplayConfig, PathConfig
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
@@ -19,14 +19,11 @@ from utils.habitat_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file")
+    parser.add_argument("--scene-list-file", default="./data/scene_list_train.txt")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
-    display_observation = True
-    display_path_map = True
-
-    os.makedirs("./output/images/")
+    os.makedirs("./output/images/", exist_ok=True)
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
@@ -75,18 +72,18 @@ if __name__ == "__main__":
 
     img_id = 0
 
-    if display_path_map:
+    if DisplayConfig.DISPLAY_PATH_MAP:
         recolored_topdown_map_list, _, _ = get_entire_maps_by_levels(sim, DataConfig.METERS_PER_PIXEL)
         init_map_display()
 
-    if display_observation:
+    if DisplayConfig.DISPLAY_OBSERVATION:
         init_opencv_cam()
 
     while True:
         observations = sim.get_sensor_observations()
         color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
 
-        if display_observation:
+        if DisplayConfig.DISPLAY_OBSERVATION:
             key = display_opencv_cam(color_img)
 
         current_state = agent.get_state()
@@ -111,7 +108,7 @@ if __name__ == "__main__":
 
         sim.step(action)
 
-        if display_path_map:
+        if DisplayConfig.DISPLAY_PATH_MAP:
             recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
             node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
             transposed_point = (node_point[1], node_point[0])

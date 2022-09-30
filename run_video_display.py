@@ -6,7 +6,7 @@ from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 
-from config.env_config import ActionConfig, CamGivenReferenceConfig, DataConfig, PathConfig
+from config.env_config import ActionConfig, CamGivenReferenceConfig, DataConfig, DisplayConfig, PathConfig
 from utils.habitat_utils import (
     cal_pose_diff,
     convert_transmat_to_point_quaternion,
@@ -35,13 +35,7 @@ if __name__ == "__main__":
 
     # Search for scene glb file according to trace-id
     scene = get_scene_by_eng_guide(instruction_id, train_guide_file, PathConfig.SCENE_DIRECTORY)
-
-    display_observation = True
-    display_path_map = True
     display_semantic_object = True
-
-    remove_duplicate_frames = True
-    interpolate_translation = True
 
     sim_settings = {
         "width": CamGivenReferenceConfig.WIDTH,
@@ -106,10 +100,10 @@ if __name__ == "__main__":
                         markerSize=2,
                     )
 
-    if remove_duplicate_frames:
+    if DataConfig.REMOVE_DUPLICATE_FRAMES:
         ext_trans_mat_list = remove_duplicate_matrix(ext_trans_mat_list)
 
-    if interpolate_translation:
+    if DataConfig.INTERPOLATE_TRANSLATION:
         ext_trans_mat_list = interpolate_discrete_matrix(
             list(ext_trans_mat_list), DataConfig.INTERPOLATION_INTERVAL, DataConfig.TRANSLATION_THRESHOLD
         )
@@ -120,10 +114,10 @@ if __name__ == "__main__":
     nodes = []
     prev = None
 
-    if display_observation:
+    if DisplayConfig.DISPLAY_OBSERVATION:
         init_opencv_cam()
 
-    if display_path_map:
+    if DisplayConfig.DISPLAY_PATH_MAP:
         init_map_display()
 
     for i in range(0, len(pos_trajectory), 1):
@@ -146,7 +140,7 @@ if __name__ == "__main__":
         observations = sim.get_sensor_observations()
         color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
-        if display_observation:
+        if DisplayConfig.DISPLAY_OBSERVATION:
             key = display_opencv_cam(color_img)
             if key == ord("o"):
                 print("save image")
@@ -154,7 +148,7 @@ if __name__ == "__main__":
                 cv2.imwrite(f"./output/db{img_id}.jpg", color_img)
                 img_id = img_id + 1
 
-        if display_path_map:
+        if DisplayConfig.DISPLAY_PATH_MAP:
             node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
             transposed_point = (node_point[1], node_point[0])
             nodes.append(transposed_point)

@@ -11,8 +11,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from config.algorithm_config import TrainingConstant
-from config.env_config import ActionConfig, Cam360Config, DataConfig, DisplayOffConfig, PathConfig
-from utils.habitat_utils import display_opencv_cam, init_opencv_cam, make_cfg
+from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
+from utils.habitat_utils import make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         output_image_path = PathConfig.TRAIN_IMAGE_PATH
         label_json_file = PathConfig.TRAIN_LABEL_PATH
     if is_valid:
-        scene_list_file = "./data/scene_list_valid.txt"
+        scene_list_file = "./data/scene_list_val_unseen.txt"
         output_image_path = PathConfig.VALID_IMAGE_PATH
         label_json_file = PathConfig.VALID_LABEL_PATH
     if is_test:
@@ -48,9 +48,9 @@ if __name__ == "__main__":
 
     check_arg = is_train + is_test + is_valid
     if check_arg == 0 or check_arg >= 2:
-        raise ValueError("Argument Error!!!")
+        raise ValueError("Argument Error. Put only one flag.")
 
-    os.makedirs(output_image_path)
+    os.makedirs(output_image_path, exist_ok=True)
 
     label = {}
     total_scene_num = 0
@@ -120,9 +120,6 @@ if __name__ == "__main__":
         if not sim.pathfinder.is_loaded:
             print("Pathfinder not initialized")
         sim.pathfinder.seed(pathfinder_seed)
-
-        if DisplayOffConfig.DISPLAY_OBSERVATION:
-            init_opencv_cam()
 
         print("total scene: ", total_scene_num)
 
@@ -208,9 +205,6 @@ if __name__ == "__main__":
 
                 label_similarity = {f"{scene_number}_{i:06d}_{k:06d}_similarity": y}
                 label.update(label_similarity)
-
-                if DisplayOffConfig.DISPLAY_OBSERVATION:
-                    display_opencv_cam(color_img)
 
         total_scene_num = total_scene_num + 1
 

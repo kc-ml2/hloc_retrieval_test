@@ -7,7 +7,7 @@ import habitat_sim
 import networkx as nx
 import numpy as np
 
-from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayOnConfig, OutputConfig, PathConfig
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayConfig, OutputConfig, PathConfig
 from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
@@ -21,12 +21,12 @@ from utils.skeletonize_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file")
+    parser.add_argument("--scene-list-file", default="./data/scene_list_train.txt")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
     if OutputConfig.SAVE_PATH_MAP:
-        os.makedirs("./output/test/")
+        os.makedirs("./output/test/", exist_ok=True)
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
         recolored_topdown_map_list, topdown_map_list, _ = get_entire_maps_by_levels(sim, DataConfig.METERS_PER_PIXEL)
 
-        if DisplayOnConfig.DISPLAY_PATH_MAP:
+        if DisplayConfig.DISPLAY_PATH_MAP:
             init_map_display(window_name="colored_map")
             init_map_display(window_name="visual_binary_map")
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
                 except nx.NetworkXNoPath:
                     pass
 
-            if DisplayOnConfig.DISPLAY_PATH_MAP:
+            if DisplayConfig.DISPLAY_PATH_MAP:
                 print("Displaying recolored map:")
                 display_map(recolored_topdown_map, window_name="colored_map", wait_for_key=True)
                 print("Displaying visual binary map:")

@@ -1,6 +1,6 @@
 class PathConfig:
-    SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    # SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset/images"
     TRAIN_LABEL_PATH = "./data/label_train.json"
     VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset/val_images"
@@ -58,16 +58,9 @@ class DataConfig:
     REMOVE_ISOLATED = True
 
 
-class DisplayOnConfig:
+class DisplayConfig:
     DISPLAY_OBSERVATION = True
     DISPLAY_PATH_MAP = True
-    DISPLAY_SEMANTIC_OBJECT = False
-
-
-class DisplayOffConfig:
-    DISPLAY_OBSERVATION = False
-    DISPLAY_PATH_MAP = False
-    DISPLAY_SEMANTIC_OBJECT = False
 
 
 class OutputConfig:

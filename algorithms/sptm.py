@@ -6,7 +6,8 @@ from numpy import mean, median
 
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import get_distance
-from config.algorithm_config import NavConstant, NetworkConstant, PathConstant
+from config.algorithm_config import NavConstant, NetworkConstant
+from config.env_config import PathConfig
 
 
 def load_keras_model(number_of_input_frames, number_of_actions, path, load_method=ResnetBuilder.build_resnet_18):
@@ -41,7 +42,7 @@ def sieve(shortcuts, top_number):
 
 class InputProcessor:
     def __init__(self):
-        self.edge_model = load_keras_model(2, 2, PathConstant.EDGE_MODEL_WEIGHTS, ResnetBuilder.build_siamese_resnet_18)
+        self.edge_model = load_keras_model(2, 2, PathConfig.EDGE_MODEL_WEIGHTS, ResnetBuilder.build_siamese_resnet_18)
         self.bottom_network = ResnetBuilder.build_bottom_network(
             self.edge_model, (NetworkConstant.NET_CHANNELS, NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH)
         )
@@ -80,7 +81,7 @@ class SPTM:
         self.shortest_paths = []
         self.shortest_distances = []
         self.shortcuts = np.array([])
-        self.shortcuts_cache_file = PathConstant.SHORTCUTS_CACHE_FILE
+        self.shortcuts_cache_file = PathConfig.SHORTCUTS_CACHE_FILE
 
     def set_memory_buffer(self, keyframes):
         self.input_processor.set_memory_buffer(keyframes)

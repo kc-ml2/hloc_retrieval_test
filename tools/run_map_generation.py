@@ -18,8 +18,8 @@ if __name__ == "__main__":
     scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
 
-    os.makedirs("./data/topdown/")
-    os.makedirs("./data/recolored_topdown/")
+    os.makedirs("./data/topdown/", exist_ok=True)
+    os.makedirs("./data/recolored_topdown/", exist_ok=True)
 
     generated_scene_num = 0
     height = {}

@@ -14,8 +14,8 @@ if __name__ == "__main__":
     train_file_directory = PathConfig.TRAIN_IMAGE_PATH
     valid_file_directory = PathConfig.VALID_IMAGE_PATH
 
-    train_label_directory = "./data/label_train.json"
-    valid_label_directory = "./data/label_val.json"
+    train_label_directory = PathConfig.TRAIN_LABEL_PATH
+    valid_label_directory = PathConfig.VALID_LABEL_PATH
 
     sorted_train_image_file = sorted(os.listdir(train_file_directory))
     sorted_valid_image_file = sorted(os.listdir(valid_file_directory))

@@ -20,7 +20,7 @@ if __name__ == "__main__":
     generate_img = args.generate_img
 
     if generate_img:
-        os.makedirs("./output/test/")
+        os.makedirs("./output/test/", exist_ok=True)
 
     file_directory = PathConfig.TEST_IMAGE_PATH
     label_directory = PathConfig.TEST_LABEL_PATH
