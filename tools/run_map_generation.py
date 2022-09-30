@@ -7,7 +7,7 @@ import cv2
 import habitat_sim
 import numpy as np
 
-from config.env_config import ActionConfig, CamNormalConfig, DataConfig
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
 from utils.habitat_utils import get_entire_maps_by_levels, make_cfg
 
 if __name__ == "__main__":
@@ -28,8 +28,7 @@ if __name__ == "__main__":
         scene_list = f.read().splitlines()
 
     for scene_number in scene_list:
-        scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-        scene = scene_directory + scene_number + "/" + scene_number + ".glb"
+        scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
         print(scene_number)
         print(generated_scene_num)
 

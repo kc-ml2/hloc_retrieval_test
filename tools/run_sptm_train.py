@@ -5,9 +5,9 @@ import keras
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
-from algorithms.constants import NetworkConstant, TrainingConstant
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
+from config.algorithm_config import NetworkConstant, TrainingConstant
 
 if __name__ == "__main__":
     train_file_directory = "/data1/chlee/siamese_dataset/images/"

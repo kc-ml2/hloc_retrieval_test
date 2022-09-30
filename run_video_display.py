@@ -6,7 +6,7 @@ from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 
-from config.env_config import ActionConfig, CamGivenReferenceConfig, DataConfig
+from config.env_config import ActionConfig, CamGivenReferenceConfig, DataConfig, PathConfig
 from utils.habitat_utils import (
     cal_pose_diff,
     convert_transmat_to_point_quaternion,
@@ -32,10 +32,9 @@ if __name__ == "__main__":
     directory = "../dataset/rxr-data/pose_traces/rxr_train/"
     pose_trace = np.load(directory + str(instruction_id).zfill(6) + "_guide_pose_trace.npz")
     train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
-    scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
 
     # Search for scene glb file according to trace-id
-    scene = get_scene_by_eng_guide(instruction_id, train_guide_file, scene_directory)
+    scene = get_scene_by_eng_guide(instruction_id, train_guide_file, PathConfig.SCENE_DIRECTORY)
 
     display_observation = True
     display_path_map = True

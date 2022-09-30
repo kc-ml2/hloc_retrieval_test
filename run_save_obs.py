@@ -6,7 +6,7 @@ import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
 
-from config.env_config import ActionConfig, Cam360Config, DataConfig
+from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
@@ -32,8 +32,7 @@ if __name__ == "__main__":
 
     # for scene_number in scene_list:
     scene_number = scene_list[0]
-    scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    scene = scene_directory + scene_number + "/" + scene_number + ".glb"
+    scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
 
     sim_settings = {
         "width": Cam360Config.WIDTH,

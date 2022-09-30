@@ -7,8 +7,8 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from algorithms.constants import TrainingConstant
 from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
+from config.algorithm_config import TrainingConstant
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

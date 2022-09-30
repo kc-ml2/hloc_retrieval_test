@@ -1,3 +1,8 @@
+class PathConfig:
+    SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    # SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+
+
 class CamNormalConfig:
     RGB_SENSOR = True
     RGB_360_SENSOR = False

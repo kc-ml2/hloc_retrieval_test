@@ -1,4 +1,5 @@
 import gzip
+import os
 
 from PIL import Image
 import cv2
@@ -198,7 +199,7 @@ def get_scene_by_eng_guide(instruction_id, train_guide_file, scene_directory):
     for obj in reader:
         if obj["instruction_id"] == instruction_id and (obj["language"] == "en-IN" or obj["language"] == "en-US"):
             scene_number = obj["scan"]
-            scene = scene_directory + scene_number + "/" + scene_number + ".glb"
+            scene = scene_directory + os.sep + scene_number + os.sep + scene_number + ".glb"
             print("Found the scene.")
 
     if not scene:

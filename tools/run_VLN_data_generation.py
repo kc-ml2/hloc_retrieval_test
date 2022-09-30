@@ -11,7 +11,7 @@ import habitat_sim
 import jsonlines
 import numpy as np
 
-from config.env_config import ActionConfig, CamNormalConfig, DataConfig
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
 from utils.habitat_utils import (
     extrinsic_mat_list_to_pos_angle_list,
     interpolate_discrete_matrix,
@@ -31,8 +31,6 @@ if __name__ == "__main__":
 
     train_guide_file = "/data1/chlee/rxr_dataset/rxr-data/rxr_train_guide.jsonl.gz"
     # train_guide_file = "../dataset/rxr-data/rxr_train_guide.jsonl.gz"
-    scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
 
     jsonl_file = gzip.open(train_guide_file)
     reader = jsonlines.Reader(jsonl_file)
@@ -68,7 +66,14 @@ if __name__ == "__main__":
         else:
             os.makedirs(f"/data1/chlee/output/img/{str(instruction_id).zfill(6)}_guide")
 
-        scene = scene_directory + eng_scene_dict[instruction_id] + "/" + eng_scene_dict[instruction_id] + ".glb"
+        scene = (
+            PathConfig.SCENE_DIRECTORY
+            + os.sep
+            + eng_scene_dict[instruction_id]
+            + os.sep
+            + eng_scene_dict[instruction_id]
+            + ".glb"
+        )
         pose_trace = np.load(directory + pose_file)
 
         sampling_frames = 40

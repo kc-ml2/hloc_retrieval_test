@@ -10,8 +10,8 @@ import networkx as nx
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from algorithms.constants import TrainingConstant
-from config.env_config import ActionConfig, Cam360Config, DataConfig, DisplayOffConfig
+from config.algorithm_config import TrainingConstant
+from config.env_config import ActionConfig, Cam360Config, DataConfig, DisplayOffConfig, PathConfig
 from utils.habitat_utils import display_opencv_cam, init_opencv_cam, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
@@ -33,8 +33,6 @@ if __name__ == "__main__":
     output_image_path = args.output_image_path
     label_json_file = args.output_label_file
 
-    num_sampling_per_level = 500
-
     label = {}
     total_scene_num = 0
     recolored_directory = "./data/recolored_topdown/"
@@ -46,9 +44,7 @@ if __name__ == "__main__":
         scene_list = f.read().splitlines()
 
     for scene_number in scene_list:
-        # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-        scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-        scene = scene_directory + scene_number + "/" + scene_number + ".glb"
+        scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
 
         num_levels = 0
         for root, dir, files in os.walk(topdown_directory):
@@ -125,7 +121,7 @@ if __name__ == "__main__":
             if len(list(graph.nodes)) == 0:
                 continue
 
-            for k in range(num_sampling_per_level):
+            for k in range(TrainingConstant.NUM_SAMPLING_PER_LEVEL):
                 if random.random() < 0.5:
                     y = 1
                     error_code = None

@@ -4,9 +4,9 @@ import networkx as nx
 import numpy as np
 from numpy import mean, median
 
-from algorithms.constants import EnvConstant, NetworkConstant, PathConstant
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import get_distance
+from config.algorithm_config import NavConstant, NetworkConstant, PathConstant
 
 
 def load_keras_model(number_of_input_frames, number_of_actions, path, load_method=ResnetBuilder.build_resnet_18):
@@ -66,9 +66,7 @@ class InputProcessor:
         input_code = np.squeeze(self.bottom_network.predict(np.expand_dims(input, axis=0), batch_size=1))
         for index in range(self.tensor_to_predict.shape[0]):
             self.tensor_to_predict[index][0 : (input_code.shape[0])] = input_code
-        probabilities = self.top_network.predict(
-            self.tensor_to_predict, batch_size=NetworkConstant.PREDICTION_BATCH_SIZE
-        )
+        probabilities = self.top_network.predict(self.tensor_to_predict, batch_size=NavConstant.PREDICTION_BATCH_SIZE)
         return probabilities[:, 1]
 
     def get_memory_size(self):
@@ -113,9 +111,9 @@ class SPTM:
                 ) / 2.0
         shortcuts = []
         for first in range(len(shortcuts_matrix)):
-            for second in range(first + 1 + EnvConstant.MIN_SHORTCUT_DISTANCE, len(shortcuts_matrix)):
+            for second in range(first + 1 + NavConstant.MIN_SHORTCUT_DISTANCE, len(shortcuts_matrix)):
                 values = []
-                for shift in range(-EnvConstant.SHORTCUT_WINDOW, EnvConstant.SHORTCUT_WINDOW + 1):
+                for shift in range(-NavConstant.SHORTCUT_WINDOW, NavConstant.SHORTCUT_WINDOW + 1):
                     first_shifted = first + shift
                     second_shifted = second + shift
                     if 0 <= first_shifted < len(shortcuts_matrix) and 0 <= second_shifted < len(shortcuts_matrix):
@@ -134,11 +132,11 @@ class SPTM:
                 shortcuts_matrix.append(probabilities)
                 print("Finished:", float(first * 100) / float(len(keyframes)), "%")
             shortcuts = self.smooth_shortcuts_matrix(shortcuts_matrix, keyframe_coordinates)
-            shortcuts = sieve(shortcuts, NetworkConstant.LARGE_SHORTCUTS_NUMBER)
+            shortcuts = sieve(shortcuts, NavConstant.LARGE_SHORTCUTS_NUMBER)
             np.save(self.shortcuts_cache_file, shortcuts)
         else:
             shortcuts = np.load(self.shortcuts_cache_file)
-        self.shortcuts = sieve(shortcuts, NetworkConstant.SMALL_SHORTCUTS_NUMBER)
+        self.shortcuts = sieve(shortcuts, NavConstant.SMALL_SHORTCUTS_NUMBER)
 
     def get_number_of_shortcuts(self):
         return len(self.shortcuts)
@@ -160,7 +158,7 @@ class SPTM:
         for index in range(self.get_number_of_shortcuts()):
             edge = self.get_shortcut(index)
             first, second = edge
-            assert abs(first - second) > EnvConstant.MIN_SHORTCUT_DISTANCE
+            assert abs(first - second) > NavConstant.MIN_SHORTCUT_DISTANCE
             self.add_double_sided_edge(*edge)
 
     def find_nn(self, input):
@@ -217,10 +215,10 @@ class SPTM:
 
     def find_smoothed_nn(self, input):
         nn = None
-        if EnvConstant.SMOOTHED_LOCALIZATION:
+        if NavConstant.SMOOTHED_LOCALIZATION:
             nn, probabilities = self.find_nn_on_last_shortest_path(input)
         if nn is None:
             nn, probabilities, _ = self.find_knn_median_threshold(
-                input, NetworkConstant.NUMBER_OF_NEAREST_NEIGHBOURS, EnvConstant.INTERMEDIATE_REACHABLE_GOAL_THRESHOLD
+                input, NavConstant.NUMBER_OF_NEAREST_NEIGHBOURS, NavConstant.INTERMEDIATE_REACHABLE_GOAL_THRESHOLD
             )
         return nn, probabilities
