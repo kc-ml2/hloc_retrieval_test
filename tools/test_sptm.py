@@ -24,7 +24,7 @@ if __name__ == "__main__":
     with open(label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
         label_data = json.load(label_json)
 
-    image_name_list, y_list = list_image_name_label_wo_index(file_directory, sorted_image_file, label_data)
+    image_name_list, y_list = list_image_name_label_wo_index(sorted_image_file, label_data)
 
     y_list_for_compare = []
     for image_name in image_name_list:
