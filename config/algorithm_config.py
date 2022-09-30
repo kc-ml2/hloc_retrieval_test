@@ -27,8 +27,3 @@ class NetworkConstant:
     NET_WIDTH = 512
     NET_HEIGHT = 256
     NET_CHANNELS = 3
-
-
-class PathConstant:
-    EDGE_MODEL_WEIGHTS = ""
-    SHORTCUTS_CACHE_FILE = ""

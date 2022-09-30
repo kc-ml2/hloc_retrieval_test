@@ -25,6 +25,9 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
 
+    if OutputConfig.SAVE_PATH_MAP:
+        os.makedirs("./output/test/")
+
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 

@@ -8,10 +8,11 @@ import tensorflow as tf
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
 from config.algorithm_config import NetworkConstant, TrainingConstant
+from config.env_config import PathConfig
 
 if __name__ == "__main__":
-    train_file_directory = "/data1/chlee/siamese_dataset/images/"
-    valid_file_directory = "/data1/chlee/siamese_dataset/val_images/"
+    train_file_directory = PathConfig.TRAIN_IMAGE_PATH
+    valid_file_directory = PathConfig.VALID_IMAGE_PATH
 
     train_label_directory = "./data/label_train.json"
     valid_label_directory = "./data/label_val.json"

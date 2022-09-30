@@ -1,6 +1,14 @@
 class PathConfig:
     SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     # SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset/images"
+    TRAIN_LABEL_PATH = "./data/label_train.json"
+    VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset/val_images"
+    VALID_LABEL_PATH = "./data/label_val.json"
+    TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset/test_images"
+    TEST_LABEL_PATH = "./data/label_test.json"
+    EDGE_MODEL_WEIGHTS = ""
+    SHORTCUTS_CACHE_FILE = ""
 
 
 class CamNormalConfig:

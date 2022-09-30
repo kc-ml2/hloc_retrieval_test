@@ -23,15 +23,34 @@ from utils.skeletonize_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--output-image-path")
-    parser.add_argument("--output-label-file")
+    parser.add_argument("--train", action="store_true")
+    parser.add_argument("--valid", action="store_true")
+    parser.add_argument("--test", action="store_true")
     args, _ = parser.parse_known_args()
-    scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
-    output_image_path = args.output_image_path
-    label_json_file = args.output_label_file
+    is_train = args.train
+    is_valid = args.valid
+    is_test = args.test
+
+    if is_train:
+        scene_list_file = "./data/scene_list_train.txt"
+        output_image_path = PathConfig.TRAIN_IMAGE_PATH
+        label_json_file = PathConfig.TRAIN_LABEL_PATH
+    if is_valid:
+        scene_list_file = "./data/scene_list_valid.txt"
+        output_image_path = PathConfig.VALID_IMAGE_PATH
+        label_json_file = PathConfig.VALID_LABEL_PATH
+    if is_test:
+        scene_list_file = "./data/scene_list_test.txt"
+        output_image_path = PathConfig.TEST_IMAGE_PATH
+        label_json_file = PathConfig.TEST_LABEL_PATH
+
+    check_arg = is_train + is_test + is_valid
+    if check_arg == 0 or check_arg >= 2:
+        raise ValueError("Argument Error!!!")
+
+    os.makedirs(output_image_path)
 
     label = {}
     total_scene_num = 0

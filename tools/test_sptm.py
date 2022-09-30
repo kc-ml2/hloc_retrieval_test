@@ -9,6 +9,7 @@ import tensorflow as tf
 
 from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
 from config.algorithm_config import TrainingConstant
+from config.env_config import PathConfig
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -16,11 +17,13 @@ if __name__ == "__main__":
     parser.add_argument("--generate-img", action="store_true")
     args, _ = parser.parse_known_args()
     loaded_model = args.load_model
-    GENERATE_IMG = args.generate_img
+    generate_img = args.generate_img
 
-    os.makedirs("./output/test/")
-    file_directory = "/data1/chlee/siamese_dataset/test_images/"
-    label_directory = "./data/label_test.json"
+    if generate_img:
+        os.makedirs("./output/test/")
+
+    file_directory = PathConfig.TEST_IMAGE_PATH
+    label_directory = PathConfig.TEST_LABEL_PATH
     sorted_image_file = sorted(os.listdir(file_directory))
     with open(label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
         label_data = json.load(label_json)
@@ -59,9 +62,9 @@ if __name__ == "__main__":
             if compare_chart[i][0] != compare_chart[i][1]:
                 prediction = "Wrong"
 
-            if GENERATE_IMG:
-                anchor_img = cv2.imread(file_directory + image_name + "_0.bmp")
-                target_img = cv2.imread(file_directory + image_name + "_1.bmp")
+            if generate_img:
+                anchor_img = cv2.imread(file_directory + os.sep + image_name + "_0.bmp")
+                target_img = cv2.imread(file_directory + os.sep + image_name + "_1.bmp")
                 separation_block = np.zeros((np.shape(anchor_img)[0], 100, 3), dtype=np.uint8)
                 concatenated_img = np.concatenate((anchor_img, separation_block), axis=1)
                 concatenated_img = np.concatenate((concatenated_img, target_img), axis=1)
