@@ -1,7 +1,6 @@
 *.pyc
-__pycache__/
+__pycache__*
 .vscode/
-pytest
+.pytest*
 output
-note
 model_weights*
