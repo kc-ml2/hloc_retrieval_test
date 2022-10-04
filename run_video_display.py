@@ -20,6 +20,7 @@ from utils.habitat_utils import (
     init_opencv_cam,
     interpolate_discrete_matrix,
     make_cfg,
+    make_sim_setting_dict,
     remove_duplicate_matrix,
 )
 
@@ -37,24 +38,7 @@ if __name__ == "__main__":
     scene = get_scene_by_eng_guide(instruction_id, train_guide_file, PathConfig.SCENE_DIRECTORY)
     display_semantic_object = True
 
-    sim_settings = {
-        "width": CamGivenReferenceConfig.WIDTH,
-        "height": CamGivenReferenceConfig.HEIGHT,
-        "scene": scene,
-        "default_agent": CamGivenReferenceConfig.SENSOR_HEIGHT,
-        "sensor_height": CamGivenReferenceConfig.SENSOR_HEIGHT,
-        "color_sensor": CamGivenReferenceConfig.RGB_SENSOR,
-        "color_360_sensor": CamGivenReferenceConfig.RGB_360_SENSOR,
-        "depth_sensor": CamGivenReferenceConfig.DEPTH_SENSOR,
-        "semantic_sensor": CamGivenReferenceConfig.SEMANTIC_SENSOR,
-        "seed": 1,
-        "enable_physics": False,
-        "forward_amount": ActionConfig.FORWARD_AMOUNT,
-        "backward_amount": ActionConfig.BACKWARD_AMOUNT,
-        "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
-        "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
-    }
-
+    sim_settings = make_sim_setting_dict(scene, CamGivenReferenceConfig, ActionConfig)
     cfg = make_cfg(sim_settings)
     sim = habitat_sim.Simulator(cfg)
 

@@ -8,7 +8,13 @@ import networkx as nx
 import numpy as np
 
 from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayConfig, OutputConfig, PathConfig
-from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
+from utils.habitat_utils import (
+    display_map,
+    get_entire_maps_by_levels,
+    init_map_display,
+    make_cfg,
+    make_sim_setting_dict,
+)
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -34,24 +40,7 @@ if __name__ == "__main__":
     for scene_number in scene_list:
         scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
 
-        sim_settings = {
-            "width": CamNormalConfig.WIDTH,
-            "height": CamNormalConfig.HEIGHT,
-            "scene": scene,
-            "default_agent": 0,
-            "sensor_height": CamNormalConfig.SENSOR_HEIGHT,
-            "color_sensor": CamNormalConfig.RGB_SENSOR,
-            "color_360_sensor": CamNormalConfig.RGB_360_SENSOR,
-            "depth_sensor": CamNormalConfig.DEPTH_SENSOR,
-            "semantic_sensor": CamNormalConfig.SEMANTIC_SENSOR,
-            "seed": 1,
-            "enable_physics": False,
-            "forward_amount": ActionConfig.FORWARD_AMOUNT,
-            "backward_amount": ActionConfig.BACKWARD_AMOUNT,
-            "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
-            "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
-        }
-
+        sim_settings = make_sim_setting_dict(scene, CamNormalConfig, ActionConfig)
         cfg = make_cfg(sim_settings)
         sim = habitat_sim.Simulator(cfg)
 

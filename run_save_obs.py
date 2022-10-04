@@ -15,6 +15,7 @@ from utils.habitat_utils import (
     init_map_display,
     init_opencv_cam,
     make_cfg,
+    make_sim_setting_dict,
 )
 
 if __name__ == "__main__":
@@ -31,24 +32,7 @@ if __name__ == "__main__":
     scene_number = scene_list[0]
     scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
 
-    sim_settings = {
-        "width": Cam360Config.WIDTH,
-        "height": Cam360Config.HEIGHT,
-        "scene": scene,
-        "default_agent": 0,
-        "sensor_height": Cam360Config.SENSOR_HEIGHT,
-        "color_sensor": Cam360Config.RGB_SENSOR,
-        "color_360_sensor": Cam360Config.RGB_360_SENSOR,
-        "depth_sensor": Cam360Config.DEPTH_SENSOR,
-        "semantic_sensor": Cam360Config.SEMANTIC_SENSOR,
-        "seed": 1,
-        "enable_physics": False,
-        "forward_amount": ActionConfig.FORWARD_AMOUNT,
-        "backward_amount": ActionConfig.BACKWARD_AMOUNT,
-        "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
-        "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
-    }
-
+    sim_settings = make_sim_setting_dict(scene, Cam360Config, ActionConfig)
     cfg = make_cfg(sim_settings)
     sim = habitat_sim.Simulator(cfg)
 

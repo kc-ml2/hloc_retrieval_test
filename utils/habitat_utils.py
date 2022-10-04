@@ -13,6 +13,28 @@ import quaternion
 from scipy.spatial.transform import Rotation as R
 
 
+def make_sim_setting_dict(scene, cam_config, action_config):
+    sim_settings = {
+        "width": cam_config.WIDTH,
+        "height": cam_config.HEIGHT,
+        "scene": scene,
+        "default_agent": 0,
+        "sensor_height": cam_config.SENSOR_HEIGHT,
+        "color_sensor": cam_config.RGB_SENSOR,
+        "color_360_sensor": cam_config.RGB_360_SENSOR,
+        "depth_sensor": cam_config.DEPTH_SENSOR,
+        "semantic_sensor": cam_config.SEMANTIC_SENSOR,
+        "seed": 1,
+        "enable_physics": False,
+        "forward_amount": action_config.FORWARD_AMOUNT,
+        "backward_amount": action_config.BACKWARD_AMOUNT,
+        "turn_left_amount": action_config.TURN_LEFT_AMOUNT,
+        "turn_right_amount": action_config.TURN_RIGHT_AMOUNT,
+    }
+
+    return sim_settings
+
+
 def make_cfg(settings):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.gpu_device_id = 0

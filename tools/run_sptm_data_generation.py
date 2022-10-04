@@ -12,7 +12,7 @@ from scipy.spatial.transform import Rotation
 
 from config.algorithm_config import TrainingConstant
 from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
-from utils.habitat_utils import make_cfg
+from utils.habitat_utils import make_cfg, make_sim_setting_dict
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -85,24 +85,7 @@ if __name__ == "__main__":
             recolored_topdown_map_list.append(searched_recolored_topdown_map)
             topdown_map_list.append(searched_topdown_map)
 
-        sim_settings = {
-            "width": Cam360Config.WIDTH,
-            "height": Cam360Config.HEIGHT,
-            "scene": scene,
-            "default_agent": 0,
-            "sensor_height": Cam360Config.SENSOR_HEIGHT,
-            "color_sensor": Cam360Config.RGB_SENSOR,
-            "color_360_sensor": Cam360Config.RGB_360_SENSOR,
-            "depth_sensor": Cam360Config.DEPTH_SENSOR,
-            "semantic_sensor": Cam360Config.SEMANTIC_SENSOR,
-            "seed": 1,
-            "enable_physics": False,
-            "forward_amount": ActionConfig.FORWARD_AMOUNT,
-            "backward_amount": ActionConfig.BACKWARD_AMOUNT,
-            "turn_left_amount": ActionConfig.TURN_LEFT_AMOUNT,
-            "turn_right_amount": ActionConfig.TURN_RIGHT_AMOUNT,
-        }
-
+        sim_settings = make_sim_setting_dict(scene, Cam360Config, ActionConfig)
         cfg = make_cfg(sim_settings)
         sim = habitat_sim.Simulator(cfg)
 
