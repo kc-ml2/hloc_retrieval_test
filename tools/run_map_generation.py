@@ -1,14 +1,13 @@
 import argparse
 import json
 import os
-import random
 
 import cv2
 import habitat_sim
 import numpy as np
 
 from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
-from utils.habitat_utils import get_entire_maps_by_levels, make_cfg, make_sim_setting_dict
+from utils.habitat_utils import get_entire_maps_by_levels, initialize_sim
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -28,29 +27,15 @@ if __name__ == "__main__":
         scene_list = f.read().splitlines()
 
     for scene_number in scene_list:
-        scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
         print(scene_number)
         print(generated_scene_num)
 
-        sim_settings = make_sim_setting_dict(scene, CamNormalConfig, ActionConfig)
-        cfg = make_cfg(sim_settings)
-        sim = habitat_sim.Simulator(cfg)
+        sim = initialize_sim(scene_number, CamNormalConfig, ActionConfig, PathConfig)
+        agent = sim.initialize_agent(0)
 
-        # The randomness is needed when choosing the actions
-        random.seed(sim_settings["seed"])
-        sim.seed(sim_settings["seed"])
-        pathfinder_seed = 1
-
-        # Set agent state
-        agent = sim.initialize_agent(sim_settings["default_agent"])
         agent_state = habitat_sim.AgentState()
         agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
         agent.set_state(agent_state)
-
-        if not sim.pathfinder.is_loaded:
-            print("Pathfinder not initialized")
-        sim.pathfinder.seed(pathfinder_seed)
-        position = sim.pathfinder.get_random_navigable_point()
 
         recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(
             sim, DataConfig.METERS_PER_PIXEL

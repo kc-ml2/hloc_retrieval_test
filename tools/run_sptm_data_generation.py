@@ -12,7 +12,7 @@ from scipy.spatial.transform import Rotation
 
 from config.algorithm_config import TrainingConstant
 from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
-from utils.habitat_utils import make_cfg, make_sim_setting_dict
+from utils.habitat_utils import get_map_from_database, initialize_sim
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -52,57 +52,22 @@ if __name__ == "__main__":
 
     os.makedirs(output_image_path, exist_ok=True)
 
-    label = {}
-    total_scene_num = 0
-    recolored_directory = "./data/recolored_topdown/"
-    topdown_directory = "./data/topdown/"
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
-
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
+    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
+        height_data = json.load(height_json)
+
+    label = {}
+    total_scene_num = 0
     for scene_number in scene_list:
-        scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
+        sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
+        agent = sim.initialize_agent(0)
+        recolored_topdown_map_list, topdown_map_list, height_list = get_map_from_database(scene_number, height_data)
 
-        num_levels = 0
-        for root, dir, files in os.walk(topdown_directory):
-            for file in files:
-                if scene_number in file:
-                    num_levels = num_levels + 1
-
-        recolored_topdown_map_list = []
-        topdown_map_list = []
-        height_list = []
-        for level in range(num_levels):
-            height_list.append(height_data[scene_number + f"_{level}"])
-            searched_recolored_topdown_map = cv2.imread(
-                recolored_directory + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
-            )
-            searched_topdown_map = cv2.imread(
-                topdown_directory + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
-            )
-            recolored_topdown_map_list.append(searched_recolored_topdown_map)
-            topdown_map_list.append(searched_topdown_map)
-
-        sim_settings = make_sim_setting_dict(scene, Cam360Config, ActionConfig)
-        cfg = make_cfg(sim_settings)
-        sim = habitat_sim.Simulator(cfg)
-
-        # The randomness is needed when choosing the actions
-        random.seed(sim_settings["seed"])
-        sim.seed(sim_settings["seed"])
-        pathfinder_seed = 1
-
-        # Set agent state
-        agent = sim.initialize_agent(sim_settings["default_agent"])
         agent_state = habitat_sim.AgentState()
         agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
         agent.set_state(agent_state)
-
-        if not sim.pathfinder.is_loaded:
-            print("Pathfinder not initialized")
-        sim.pathfinder.seed(pathfinder_seed)
 
         print("total scene: ", total_scene_num)
 

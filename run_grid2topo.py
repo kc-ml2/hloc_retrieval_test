@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import random
 
@@ -8,13 +9,7 @@ import networkx as nx
 import numpy as np
 
 from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayConfig, OutputConfig, PathConfig
-from utils.habitat_utils import (
-    display_map,
-    get_entire_maps_by_levels,
-    init_map_display,
-    make_cfg,
-    make_sim_setting_dict,
-)
+from utils.habitat_utils import display_map, get_map_from_database, init_map_display, initialize_sim
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -28,38 +23,30 @@ from utils.skeletonize_utils import (
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file", default="./data/scene_list_train.txt")
+    parser.add_argument("--map-height-json", default="./data/map_height.json")
+    parser.add_argument("--output-path", default="./output/skeleton")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
+    height_json_path = args.map_height_json
+    output_path = args.output_path
 
     if OutputConfig.SAVE_PATH_MAP:
-        os.makedirs("./output/test/", exist_ok=True)
+        os.makedirs(output_path, exist_ok=True)
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
+    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
+        height_data = json.load(height_json)
+
     for scene_number in scene_list:
-        scene = PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
+        sim = initialize_sim(scene_number, CamNormalConfig, ActionConfig, PathConfig)
+        agent = sim.initialize_agent(0)
+        recolored_topdown_map_list, topdown_map_list, _ = get_map_from_database(scene_number, height_data)
 
-        sim_settings = make_sim_setting_dict(scene, CamNormalConfig, ActionConfig)
-        cfg = make_cfg(sim_settings)
-        sim = habitat_sim.Simulator(cfg)
-
-        # The randomness is needed when choosing the actions
-        random.seed(sim_settings["seed"])
-        sim.seed(sim_settings["seed"])
-        pathfinder_seed = 1
-
-        # Set agent state
-        agent = sim.initialize_agent(sim_settings["default_agent"])
         agent_state = habitat_sim.AgentState()
         agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
         agent.set_state(agent_state)
-
-        if not sim.pathfinder.is_loaded:
-            print("Pathfinder not initialized")
-        sim.pathfinder.seed(pathfinder_seed)
-
-        recolored_topdown_map_list, topdown_map_list, _ = get_entire_maps_by_levels(sim, DataConfig.METERS_PER_PIXEL)
 
         if DisplayConfig.DISPLAY_PATH_MAP:
             init_map_display(window_name="colored_map")

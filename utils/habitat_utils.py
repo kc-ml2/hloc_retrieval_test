@@ -1,5 +1,6 @@
 import gzip
 import os
+import random
 
 from PIL import Image
 import cv2
@@ -13,18 +14,36 @@ import quaternion
 from scipy.spatial.transform import Rotation as R
 
 
-def make_sim_setting_dict(scene, cam_config, action_config):
+def initialize_sim(scene_number, cam_config, action_config, path_config):
+    """Initialize Habitat sim object."""
+    scene = path_config.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
+    sim_settings = make_sim_setting_dict(scene, cam_config, action_config)
+    cfg = make_cfg(sim_settings)
+    sim = habitat_sim.Simulator(cfg)
+
+    random.seed(sim_settings["seed"])
+    sim.seed(sim_settings["seed"])
+
+    if not sim.pathfinder.is_loaded:
+        print("Pathfinder not initialized")
+    print("The NavMesh bounds are: " + str(sim.pathfinder.get_bounds()))
+    sim.pathfinder.seed(sim_settings["seed"])
+
+    return sim
+
+
+def make_sim_setting_dict(scene, cam_config, action_config, seed=1):
+    """Make sim setting dictionary."""
     sim_settings = {
         "width": cam_config.WIDTH,
         "height": cam_config.HEIGHT,
         "scene": scene,
-        "default_agent": 0,
         "sensor_height": cam_config.SENSOR_HEIGHT,
         "color_sensor": cam_config.RGB_SENSOR,
         "color_360_sensor": cam_config.RGB_360_SENSOR,
         "depth_sensor": cam_config.DEPTH_SENSOR,
         "semantic_sensor": cam_config.SEMANTIC_SENSOR,
-        "seed": 1,
+        "seed": seed,
         "enable_physics": False,
         "forward_amount": action_config.FORWARD_AMOUNT,
         "backward_amount": action_config.BACKWARD_AMOUNT,
@@ -36,6 +55,7 @@ def make_sim_setting_dict(scene, cam_config, action_config):
 
 
 def make_cfg(settings):
+    """Make config object with sim setting dictionary."""
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene_id = settings["scene"]
@@ -101,6 +121,7 @@ def make_cfg(settings):
 
 
 def print_scene_recur(scene, limit_output=10):
+    """Print semantic information in scene file recursively."""
     print(f"House has {len(scene.levels)} levels, {len(scene.regions)} regions and {len(scene.objects)} objects")
     print(f"House center:{scene.aabb.center} dims:{scene.aabb.sizes}")
 
@@ -296,6 +317,33 @@ def get_closest_map(sim, position, map_list):
     recolored_topdown_map = map_list[closest_level]
 
     return recolored_topdown_map, closest_level
+
+
+def get_map_from_database(
+    scene_number, height_data, topdown_directory="./data/topdown/", recolored_directory="./data/recolored_topdown/"
+):
+    """Get map files from pre-made map."""
+    num_levels = 0
+    for _, _, files in os.walk(topdown_directory):
+        for file in files:
+            if scene_number in file:
+                num_levels = num_levels + 1
+
+    recolored_topdown_map_list = []
+    topdown_map_list = []
+    height_list = []
+    for level in range(num_levels):
+        height_list.append(height_data[scene_number + f"_{level}"])
+        searched_recolored_topdown_map = cv2.imread(
+            recolored_directory + os.sep + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
+        )
+        searched_topdown_map = cv2.imread(
+            topdown_directory + os.sep + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
+        )
+        recolored_topdown_map_list.append(searched_recolored_topdown_map)
+        topdown_map_list.append(searched_topdown_map)
+
+    return recolored_topdown_map_list, topdown_map_list, height_list
 
 
 def extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list):
