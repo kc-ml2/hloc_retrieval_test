@@ -22,6 +22,10 @@ class TrainingConstant:
     NUM_SAMPLING_PER_LEVEL = 500
 
 
+class TestConstant:
+    BATCH_SIZE = 32
+
+
 class NetworkConstant:
     # Input size
     NET_WIDTH = 512

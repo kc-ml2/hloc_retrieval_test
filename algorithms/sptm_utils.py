@@ -38,6 +38,23 @@ def preprocess_image(image_name, label, file_directory):
     return input_image, label
 
 
+def preprocess_image_for_building_map(obs_id_pair, file_directory, extension):
+    """Preprocess & concatenate two images from observations."""
+    anchor_file = file_directory + os.sep + obs_id_pair[0] + extension
+    target_file = file_directory + os.sep + obs_id_pair[1] + extension
+
+    anchor_image_string = tf.io.read_file(anchor_file)
+    target_image_string = tf.io.read_file(target_file)
+    anchor_image = tf.image.decode_jpeg(anchor_image_string, channels=3)
+    target_image = tf.image.decode_jpeg(target_image_string, channels=3)
+    anchor_image = tf.image.convert_image_dtype(anchor_image, tf.float32)
+    target_image = tf.image.convert_image_dtype(target_image, tf.float32)
+
+    input_image = tf.concat((anchor_image, target_image), 2)
+
+    return input_image
+
+
 def list_image_name_label_wo_index(sorted_image_file, label_data):
     image_name_list = []
     for image_file in sorted_image_file:
