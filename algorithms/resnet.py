@@ -11,8 +11,8 @@ from keras.models import Model
 from keras.regularizers import l2
 import six
 
-NUM_EMBEDDING = 512  # 256 #512 #1024 #256 #1024 #256
-TOP_HIDDEN = 4  # 1 #4
+NUM_EMBEDDING = 256  # 256 #512 #1024 #256 #1024 #256
+TOP_HIDDEN = 3  # 1 #4
 NORMALIZATION_ON = False  # True #False #True
 
 ROW_AXIS = 1
@@ -180,16 +180,11 @@ def _get_block(identifier):
     return identifier
 
 
-def _bn_relu_for_dense(input):
-    norm = BatchNormalization()(input)
-    return Activation("relu")(norm)
-
-
 def _top_network(input):
-    raw_result = _bn_relu_for_dense(input)
+    raw_result = _bn_relu(input)
     for _ in range(TOP_HIDDEN):
         raw_result = Dense(units=NUM_EMBEDDING, kernel_initializer="he_normal")(raw_result)
-        raw_result = _bn_relu_for_dense(raw_result)
+        raw_result = _bn_relu(raw_result)
     output = Dense(units=2, activation="softmax", kernel_initializer="he_normal")(raw_result)
     return output
 
