@@ -8,6 +8,8 @@
 # 4. pass all observations through pre-trained model
 #   - make all-visit : V
 #   - make visit-except-near : V
+#   - Fix save obs
+#   - refactoring
 # (Optional) 4'. split model
 #   - split pre-trained weight
 #   - make resnet only model
@@ -22,11 +24,11 @@
 
 import argparse
 import itertools
-import json
 import os
 
 import cv2
 import networkx as nx
+import numpy as np
 import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
@@ -37,11 +39,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--obs-path", default="./output/observations/")
     parser.add_argument("--load-model", default="./model_weights/model0929_32batch_full_data_93.weights.best.hdf5")
-    parser.add_argument("--result-cache-json")
+    parser.add_argument("--result-cache")
     args, _ = parser.parse_known_args()
     obs_path = args.obs_path
     loaded_model = args.load_model
-    result_cache_json = args.result_cache_json
+    result_cache = args.result_cache
 
     sorted_obs_image_file = sorted(os.listdir(obs_path))
     obs_id_list = [obs_image_file[:-4] for obs_image_file in sorted_obs_image_file]
@@ -69,13 +71,11 @@ if __name__ == "__main__":
         predictions = tf.math.argmax(predictions, -1)
         pred_np = predictions.numpy()
 
-    similarity_result = {}
+    similarity_matrix = np.zeros((len(obs_id_list), len(obs_id_list)))
     for i, combination in enumerate(similarity_combination_list):
-        similarity_result.update({combination[0] + "-" + combination[1]: int(pred_np[i])})
-
-    if result_cache_json:
-        with open(result_cache_json, "w") as cache_json:  # pylint: disable=unspecified-encoding
-            json.dump(similarity_result, cache_json, indent=4)
+        similarity_matrix[int(combination[0])][int(combination[1])] = int(pred_np[i])
+        similarity_matrix[int(combination[1])][int(combination[0])] = int(pred_np[i])
+    np.save(result_cache, similarity_matrix)
 
     G = nx.Graph()
     G.add_nodes_from(obs_id_list)
