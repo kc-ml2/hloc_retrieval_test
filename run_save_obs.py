@@ -19,7 +19,7 @@ from utils.habitat_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file", default="./data/scene_list_train.txt")
+    parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--output-path", default="./output/observations")
     parser.add_argument("--save-all", action="store_true")
