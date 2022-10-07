@@ -1,6 +1,4 @@
 import argparse
-import json
-import os
 import random
 
 import cv2
@@ -8,8 +6,7 @@ import habitat_sim
 import networkx as nx
 import numpy as np
 
-from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayConfig, OutputConfig, PathConfig
-from utils.habitat_utils import display_map, get_map_from_database, init_map_display, initialize_sim
+from utils.habitat_utils import display_map, get_entire_maps_by_levels, init_map_display, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -22,33 +19,67 @@ from utils.skeletonize_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file", default="./data/scene_list_train.txt")
-    parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--output-path", default="./output/skeleton")
+    parser.add_argument("--scene-list-file")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
-    height_json_path = args.map_height_json
-    output_path = args.output_path
 
-    if OutputConfig.SAVE_PATH_MAP:
-        os.makedirs(output_path, exist_ok=True)
+    rgb_sensor = False
+    rgb_360_sensor = True
+    depth_sensor = True
+    semantic_sensor = False
+
+    meters_per_pixel = 0.1
+    display_path_map = True
+    save_path_map = False
+    is_dense_graph = True
+    remove_isolated = True
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
-
     for scene_number in scene_list:
-        sim = initialize_sim(scene_number, CamNormalConfig, ActionConfig, PathConfig)
-        agent = sim.initialize_agent(0)
-        recolored_topdown_map_list, topdown_map_list, _ = get_map_from_database(scene_number, height_data)
+        scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+        scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
+        sim_settings = {
+            "width": 512,  # Spatial resolution of the observations
+            "height": 256,
+            "scene": scene,  # Scene path
+            "default_agent": 0,
+            "sensor_height": 0,  # Height of sensors in meters
+            "color_sensor": rgb_sensor,  # RGB sensor
+            "color_360_sensor": rgb_360_sensor,
+            "depth_sensor": depth_sensor,  # Depth sensor
+            "semantic_sensor": semantic_sensor,  # Semantic sensor
+            "seed": 1,  # used in the random navigation
+            "enable_physics": False,  # kinematics only
+            "forward_amount": 0.25,
+            "backward_amount": 0.25,
+            "turn_left_amount": 5.0,
+            "turn_right_amount": 5.0,
+        }
+
+        cfg = make_cfg(sim_settings)
+        sim = habitat_sim.Simulator(cfg)
+
+        # The randomness is needed when choosing the actions
+        random.seed(sim_settings["seed"])
+        sim.seed(sim_settings["seed"])
+        pathfinder_seed = 1
+
+        # Set agent state
+        agent = sim.initialize_agent(sim_settings["default_agent"])
         agent_state = habitat_sim.AgentState()
         agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
         agent.set_state(agent_state)
 
-        if DisplayConfig.DISPLAY_PATH_MAP:
+        if not sim.pathfinder.is_loaded:
+            print("Pathfinder not initialized")
+        sim.pathfinder.seed(pathfinder_seed)
+
+        recolored_topdown_map_list, topdown_map_list, _ = get_entire_maps_by_levels(sim, meters_per_pixel)
+
+        if display_path_map:
             init_map_display(window_name="colored_map")
             init_map_display(window_name="visual_binary_map")
 
@@ -57,7 +88,7 @@ if __name__ == "__main__":
             topdown_map = topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
-            if DataConfig.REMOVE_ISOLATED:
+            if remove_isolated:
                 topdown_map = remove_isolated_area(topdown_map)
 
             binary_map = convert_to_binarymap(topdown_map)
@@ -72,26 +103,20 @@ if __name__ == "__main__":
                 except nx.NetworkXNoPath:
                     pass
 
-            if DisplayConfig.DISPLAY_PATH_MAP:
+            if display_path_map:
                 print("Displaying recolored map:")
                 display_map(recolored_topdown_map, window_name="colored_map", wait_for_key=True)
                 print("Displaying visual binary map:")
                 display_map(visual_binary_map, window_name="visual_binary_map", wait_for_key=True)
                 print("Displaying graph:")
                 display_graph(
-                    visual_binary_map,
-                    graph,
-                    window_name="original graph",
-                    node_only=DataConfig.IS_DENSE_GRAPH,
-                    wait_for_key=True,
+                    visual_binary_map, graph, window_name="original graph", node_only=is_dense_graph, wait_for_key=True
                 )
                 print("Displaying path:")
                 visualize_path(visual_binary_map, graph, node_list, wait_for_key=True)
 
-            if OutputConfig.SAVE_PATH_MAP:
-                map_img = generate_map_image(
-                    visual_binary_map, graph, node_only=DataConfig.IS_DENSE_GRAPH, line_edge=False
-                )
+            if save_path_map:
+                map_img = generate_map_image(visual_binary_map, graph, node_only=is_dense_graph, line_edge=False)
                 cv2.imwrite(f"./output/test/{scene_number}_{i}.bmp", map_img)
 
         cv2.destroyAllWindows()

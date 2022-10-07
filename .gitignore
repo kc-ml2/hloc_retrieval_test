@@ -1,6 +1,6 @@
 *.pyc
-__pycache__*
+__pycache__/
 .vscode/
-.pytest_cache/
+pytest
 output
-model_weights*
+note

@@ -13,4 +13,4 @@ sknw == 0.14
 networkx == 2.6.3
 numpy == 1.21.6
 tensorflow
-opencv-python >= 4.5
+opencv-python == 4.5.5

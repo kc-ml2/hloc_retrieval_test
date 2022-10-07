@@ -10,9 +10,8 @@ import networkx as nx
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from config.algorithm_config import TrainingConstant
-from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
-from utils.habitat_utils import get_map_from_database, initialize_sim
+from algorithms.constants import TrainingConstant
+from utils.habitat_utils import display_opencv_cam, init_opencv_cam, make_cfg
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -23,51 +22,99 @@ from utils.skeletonize_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--train", action="store_true")
-    parser.add_argument("--valid", action="store_true")
-    parser.add_argument("--test", action="store_true")
+    parser.add_argument("--scene-list-file")
     args, _ = parser.parse_known_args()
-    height_json_path = args.map_height_json
-    is_train = args.train
-    is_valid = args.valid
-    is_test = args.test
+    scene_list_file = args.scene_list_file
 
-    if is_train:
-        scene_list_file = "./data/scene_list_train.txt"
-        output_image_path = PathConfig.TRAIN_IMAGE_PATH
-        label_json_file = PathConfig.TRAIN_LABEL_PATH
-    if is_valid:
-        scene_list_file = "./data/scene_list_val_unseen.txt"
-        output_image_path = PathConfig.VALID_IMAGE_PATH
-        label_json_file = PathConfig.VALID_LABEL_PATH
-    if is_test:
-        scene_list_file = "./data/scene_list_test.txt"
-        output_image_path = PathConfig.TEST_IMAGE_PATH
-        label_json_file = PathConfig.TEST_LABEL_PATH
+    rgb_sensor = False
+    rgb_360_sensor = True
+    depth_sensor = True
+    semantic_sensor = False
 
-    check_arg = is_train + is_test + is_valid
-    if check_arg == 0 or check_arg >= 2:
-        raise ValueError("Argument Error. Put only one flag.")
+    meters_per_pixel = 0.1
+    is_dense_graph = True
+    remove_isolated = True
 
-    os.makedirs(output_image_path, exist_ok=True)
+    display = False
+
+    num_sampling_per_level = 500
+
+    label_json_path = "./output/label.json"
+    label = {}
+
+    total_scene_num = 0
+    recolored_directory = "./output/recolored_topdown/"
+    topdown_directory = "./output/topdown/"
+    height_json_path = "./output/map_height.json"
+    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
+        height_data = json.load(height_json)
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
-
-    label = {}
-    total_scene_num = 0
     for scene_number in scene_list:
-        sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
-        agent = sim.initialize_agent(0)
-        recolored_topdown_map_list, topdown_map_list, height_list = get_map_from_database(scene_number, height_data)
+        # scene_directory = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+        scene_directory = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+        scene = scene_directory + scene_number + "/" + scene_number + ".glb"
 
+        num_levels = 0
+        for root, dir, files in os.walk(topdown_directory):
+            for file in files:
+                if scene_number in file:
+                    num_levels = num_levels + 1
+
+        recolored_topdown_map_list = []
+        topdown_map_list = []
+        height_list = []
+        for level in range(num_levels):
+            height_list.append(height_data[scene_number + f"_{level}"])
+            searched_recolored_topdown_map = cv2.imread(
+                recolored_directory + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
+            )
+            searched_topdown_map = cv2.imread(
+                topdown_directory + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
+            )
+            recolored_topdown_map_list.append(searched_recolored_topdown_map)
+            topdown_map_list.append(searched_topdown_map)
+
+        sim_settings = {
+            "width": 512,  # Spatial resolution of the observations
+            "height": 256,
+            "scene": scene,  # Scene path
+            "default_agent": 0,
+            "sensor_height": 0.5,  # Height of sensors in meters
+            "color_sensor": rgb_sensor,  # RGB sensor
+            "color_360_sensor": rgb_360_sensor,
+            "depth_sensor": depth_sensor,  # Depth sensor
+            "semantic_sensor": semantic_sensor,  # Semantic sensor
+            "seed": 1,  # used in the random navigation
+            "enable_physics": False,  # kinematics only
+            "forward_amount": 0.25,
+            "backward_amount": 0.25,
+            "turn_left_amount": 5.0,
+            "turn_right_amount": 5.0,
+        }
+
+        cfg = make_cfg(sim_settings)
+        sim = habitat_sim.Simulator(cfg)
+
+        # The randomness is needed when choosing the actions
+        random.seed(sim_settings["seed"])
+        sim.seed(sim_settings["seed"])
+        pathfinder_seed = 1
+
+        # Set agent state
+        agent = sim.initialize_agent(sim_settings["default_agent"])
         agent_state = habitat_sim.AgentState()
         agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
         agent.set_state(agent_state)
+
+        if not sim.pathfinder.is_loaded:
+            print("Pathfinder not initialized")
+        sim.pathfinder.seed(pathfinder_seed)
+
+        if display:
+            init_opencv_cam()
 
         print("total scene: ", total_scene_num)
 
@@ -76,7 +123,7 @@ if __name__ == "__main__":
             topdown_map = topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
-            if DataConfig.REMOVE_ISOLATED:
+            if remove_isolated:
                 topdown_map = remove_isolated_area(topdown_map)
 
             binary_map = convert_to_binarymap(topdown_map)
@@ -85,7 +132,7 @@ if __name__ == "__main__":
             if len(list(graph.nodes)) == 0:
                 continue
 
-            for k in range(TrainingConstant.NUM_SAMPLING_PER_LEVEL):
+            for k in range(num_sampling_per_level):
                 if random.random() < 0.5:
                     y = 1
                     error_code = None
@@ -142,7 +189,7 @@ if __name__ == "__main__":
                     observations = sim.get_sensor_observations()
                     color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
 
-                    cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
+                    cv2.imwrite(f"./output/images/{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
                     label_pos = {
                         f"{scene_number}_{i:06d}_{k:06d}_{j}": [
                             [float(pos[1]), float(height_list[i]), float(pos[0])],
@@ -154,10 +201,13 @@ if __name__ == "__main__":
                 label_similarity = {f"{scene_number}_{i:06d}_{k:06d}_similarity": y}
                 label.update(label_similarity)
 
+                if display:
+                    display_opencv_cam(color_img)
+
         total_scene_num = total_scene_num + 1
 
         cv2.destroyAllWindows()
         sim.close()
 
-        with open(label_json_file, "w") as label_json:  # pylint: disable=unspecified-encoding
+        with open(label_json_path, "w") as label_json:  # pylint: disable=unspecified-encoding
             json.dump(label, label_json, indent=4)
