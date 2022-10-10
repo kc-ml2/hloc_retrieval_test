@@ -14,9 +14,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--obs-path", default="./output/observations/")
-    parser.add_argument("--pos-record", default="./output/pos_record.json")
-    parser.add_argument("--result-cache", default="./output/similarity_matrix.npy")
+    parser.add_argument("--obs-path", default="./output/large_observations/")
+    parser.add_argument("--pos-record", default="./output/large_pos_record.json")
+    parser.add_argument("--result-cache", default="./output/large_similarity_matrix.npy")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     with open(result_cache, "rb") as f:  # pylint: disable=unspecified-encoding
         similarity_matrix = np.load(f)
 
-    scene_number = scene_list[0]
+    scene_number = scene_list[2]
     sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
     recolored_topdown_map_list, _, _ = get_map_from_database(scene_number, height_data)
 
@@ -84,6 +84,7 @@ if __name__ == "__main__":
                 splitted_edge.append(edge)
         splitted_edge_list.append(splitted_edge)
 
+    img_id = 0
     for splitted_edge in splitted_edge_list:
         map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
         node_points = np.array([G.nodes()[i]["o"] for i in G.nodes()])
@@ -108,7 +109,17 @@ if __name__ == "__main__":
                     thickness=1,
                 )
 
+        cv2.circle(
+            img=map_image,
+            center=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
+            radius=1,
+            color=(0, 255, 0),
+            thickness=-1,
+        )
+
         cv2.namedWindow("similarity", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("similarity", 1152, 1152)
         cv2.imshow("similarity", map_image)
+        cv2.imwrite(f"./output/sim_result/{img_id:06d}.jpg", map_image)
+        img_id = img_id + 1
         cv2.waitKey()
