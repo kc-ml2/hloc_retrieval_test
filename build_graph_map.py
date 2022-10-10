@@ -73,7 +73,18 @@ if __name__ == "__main__":
         G.edges[edge]["consecutive"] = 0
         G.edges[edge]["similarity"] = 1
 
-    for edge in similarity_edge_list:
+    start_list = [similarity_edge[0] for similarity_edge in similarity_edge_list]
+    start_list = sorted([*set(start_list)])
+    splitted_edge_list = []
+
+    for start in start_list:
+        splitted_edge = []
+        for edge in similarity_edge_list:
+            if edge[0] == start:
+                splitted_edge.append(edge)
+        splitted_edge_list.append(splitted_edge)
+
+    for splitted_edge in splitted_edge_list:
         map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
         node_points = np.array([G.nodes()[i]["o"] for i in G.nodes()])
 
@@ -86,15 +97,16 @@ if __name__ == "__main__":
                 thickness=-1,
             )
 
-        (s, e) = edge
-        if G.edges[(s, e)]["similarity"] == 1:
-            cv2.line(
-                img=map_image,
-                pt1=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
-                pt2=(int(G.nodes[e]["o"][1]), int(G.nodes[e]["o"][0])),
-                color=(255, 0, 0),
-                thickness=1,
-            )
+        for edge in splitted_edge:
+            (s, e) = edge
+            if G.edges[(s, e)]["similarity"] == 1:
+                cv2.line(
+                    img=map_image,
+                    pt1=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
+                    pt2=(int(G.nodes[e]["o"][1]), int(G.nodes[e]["o"][0])),
+                    color=(255, 0, 0),
+                    thickness=1,
+                )
 
         cv2.namedWindow("similarity", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("similarity", 1152, 1152)

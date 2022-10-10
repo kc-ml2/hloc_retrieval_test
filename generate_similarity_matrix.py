@@ -1,27 +1,3 @@
-# TODO
-# 1. imread from path config : V
-# 2. make node : V
-#   - add obs attribute : V
-#   - check if ID is correct : V
-# 3. add edge 1 : V
-#   - adjacent with ID : V
-# 4. pass all observations through pre-trained model
-#   - make all-visit : V
-#   - make visit-except-near : V
-#   - Fix save obs : V
-#   - refactoring : V
-# (Optional) 4'. split model
-#   - split pre-trained weight
-#   - make resnet only model
-#   - make fcn only model
-# (Optional) 5. similarity routine
-#   - pass all observations through resnet & save embedding
-#   - generate similarity matrix
-# 6. add edge 2
-#   - according to similarity matrix
-# 7. visualization
-
-
 import argparse
 import itertools
 import os
@@ -39,7 +15,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--obs-path", default="./output/observations/")
     parser.add_argument("--load-model", default="./model_weights/model0929_32batch_full_data_93.weights.best.hdf5")
-    parser.add_argument("--result-cache")
+    parser.add_argument("--result-cache", default="./output/similarity_matrix.npy")
     args, _ = parser.parse_known_args()
     obs_path = args.obs_path
     loaded_model = args.load_model
