@@ -192,7 +192,7 @@ def display_map(topdown_map, window_name="map", key_points=None, wait_for_key=Fa
         for pnt in key_points:
             cv2.drawMarker(
                 img=topdown_map,
-                position=(int(pnt[0]), int(pnt[1])),
+                position=(int(pnt[1]), int(pnt[0])),
                 color=(255, 0, 0),
                 markerType=cv2.MARKER_DIAMOND,
                 markerSize=1,
@@ -202,8 +202,8 @@ def display_map(topdown_map, window_name="map", key_points=None, wait_for_key=Fa
         for i in range(len(key_points) - 1):
             cv2.line(
                 img=topdown_map,
-                pt1=key_points[i],
-                pt2=key_points[i + 1],
+                pt1=(int(key_points[i][1]), int(key_points[i][0])),
+                pt2=(int(key_points[i + 1][1]), int(key_points[i + 1][0])),
                 color=(0, 255, 0),
                 thickness=1,
             )

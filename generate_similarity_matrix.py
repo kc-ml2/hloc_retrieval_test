@@ -8,8 +8,8 @@
 # 4. pass all observations through pre-trained model
 #   - make all-visit : V
 #   - make visit-except-near : V
-#   - Fix save obs
-#   - refactoring
+#   - Fix save obs : V
+#   - refactoring : V
 # (Optional) 4'. split model
 #   - split pre-trained weight
 #   - make resnet only model
@@ -75,7 +75,9 @@ if __name__ == "__main__":
     for i, combination in enumerate(similarity_combination_list):
         similarity_matrix[int(combination[0])][int(combination[1])] = int(pred_np[i])
         similarity_matrix[int(combination[1])][int(combination[0])] = int(pred_np[i])
-    np.save(result_cache, similarity_matrix)
+
+    with open(result_cache, "wb") as f:
+        np.save(f, similarity_matrix)
 
     G = nx.Graph()
     G.add_nodes_from(obs_id_list)

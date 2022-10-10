@@ -46,7 +46,7 @@ if __name__ == "__main__":
         height_data = json.load(height_json)
 
     # for scene_number in scene_list:
-    scene_number = scene_list[0]
+    scene_number = scene_list[2]
     sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
     agent = sim.initialize_agent(0)
     recolored_topdown_map_list, _, _ = get_map_from_database(scene_number, height_data)
@@ -76,8 +76,7 @@ if __name__ == "__main__":
         node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
 
         if DisplayConfig.DISPLAY_PATH_MAP:
-            transposed_point = (node_point[1], node_point[0])
-            display_map(recolored_topdown_map, key_points=[transposed_point])
+            display_map(recolored_topdown_map, key_points=[node_point])
 
         if DisplayConfig.DISPLAY_OBSERVATION:
             key = display_opencv_cam(color_img)
