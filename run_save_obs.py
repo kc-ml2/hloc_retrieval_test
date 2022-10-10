@@ -24,16 +24,16 @@ if __name__ == "__main__":
     parser.add_argument("--output-path", default="./output/observations")
     parser.add_argument("--pos-record-json")
     parser.add_argument("--save-all", action="store_true")
-    parser.add_argument("--save-all-except-rotation", action="store_true")
+    parser.add_argument("--save-except-rotation", action="store_true")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
     output_path = args.output_path
     pos_record_json = args.pos_record_json
     is_save_all = args.save_all
-    is_save_all_except_rotation = args.save_all_except_rotation
+    is_save_except_rotation = args.save_except_rotation
 
-    check_arg = is_save_all + is_save_all_except_rotation
+    check_arg = is_save_all + is_save_except_rotation
     if check_arg >= 2:
         raise ValueError("Argument Error. Put only one flag.")
 
@@ -69,11 +69,18 @@ if __name__ == "__main__":
         observations = sim.get_sensor_observations()
         color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
 
-        if DisplayConfig.DISPLAY_OBSERVATION:
-            key = display_opencv_cam(color_img)
-
         current_state = agent.get_state()
         position = current_state.position
+
+        recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
+        node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
+
+        if DisplayConfig.DISPLAY_PATH_MAP:
+            transposed_point = (node_point[1], node_point[0])
+            display_map(recolored_topdown_map, key_points=[transposed_point])
+
+        if DisplayConfig.DISPLAY_OBSERVATION:
+            key = display_opencv_cam(color_img)
 
         if key == ord("w"):
             action = "move_forward"
@@ -88,31 +95,31 @@ if __name__ == "__main__":
 
         if is_save_all:
             cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
+            sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
+            grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+            pos_record.update(sim_pos)
+            pos_record.update(grid_pos)
             img_id = img_id + 1
-        if is_save_all_except_rotation:
-            if key == ord("w") or ord("s"):
+        if is_save_except_rotation:
+            if key == ord("w") or key == ord("s"):
                 cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
+                sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
+                grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+                pos_record.update(sim_pos)
+                pos_record.update(grid_pos)
                 img_id = img_id + 1
-
         if key == ord("o"):
-            if is_save_all or is_save_all_except_rotation:
+            if is_save_all or is_save_except_rotation:
                 pass
             else:
                 print("save image")
                 cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
+                sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
+                grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+                pos_record.update(sim_pos)
+                pos_record.update(grid_pos)
                 img_id = img_id + 1
                 continue
-
-        recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
-        node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
-        sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
-        grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
-        pos_record.update(sim_pos)
-        pos_record.update(grid_pos)
-
-        if DisplayConfig.DISPLAY_PATH_MAP:
-            transposed_point = (node_point[1], node_point[0])
-            display_map(recolored_topdown_map, key_points=[transposed_point])
 
         sim.step(action)
 
