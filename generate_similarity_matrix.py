@@ -2,8 +2,6 @@ import argparse
 import itertools
 import os
 
-import cv2
-import networkx as nx
 import numpy as np
 import tensorflow as tf
 
@@ -13,9 +11,9 @@ from config.algorithm_config import NetworkConstant, TestConstant, TrainingConst
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--obs-path", default="./output/observations/")
+    parser.add_argument("--obs-path", default="./output/small_observations/")
     parser.add_argument("--load-model", default="./model_weights/model0929_32batch_full_data_93.weights.best.hdf5")
-    parser.add_argument("--result-cache", default="./output/similarity_matrix.npy")
+    parser.add_argument("--result-cache", default="./output/small_prob_similarity_matrix.npy")
     args, _ = parser.parse_known_args()
     obs_path = args.obs_path
     loaded_model = args.load_model
@@ -44,23 +42,11 @@ if __name__ == "__main__":
         model.load_weights(loaded_model, by_name=True)
 
         predictions = model.predict(record_dataset)
-        predictions = tf.math.argmax(predictions, -1)
-        pred_np = predictions.numpy()
 
     similarity_matrix = np.zeros((len(obs_id_list), len(obs_id_list)))
     for i, combination in enumerate(similarity_combination_list):
-        similarity_matrix[int(combination[0])][int(combination[1])] = int(pred_np[i])
-        similarity_matrix[int(combination[1])][int(combination[0])] = int(pred_np[i])
+        similarity_matrix[int(combination[0])][int(combination[1])] = predictions[i][1]
+        similarity_matrix[int(combination[1])][int(combination[0])] = predictions[i][1]
 
     with open(result_cache, "wb") as f:
         np.save(f, similarity_matrix)
-
-    G = nx.Graph()
-    G.add_nodes_from(obs_id_list)
-    G.add_edges_from(consecutive_edge_list)
-
-    for obs_id in obs_id_list:
-        G.nodes[obs_id]["obs"] = cv2.imread(obs_path + os.sep + obs_id + img_extension)
-
-    for edge in consecutive_edge_list:
-        G.edges[edge]["type"] = "consecutive"

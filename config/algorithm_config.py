@@ -24,6 +24,7 @@ class TrainingConstant:
 
 class TestConstant:
     BATCH_SIZE = 32
+    NORMALIZE_PROBABILITY = False
 
 
 class NetworkConstant:
