@@ -11,19 +11,21 @@ from config.algorithm_config import NetworkConstant, TestConstant, TrainingConst
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--obs-path", default="./output/small_observations/")
+    parser.add_argument("--obs-path", default="./output/observations/")
     parser.add_argument("--load-model", default="./model_weights/model0929_32batch_full_data_93.weights.best.hdf5")
-    parser.add_argument("--result-cache", default="./output/small_prob_similarity_matrix.npy")
+    parser.add_argument("--result-cache", default="./output/prob_similarity_matrix.npy")
     args, _ = parser.parse_known_args()
     obs_path = args.obs_path
     loaded_model = args.load_model
     result_cache = args.result_cache
 
+    # Get observation id lists & edges from consecutive nodes
     sorted_obs_image_file = sorted(os.listdir(obs_path))
     obs_id_list = [obs_image_file[:-4] for obs_image_file in sorted_obs_image_file]
     img_extension = sorted_obs_image_file[0][-4:]
     consecutive_edge_list = [(obs_id_list[i], obs_id_list[i + 1]) for i in range(len(obs_id_list) - 1)]
 
+    # Get list of node combinations that should be examined with similarity prediction (visual shortcut in paper)
     similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
     temp_combination_list = similarity_combination_list.copy()
 
@@ -43,6 +45,7 @@ if __name__ == "__main__":
 
         predictions = model.predict(record_dataset)
 
+    # Save similarity matrix that contains similarity probabilities
     similarity_matrix = np.zeros((len(obs_id_list), len(obs_id_list)))
     for i, combination in enumerate(similarity_combination_list):
         similarity_matrix[int(combination[0])][int(combination[1])] = predictions[i][1]
