@@ -24,7 +24,8 @@ class TrainingConstant:
 
 class TestConstant:
     BATCH_SIZE = 32
-    NORMALIZE_PROBABILITY = False
+    SIMILARITY_PROBABILITY_THRESHOLD = 0.99
+    VISUAL_SHORTCUT_WITH_MAX_VALUE = True
 
 
 class NetworkConstant:

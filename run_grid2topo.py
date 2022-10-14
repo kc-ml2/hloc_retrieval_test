@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 map_img = generate_map_image(
                     visual_binary_map, graph, node_only=DataConfig.IS_DENSE_GRAPH, line_edge=False
                 )
-                cv2.imwrite(f"./output/test/{scene_number}_{i}.bmp", map_img)
+                cv2.imwrite(output_path + os.sep + f"{scene_number}_{i}.bmp", map_img)
 
         cv2.destroyAllWindows()
         sim.close()

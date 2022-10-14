@@ -6,7 +6,7 @@ import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
 
-from config.env_config import ActionConfig, Cam360Config, DisplayConfig, PathConfig
+from config.env_config import ActionConfig, Cam360Config, PathConfig
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
@@ -20,13 +20,15 @@ from utils.habitat_utils import (
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
+    parser.add_argument("--scene-index", type=int, default=0)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--output-path", default="./output/observations")
-    parser.add_argument("--pos-record-json")
+    parser.add_argument("--pos-record-json", default="./output/pos_record.json")
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
+    scene_index = args.scene_index
     height_json_path = args.map_height_json
     output_path = args.output_path
     pos_record_json = args.pos_record_json
@@ -45,8 +47,10 @@ if __name__ == "__main__":
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
         height_data = json.load(height_json)
 
-    # for scene_number in scene_list:
-    scene_number = scene_list[2]
+    if scene_index >= len(scene_list):
+        raise IndexError(f"Scene list index out of range. The range is from 0 to {len(scene_list) - 1}")
+
+    scene_number = scene_list[scene_index]
     sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
     agent = sim.initialize_agent(0)
     recolored_topdown_map_list, _, _ = get_map_from_database(scene_number, height_data)
@@ -58,12 +62,11 @@ if __name__ == "__main__":
 
     img_id = 0
     pos_record = {}
+    pos_record.update({"scene_number": scene_number})
 
-    if DisplayConfig.DISPLAY_PATH_MAP:
-        init_map_display()
-
-    if DisplayConfig.DISPLAY_OBSERVATION:
-        init_opencv_cam()
+    # Initialize opencv display window
+    init_map_display()
+    init_opencv_cam()
 
     while True:
         observations = sim.get_sensor_observations()
@@ -75,11 +78,8 @@ if __name__ == "__main__":
         recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
         node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
 
-        if DisplayConfig.DISPLAY_PATH_MAP:
-            display_map(recolored_topdown_map, key_points=[node_point])
-
-        if DisplayConfig.DISPLAY_OBSERVATION:
-            key = display_opencv_cam(color_img)
+        display_map(recolored_topdown_map, key_points=[node_point])
+        key = display_opencv_cam(color_img)
 
         if key == ord("w"):
             action = "move_forward"

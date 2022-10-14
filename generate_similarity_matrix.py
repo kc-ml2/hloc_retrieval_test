@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--obs-path", default="./output/observations/")
     parser.add_argument("--load-model", default="./model_weights/model0929_32batch_full_data_93.weights.best.hdf5")
-    parser.add_argument("--result-cache", default="./output/prob_similarity_matrix.npy")
+    parser.add_argument("--result-cache", default="./output/similarity_matrix.npy")
     args, _ = parser.parse_known_args()
     obs_path = args.obs_path
     loaded_model = args.load_model

@@ -13,22 +13,17 @@ from utils.habitat_utils import get_closest_map, get_map_from_database, initiali
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--obs-path", default="./output/large_observations/")
-    parser.add_argument("--pos-record", default="./output/large_pos_record.json")
-    parser.add_argument("--result-cache", default="./output/large_prob_similarity_matrix.npy")
+    parser.add_argument("--obs-path", default="./output/observations/")
+    parser.add_argument("--pos-record", default="./output/pos_record.json")
+    parser.add_argument("--result-cache", default="./output/similarity_matrix.npy")
     args, _ = parser.parse_known_args()
-    scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
     obs_path = args.obs_path
     pos_record = args.pos_record
     result_cache = args.result_cache
 
     # Open files
-    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
-        scene_list = f.read().splitlines()
-
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
         height_data = json.load(height_json)
 
@@ -39,7 +34,7 @@ if __name__ == "__main__":
         similarity_matrix = np.load(f)
 
     # Similation initialize
-    scene_number = scene_list[2]
+    scene_number = pos_record["scene_number"]
     sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
     recolored_topdown_map_list, _, _ = get_map_from_database(scene_number, height_data)
     position = pos_record["000000_sim"]
@@ -51,36 +46,23 @@ if __name__ == "__main__":
     img_extension = sorted_obs_image_file[0][-4:]
     consecutive_edge_list = [(obs_id_list[i], obs_id_list[i + 1]) for i in range(len(obs_id_list) - 1)]
 
-    if TestConstant.NORMALIZE_PROBABILITY:
-        # Get lists of  possibilites that are higher than 0.5 & their indices
-        idx_list_over_threshold = []
-        probability_list_over_threshold = []
-        for idx, probability in np.ndenumerate(similarity_matrix):
-            if probability > 0.5:
-                probability_list_over_threshold.append(probability)
-                idx_list_over_threshold.append(idx)
+    if TestConstant.VISUAL_SHORTCUT_WITH_MAX_VALUE:
+        argmax_similarity_matrix = np.zeros((len(similarity_matrix), len(similarity_matrix)))
+        max_row_index = np.argmax(similarity_matrix, axis=0)
+        max_column_index = np.argmax(similarity_matrix, axis=1)
 
-        probability_list_over_threshold = probability_list_over_threshold / np.linalg.norm(
-            probability_list_over_threshold
-        )
-        for i, idx in enumerate(idx_list_over_threshold):
-            similarity_matrix[idx] = probability_list_over_threshold[i]
+        for i in range(len(similarity_matrix)):
+            argmax_similarity_matrix[max_row_index[i]][i] = 1
+            argmax_similarity_matrix[i][max_column_index[i]] = 1
 
-        # Generate similarity list for adding edge
-        similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
-        similarity_list = []
-        for combination in similarity_combination_list:
-            if (int(combination[0]), int(combination[1])) in idx_list_over_threshold:  # If probability is over 0.5
-                probability = similarity_matrix[int(combination[0]), int(combination[1])]
-                similarity_list.append({"edge": combination, "probability": probability})
+        similarity_matrix = argmax_similarity_matrix
 
-    else:
-        similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
-        similarity_list = []
-        for combination in similarity_combination_list:
-            probability = similarity_matrix[int(combination[0]), int(combination[1])]
-            if probability >= 0.5:
-                similarity_list.append({"edge": combination, "probability": probability})
+    similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
+    similarity_list = []
+    for combination in similarity_combination_list:
+        probability = similarity_matrix[int(combination[0]), int(combination[1])]
+        if probability >= 0.99:
+            similarity_list.append({"edge": combination, "probability": probability})
 
     # Initialize graph
     G = nx.Graph()
