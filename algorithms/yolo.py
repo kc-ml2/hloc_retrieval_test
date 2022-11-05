@@ -5,12 +5,18 @@ import numpy as np
 
 
 class Yolo:
-    def __init__(self, yolo_path="./config/yolo", confidence=0.5, threshold=0.3):
+    def __init__(
+        self,
+        yolo_cfg_path="./config/yolo",
+        yolo_weight_path="./model_weights/yolov3.weights",
+        confidence=0.5,
+        threshold=0.3,
+    ):
         self.confidence = confidence
         self.threshold = threshold
 
         # Load the COCO class labels our YOLO model was trained on
-        labels_path = os.path.sep.join([yolo_path, "coco.names"])
+        labels_path = os.path.sep.join([yolo_cfg_path, "coco.names"])
         with open(labels_path) as label_file:  # pylint: disable=unspecified-encoding
             self.labels = label_file.read().strip().split("\n")
 
@@ -19,8 +25,8 @@ class Yolo:
         self.colors = np.random.randint(0, 255, size=(len(self.labels), 3), dtype="uint8")
 
         # Derive the paths to the YOLO weights and model configuration
-        weights_path = os.path.sep.join([yolo_path, "yolov3.weights"])
-        config_path = os.path.sep.join([yolo_path, "yolov3.cfg"])
+        weights_path = os.path.sep.join([yolo_weight_path, "yolov3.weights"])
+        config_path = os.path.sep.join([yolo_cfg_path, "yolov3.cfg"])
 
         # Load our YOLO object detector trained on COCO dataset (80 classes)
         print("[INFO] loading YOLO from disk...")
