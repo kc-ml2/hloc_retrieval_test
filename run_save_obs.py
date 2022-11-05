@@ -6,6 +6,7 @@ import cv2
 from habitat.utils.visualizations import maps
 import habitat_sim
 
+from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, Cam360Config, PathConfig
 from utils.habitat_utils import (
     display_map,
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("--pos-record-json", default="./output/pos_record.json")
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
+    parser.add_argument("--detection", action="store_true")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
@@ -34,10 +36,14 @@ if __name__ == "__main__":
     pos_record_json = args.pos_record_json
     is_save_all = args.save_all
     is_save_except_rotation = args.save_except_rotation
+    is_detection = args.detection
 
     check_arg = is_save_all + is_save_except_rotation
     if check_arg >= 2:
         raise ValueError("Argument Error. Put only one flag.")
+
+    if is_detection:
+        yolo = Yolo()
 
     os.makedirs(output_path, exist_ok=True)
 
@@ -79,7 +85,12 @@ if __name__ == "__main__":
         node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
 
         display_map(recolored_topdown_map, key_points=[node_point])
-        key = display_opencv_cam(color_img)
+
+        if is_detection:
+            detect_img = yolo.detect_img(color_img)
+            key = display_opencv_cam(detect_img)
+        else:
+            key = display_opencv_cam(color_img)
 
         if key == ord("w"):
             action = "move_forward"
