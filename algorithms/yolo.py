@@ -24,13 +24,12 @@ class Yolo:
         np.random.seed(42)
         self.colors = np.random.randint(0, 255, size=(len(self.labels), 3), dtype="uint8")
 
-        # Derive the paths to the YOLO weights and model configuration
-        weights_path = os.path.sep.join([yolo_weight_path, "yolov3.weights"])
+        # Derive the paths to the model configuration
         config_path = os.path.sep.join([yolo_cfg_path, "yolov3.cfg"])
 
         # Load our YOLO object detector trained on COCO dataset (80 classes)
         print("[INFO] loading YOLO from disk...")
-        self.net = cv2.dnn.readNetFromDarknet(config_path, weights_path)
+        self.net = cv2.dnn.readNetFromDarknet(config_path, yolo_weight_path)
         self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
