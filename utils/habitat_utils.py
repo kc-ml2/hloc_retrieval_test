@@ -74,7 +74,7 @@ def make_cfg(settings):
 
     if settings["color_360_sensor"] is True:
         color_360_sensor_spec = habitat_sim.EquirectangularSensorSpec()
-        color_360_sensor_spec.uuid = "color_360_sensor"
+        color_360_sensor_spec.uuid = "color_sensor"
         color_360_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
         color_360_sensor_spec.resolution = [settings["height"], settings["width"]]
         color_360_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]

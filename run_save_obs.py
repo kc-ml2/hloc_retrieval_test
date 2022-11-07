@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     while True:
         observations = sim.get_sensor_observations()
-        color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
+        color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
         current_state = agent.get_state()
         position = current_state.position

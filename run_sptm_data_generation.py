@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
                     agent.set_state(agent_state)
                     observations = sim.get_sensor_observations()
-                    color_img = cv2.cvtColor(observations["color_360_sensor"], cv2.COLOR_BGR2RGB)
+                    color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
                     cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
                     label_pos = {
