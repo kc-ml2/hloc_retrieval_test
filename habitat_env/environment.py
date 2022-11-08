@@ -18,7 +18,6 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         scene = path_config.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
         sim_settings = make_sim_setting_dict(scene, cam_config, action_config)
         cfg = make_cfg(sim_settings)
-        # TODO: Raise error when color_sensor & color_360_sensor are both true
 
         super().__init__(cfg)
 

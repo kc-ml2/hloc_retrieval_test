@@ -44,6 +44,9 @@ def make_cfg(settings):
 
     sensor_specs = []
 
+    if (settings["color_sensor"] is True) and (settings["color_360_sensor"] is True):
+        raise ValueError("Normal camera & 360 camera cannot be used at the same time.")
+
     if settings["color_sensor"] is True:
         color_sensor_spec = habitat_sim.CameraSensorSpec()
         color_sensor_spec.uuid = "color_sensor"
