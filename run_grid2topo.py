@@ -4,12 +4,11 @@ import os
 import random
 
 import cv2
-import habitat_sim
 import networkx as nx
-import numpy as np
 
 from config.env_config import ActionConfig, CamNormalConfig, DataConfig, DisplayConfig, OutputConfig, PathConfig
-from utils.habitat_utils import display_map, get_map_from_database, init_map_display, initialize_sim
+from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import display_map, init_map_display
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -40,21 +39,15 @@ if __name__ == "__main__":
         height_data = json.load(height_json)
 
     for scene_number in scene_list:
-        sim = initialize_sim(scene_number, CamNormalConfig, ActionConfig, PathConfig)
-        agent = sim.initialize_agent(0)
-        recolored_topdown_map_list, topdown_map_list, _ = get_map_from_database(scene_number, height_data)
-
-        agent_state = habitat_sim.AgentState()
-        agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
-        agent.set_state(agent_state)
+        sim = HabitatSimWithMap(scene_number, CamNormalConfig, ActionConfig, PathConfig, height_data)
 
         if DisplayConfig.DISPLAY_PATH_MAP:
             init_map_display(window_name="colored_map")
             init_map_display(window_name="visual_binary_map")
 
-        for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
+        for i, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", i)
-            topdown_map = topdown_map_list[i]
+            topdown_map = sim.topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
             if DataConfig.REMOVE_ISOLATED:

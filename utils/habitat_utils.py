@@ -1,6 +1,5 @@
 import gzip
 import os
-import random
 
 from PIL import Image
 import cv2
@@ -12,24 +11,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import quaternion
 from scipy.spatial.transform import Rotation as R
-
-
-def initialize_sim(scene_number, cam_config, action_config, path_config):
-    """Initialize Habitat sim object."""
-    scene = path_config.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
-    sim_settings = make_sim_setting_dict(scene, cam_config, action_config)
-    cfg = make_cfg(sim_settings)
-    sim = habitat_sim.Simulator(cfg)
-
-    random.seed(sim_settings["seed"])
-    sim.seed(sim_settings["seed"])
-
-    if not sim.pathfinder.is_loaded:
-        print("Pathfinder not initialized")
-    print("The NavMesh bounds are: " + str(sim.pathfinder.get_bounds()))
-    sim.pathfinder.seed(sim_settings["seed"])
-
-    return sim
 
 
 def make_sim_setting_dict(scene, cam_config, action_config, seed=1):
@@ -303,49 +284,6 @@ def get_entire_maps_by_levels(sim, meters_per_pixel):
     return recolored_topdown_map_list, topdown_map_list, height_points
 
 
-def get_closest_map(sim, position, map_list):
-    """Find out which level the agent is on."""
-    distance_list = []
-    average_list = []
-    for level in sim.semantic_scene.levels:
-        for region in level.regions:
-            distance = abs(region.aabb.center[1] - position[1])
-            distance_list.append(distance)
-        average = sum(distance_list) / len(distance_list)
-        average_list.append(average)
-    closest_level = average_list.index(min(average_list))
-    recolored_topdown_map = map_list[closest_level]
-
-    return recolored_topdown_map, closest_level
-
-
-def get_map_from_database(
-    scene_number, height_data, topdown_directory="./data/topdown/", recolored_directory="./data/recolored_topdown/"
-):
-    """Get map files from pre-made map."""
-    num_levels = 0
-    for _, _, files in os.walk(topdown_directory):
-        for file in files:
-            if scene_number in file:
-                num_levels = num_levels + 1
-
-    recolored_topdown_map_list = []
-    topdown_map_list = []
-    height_list = []
-    for level in range(num_levels):
-        height_list.append(height_data[scene_number + f"_{level}"])
-        searched_recolored_topdown_map = cv2.imread(
-            recolored_directory + os.sep + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
-        )
-        searched_topdown_map = cv2.imread(
-            topdown_directory + os.sep + scene_number + f"_{level}" + ".bmp", cv2.IMREAD_GRAYSCALE
-        )
-        recolored_topdown_map_list.append(searched_recolored_topdown_map)
-        topdown_map_list.append(searched_topdown_map)
-
-    return recolored_topdown_map_list, topdown_map_list, height_list
-
-
 def extrinsic_mat_list_to_pos_angle_list(ext_trans_mat_list):
     """Convert RxR dataset extrinsic matrix to Cartesian position & angle(quaternion) list."""
     pos_trajectory = []
@@ -437,9 +375,3 @@ def remove_duplicate_matrix(extrinsic_mat_list):
         deduplicated_mat_list.append(ext_trans_mat)
 
     return deduplicated_mat_list
-
-
-def generate_pose_diff_data(output_directory):
-    """Generate image & position diff data for S3D pre-trained weight."""
-
-    print(output_directory)

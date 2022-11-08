@@ -4,19 +4,11 @@ import os
 
 import cv2
 from habitat.utils.visualizations import maps
-import habitat_sim
 
 from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, Cam360Config, PathConfig
-from utils.habitat_utils import (
-    display_map,
-    display_opencv_cam,
-    get_closest_map,
-    get_map_from_database,
-    init_map_display,
-    init_opencv_cam,
-    initialize_sim,
-)
+from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import display_map, display_opencv_cam, init_map_display, init_opencv_cam
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -57,14 +49,7 @@ if __name__ == "__main__":
         raise IndexError(f"Scene list index out of range. The range is from 0 to {len(scene_list) - 1}")
 
     scene_number = scene_list[scene_index]
-    sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
-    agent = sim.initialize_agent(0)
-    recolored_topdown_map_list, _, _ = get_map_from_database(scene_number, height_data)
-
-    agent_state = habitat_sim.AgentState()
-    nav_point = sim.pathfinder.get_random_navigable_point()
-    agent_state.position = nav_point  # world space
-    agent.set_state(agent_state)
+    sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
 
     img_id = 0
     pos_record = {}
@@ -75,23 +60,27 @@ if __name__ == "__main__":
     init_opencv_cam()
 
     while True:
+        # Get camera observation
         observations = sim.get_sensor_observations()
         color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
-        current_state = agent.get_state()
+        # Get current position
+        current_state = sim.agent.get_state()
         position = current_state.position
 
-        recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
-        node_point = maps.to_grid(position[2], position[0], recolored_topdown_map.shape[0:2], sim)
+        # Update map data
+        sim.update_closest_map(position)
+        node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
+        display_map(sim.recolored_topdown_map, key_points=[node_point])
 
-        display_map(recolored_topdown_map, key_points=[node_point])
-
+        # Display observation. If YOLO is available, display object detection result
         if is_detection:
             detect_img = yolo.detect_img(color_img)
             key = display_opencv_cam(detect_img)
         else:
             key = display_opencv_cam(color_img)
 
+        # Set action according to key input
         if key == ord("w"):
             action = "move_forward"
         if key == ord("s"):
@@ -103,6 +92,8 @@ if __name__ == "__main__":
         if key == ord("q"):
             break
 
+        # Save observation & position record according to the flag
+        # Save observation every step
         if is_save_all:
             cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
             sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
@@ -110,6 +101,7 @@ if __name__ == "__main__":
             pos_record.update(sim_pos)
             pos_record.update(grid_pos)
             img_id = img_id + 1
+        # Save observation only when forward & backward movement
         if is_save_except_rotation:
             if key == ord("w") or key == ord("s"):
                 cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
@@ -118,6 +110,7 @@ if __name__ == "__main__":
                 pos_record.update(sim_pos)
                 pos_record.update(grid_pos)
                 img_id = img_id + 1
+        # Save observation when "o" key input
         if key == ord("o"):
             if is_save_all or is_save_except_rotation:
                 pass

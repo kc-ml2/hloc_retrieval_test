@@ -3,11 +3,10 @@ import json
 import os
 
 import cv2
-import habitat_sim
-import numpy as np
 
 from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
-from utils.habitat_utils import get_entire_maps_by_levels, initialize_sim
+from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import get_entire_maps_by_levels
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -30,17 +29,14 @@ if __name__ == "__main__":
         print(scene_number)
         print(generated_scene_num)
 
-        sim = initialize_sim(scene_number, CamNormalConfig, ActionConfig, PathConfig)
-        agent = sim.initialize_agent(0)
+        sim = HabitatSimWithMap(scene_number, CamNormalConfig, ActionConfig, PathConfig)
 
-        agent_state = habitat_sim.AgentState()
-        agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
-        agent.set_state(agent_state)
-
+        # Sample random maps & get the largest maps by levels
         recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(
             sim, DataConfig.METERS_PER_PIXEL
         )
 
+        # Store the largest maps
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             topdown_map = topdown_map_list[i]
 

@@ -9,7 +9,7 @@ import numpy as np
 
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, Cam360Config, PathConfig
-from utils.habitat_utils import get_closest_map, get_map_from_database, initialize_sim
+from habitat_env.environment import HabitatSimWithMap
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -35,17 +35,18 @@ if __name__ == "__main__":
 
     # Similation initialize
     scene_number = pos_record["scene_number"]
-    sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
-    recolored_topdown_map_list, _, _ = get_map_from_database(scene_number, height_data)
-    position = pos_record["000000_sim"]
-    recolored_topdown_map, closest_level = get_closest_map(sim, position, recolored_topdown_map_list)
+    sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
 
-    # Make lists for node & edge generation
+    position = pos_record["000000_sim"]
+    sim.update_closest_map(position)
+
+    # Make lists to iteration for building graph
     sorted_obs_image_file = sorted(os.listdir(obs_path))
     obs_id_list = [obs_image_file[:-4] for obs_image_file in sorted_obs_image_file]
     img_extension = sorted_obs_image_file[0][-4:]
     consecutive_edge_list = [(obs_id_list[i], obs_id_list[i + 1]) for i in range(len(obs_id_list) - 1)]
 
+    # In case of visual shortcuts considering only max confidence(similarity probability)
     if TestConstant.VISUAL_SHORTCUT_WITH_MAX_VALUE:
         argmax_similarity_matrix = np.zeros((len(similarity_matrix), len(similarity_matrix)))
         max_row_index = np.argmax(similarity_matrix, axis=0)
@@ -57,6 +58,7 @@ if __name__ == "__main__":
 
         similarity_matrix = argmax_similarity_matrix
 
+    # Make similarity dictionary to build graph
     similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
     similarity_list = []
     for combination in similarity_combination_list:
@@ -77,10 +79,12 @@ if __name__ == "__main__":
     for i in G.nodes():
         G.nodes()[i]["o"] = pos_record[i + "_grid"]
 
+    # Add edge between consecutive nodes
     for edge in consecutive_edge_list:
         G.edges[edge]["consecutive"] = 1
         G.edges[edge]["similarity"] = 0
 
+    # If visual shortcuts exists, remove consecutive edge & add similarity value
     for similarity in similarity_list:
         G.edges[similarity["edge"]]["consecutive"] = 0
         G.edges[similarity["edge"]]["similarity"] = similarity["probability"]
@@ -88,7 +92,7 @@ if __name__ == "__main__":
     # Visualization
     img_id = 0
     for obs_id in obs_id_list:
-        map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
+        map_image = cv2.cvtColor(sim.recolored_topdown_map, cv2.COLOR_GRAY2BGR)
         node_points = np.array([G.nodes()[i]["o"] for i in G.nodes()])
 
         for pnt in node_points:

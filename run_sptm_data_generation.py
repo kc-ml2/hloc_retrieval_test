@@ -12,7 +12,7 @@ from scipy.spatial.transform import Rotation
 
 from config.algorithm_config import TrainingConstant
 from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
-from utils.habitat_utils import get_map_from_database, initialize_sim
+from habitat_env.environment import HabitatSimWithMap
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -33,6 +33,7 @@ if __name__ == "__main__":
     is_valid = args.valid
     is_test = args.test
 
+    # Set dataset output path according to flag
     if is_train:
         scene_list_file = "./data/scene_list_train.txt"
         output_image_path = PathConfig.TRAIN_IMAGE_PATH
@@ -46,12 +47,14 @@ if __name__ == "__main__":
         output_image_path = PathConfig.TEST_IMAGE_PATH
         label_json_file = PathConfig.TEST_LABEL_PATH
 
+    # Check if there is only one flag via train, valid, and test
     check_arg = is_train + is_test + is_valid
     if check_arg == 0 or check_arg >= 2:
         raise ValueError("Argument Error. Put only one flag.")
 
     os.makedirs(output_image_path, exist_ok=True)
 
+    # Open files
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
@@ -61,19 +64,13 @@ if __name__ == "__main__":
     label = {}
     total_scene_num = 0
     for scene_number in scene_list:
-        sim = initialize_sim(scene_number, Cam360Config, ActionConfig, PathConfig)
-        agent = sim.initialize_agent(0)
-        recolored_topdown_map_list, topdown_map_list, height_list = get_map_from_database(scene_number, height_data)
-
-        agent_state = habitat_sim.AgentState()
-        agent_state.position = np.array([0.0, 0.5, 0.0])  # world space
-        agent.set_state(agent_state)
+        sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
 
         print("total scene: ", total_scene_num)
 
-        for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
+        for i, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", i)
-            topdown_map = topdown_map_list[i]
+            topdown_map = sim.topdown_map_list[i]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
             if DataConfig.REMOVE_ISOLATED:
@@ -85,7 +82,9 @@ if __name__ == "__main__":
             if len(list(graph.nodes)) == 0:
                 continue
 
+            # Make ratio of positive & negative samples to be 5:5 with "random() < 0.5"
             for k in range(TrainingConstant.NUM_SAMPLING_PER_LEVEL):
+                # Positive samples
                 if random.random() < 0.5:
                     y = 1
                     error_code = None
@@ -94,17 +93,20 @@ if __name__ == "__main__":
                             start = random.choice(list(graph.nodes))
                         except IndexError:
                             break
+                        # Get step between 1 ~ max positive distance
                         step = random.randint(1, TrainingConstant.POSITIVE_SAMPLE_DISTANCE)
                         previous_node = None
                         current_node = start
 
                         for _ in range(step):
+                            # Randomly select a direction. Ignore visited (previous) node
                             next_node, error_code = get_one_random_directed_adjacent_node(
                                 graph, current_node, previous_node
                             )
                             previous_node = current_node
                             current_node = next_node
                     end = next_node
+                # Negative samples
                 else:
                     y = 0
                     step = 0
@@ -133,19 +135,22 @@ if __name__ == "__main__":
                         sim,
                         sim.pathfinder,
                     )
-                    agent_state.position = np.array([pos[1], height_list[i], pos[0]])
+
+                    # Set random rotation at current position
+                    agent_state = habitat_sim.AgentState()
+                    agent_state.position = np.array([pos[1], sim.height_list[i], pos[0]])
                     random_rotation = random.randint(0, 359)
                     r = Rotation.from_euler("y", random_rotation, degrees=True)
                     agent_state.rotation = r.as_quat()
+                    sim.agent.set_state(agent_state)
 
-                    agent.set_state(agent_state)
                     observations = sim.get_sensor_observations()
                     color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
                     cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
                     label_pos = {
                         f"{scene_number}_{i:06d}_{k:06d}_{j}": [
-                            [float(pos[1]), float(height_list[i]), float(pos[0])],
+                            [float(pos[1]), float(sim.height_list[i]), float(pos[0])],
                             random_rotation,
                         ]
                     }
