@@ -1,5 +1,6 @@
 import gzip
 import os
+import time
 
 from PIL import Image
 import cv2
@@ -102,6 +103,16 @@ def make_cfg(settings):
     }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
+
+
+def make_output_path(output_path, scene_number):
+    """Make directory for output file & records."""
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    observation_path = os.path.join(output_path, f"observation_{scene_number}", timestr)
+    os.makedirs(observation_path, exist_ok=True)
+    pos_record_json = os.path.join(output_path, f"observation_{scene_number}", f"pos_record_{timestr}.json")
+
+    return observation_path, pos_record_json
 
 
 def print_scene_recur(scene, limit_output=10):

@@ -8,15 +8,14 @@ from habitat.utils.visualizations import maps
 from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, Cam360Config, PathConfig
 from habitat_env.environment import HabitatSimWithMap
-from utils.habitat_utils import display_map, display_opencv_cam, init_map_display, init_opencv_cam
+from utils.habitat_utils import display_map, display_opencv_cam, init_map_display, init_opencv_cam, make_output_path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int, default=0)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--output-path", default="./output/observations")
-    parser.add_argument("--pos-record-json", default="./output/pos_record.json")
+    parser.add_argument("--output-path", default="./output")
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
     parser.add_argument("--detection", action="store_true")
@@ -25,7 +24,6 @@ if __name__ == "__main__":
     scene_index = args.scene_index
     height_json_path = args.map_height_json
     output_path = args.output_path
-    pos_record_json = args.pos_record_json
     is_save_all = args.save_all
     is_save_except_rotation = args.save_except_rotation
     is_detection = args.detection
@@ -36,8 +34,6 @@ if __name__ == "__main__":
 
     if is_detection:
         yolo = Yolo()
-
-    os.makedirs(output_path, exist_ok=True)
 
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
@@ -50,6 +46,7 @@ if __name__ == "__main__":
 
     scene_number = scene_list[scene_index]
     sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
+    observation_path, pos_record_json = make_output_path(output_path, scene_number)
 
     img_id = 0
     pos_record = {}
@@ -95,7 +92,7 @@ if __name__ == "__main__":
         # Save observation & position record according to the flag
         # Save observation every step
         if is_save_all:
-            cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
+            cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
             sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
             grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
             pos_record.update(sim_pos)
@@ -104,7 +101,7 @@ if __name__ == "__main__":
         # Save observation only when forward & backward movement
         if is_save_except_rotation:
             if key == ord("w") or key == ord("s"):
-                cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
+                cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
                 sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
                 grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
                 pos_record.update(sim_pos)
@@ -116,7 +113,7 @@ if __name__ == "__main__":
                 pass
             else:
                 print("save image")
-                cv2.imwrite(output_path + os.sep + f"{img_id:06d}.jpg", color_img)
+                cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
                 sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
                 grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
                 pos_record.update(sim_pos)

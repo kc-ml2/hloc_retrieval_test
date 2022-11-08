@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import keras
 from keras.callbacks import ModelCheckpoint
@@ -11,6 +12,8 @@ from config.algorithm_config import NetworkConstant, TrainingConstant
 from config.env_config import PathConfig
 
 if __name__ == "__main__":
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+
     train_file_directory = PathConfig.TRAIN_IMAGE_PATH
     valid_file_directory = PathConfig.VALID_IMAGE_PATH
 
@@ -45,7 +48,7 @@ if __name__ == "__main__":
         adam = keras.optimizers.Adam(
             learning_rate=TrainingConstant.LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.000001
         )
-        checkpointer = ModelCheckpoint(filepath="model1.weights.best.hdf5", verbose=1, save_best_only=True)
+        checkpointer = ModelCheckpoint(filepath=f"model.{timestr}.weights.best.hdf5", verbose=1, save_best_only=True)
         model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
         model.summary()
         model.fit(x=train_dataset, epochs=10000, validation_data=valid_dataset, callbacks=[checkpointer])

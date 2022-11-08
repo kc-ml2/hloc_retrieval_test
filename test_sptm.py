@@ -13,7 +13,7 @@ from config.env_config import PathConfig
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model")
+    parser.add_argument("--load-model", required=True)
     parser.add_argument("--generate-img", action="store_true")
     args, _ = parser.parse_known_args()
     loaded_model = args.load_model

@@ -14,14 +14,24 @@ from habitat_env.environment import HabitatSimWithMap
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--obs-path", default="./output/observations/")
-    parser.add_argument("--pos-record", default="./output/pos_record.json")
-    parser.add_argument("--result-cache", default="./output/similarity_matrix.npy")
+    parser.add_argument("--obs-path", required=True, help="directory containing observation images")
+    parser.add_argument("--pos-record")
+    parser.add_argument("--result-cache")
     args, _ = parser.parse_known_args()
     height_json_path = args.map_height_json
     obs_path = args.obs_path
-    pos_record = args.pos_record
-    result_cache = args.result_cache
+
+    # Get record and cached files from argument or from pre-defined name
+    cache_index = os.path.basename(os.path.normpath(obs_path))
+    parent_dir = os.path.dirname(os.path.dirname(obs_path))
+    if args.pos_record:
+        pos_record = args.pos_record
+    else:
+        pos_record = os.path.join(parent_dir, f"pos_record_{cache_index}.npy")
+    if args.result_cache:
+        result_cache = args.result_cache
+    else:
+        result_cache = os.path.join(parent_dir, f"similarity_matrix_{cache_index}.npy")
 
     # Open files
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
