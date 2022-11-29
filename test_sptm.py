@@ -19,8 +19,12 @@ if __name__ == "__main__":
     loaded_model = args.load_model
     generate_img = args.generate_img
 
+    correct_directory = "./output/sptm_result/correct/"
+    wrong_directory = "./output/sptm_result/wrong/"
+
     if generate_img:
-        os.makedirs("./output/test/", exist_ok=True)
+        os.makedirs(correct_directory, exist_ok=True)
+        os.makedirs(wrong_directory, exist_ok=True)
 
     file_directory = PathConfig.TEST_IMAGE_PATH
     label_directory = PathConfig.TEST_LABEL_PATH
@@ -58,9 +62,11 @@ if __name__ == "__main__":
 
             if compare_chart[i][0] == compare_chart[i][1]:
                 prediction = "Correct"
+                output_path = correct_directory
                 num_correct = num_correct + 1
             if compare_chart[i][0] != compare_chart[i][1]:
                 prediction = "Wrong"
+                output_path = wrong_directory
 
             if generate_img:
                 anchor_img = cv2.imread(file_directory + os.sep + image_name + "_0.bmp")
@@ -82,7 +88,7 @@ if __name__ == "__main__":
                     lineType=cv2.LINE_AA,
                 )
 
-                cv2.imwrite(f"./output/test/{image_name}_{distance}_{prediction}.bmp", concatenated_img)
+                cv2.imwrite(output_path + os.sep + f"{image_name}_{distance}_{prediction}.bmp", concatenated_img)
 
             print(i)
         print("Number of correct answer: ", num_correct)
