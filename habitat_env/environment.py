@@ -3,14 +3,17 @@ import random
 
 import cv2
 import habitat_sim
+import numpy as np
+import quaternion
 
+from algorithms.yolo import Yolo
 from utils.habitat_utils import make_cfg, make_sim_setting_dict
 
 
 class HabitatSimWithMap(habitat_sim.Simulator):
     """Inheritance instance of habitat_sim.Simulator. This class inlcudes config init, map loading, agent init."""
 
-    def __init__(self, scene_number, cam_config, action_config, path_config, height_data=None):
+    def __init__(self, scene_number, cam_config, action_config, path_config, height_data=None, is_detection=None):
         self.scene_number = scene_number
         self.height_data = height_data
 
@@ -20,6 +23,11 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         cfg = make_cfg(sim_settings)
 
         super().__init__(cfg)
+
+        # Set Flag
+        self.is_four_view = cam_config.FOUR_VIEW
+        self.four_view_angle = quaternion.from_rotation_vector([0, np.pi / 2, 0])
+        self.four_view_line = np.zeros([cam_config.HEIGHT, 50, 3]).astype(np.uint8)
 
         # Set seed
         random.seed(sim_settings["seed"])
@@ -42,6 +50,10 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         nav_point = self.pathfinder.get_random_navigable_point()
         agent_state.position = nav_point  # world space
         self.agent.set_state(agent_state)
+
+        # Initialize Yolo
+        if is_detection:
+            self.yolo = Yolo()
 
     def get_map_from_database(
         self, topdown_directory="./data/topdown/", recolored_directory="./data/recolored_topdown/"
@@ -83,3 +95,110 @@ class HabitatSimWithMap(habitat_sim.Simulator):
 
         self.closest_level = average_list.index(min(average_list))
         self.recolored_topdown_map = self.recolored_topdown_map_list[self.closest_level]
+
+    def get_cam_observations(self):
+        """Inherit the 'get_sensor_observations' method of the parent class."""
+        cam_observations = {
+            "all_view": None,
+            "all_view_with_line": None,
+            "front_view": None,
+            "right_view": None,
+            "back_view": None,
+            "left_view": None,
+        }
+
+        if self.is_four_view:
+            # Store original view for agent state restoration
+            original_state = self.agent.get_state()
+            current_state = self.agent.get_state()
+            rotation = current_state.rotation
+
+            # Get front view
+            observations = self.get_sensor_observations()
+            cam_observations["front_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+
+            # Turn agent for left view
+            rotation = rotation * self.four_view_angle
+            current_state.rotation = rotation
+            self.agent.set_state(current_state)
+
+            # Get left view
+            observations = self.get_sensor_observations()
+            cam_observations["left_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+
+            # Turn agent for back view
+            rotation = rotation * self.four_view_angle
+            current_state.rotation = rotation
+            self.agent.set_state(current_state)
+
+            # Get back view
+            observations = self.get_sensor_observations()
+            cam_observations["back_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+
+            # Turn agent for right view
+            rotation = rotation * self.four_view_angle
+            current_state.rotation = rotation
+            self.agent.set_state(current_state)
+
+            # Get right view
+            observations = self.get_sensor_observations()
+            cam_observations["right_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+
+            # Merge every view for "all_view"
+            cam_observations["all_view"] = np.concatenate(
+                [
+                    cam_observations["front_view"],
+                    cam_observations["right_view"],
+                    cam_observations["back_view"],
+                    cam_observations["left_view"],
+                ],
+                axis=1,
+            )
+
+            # Merge every view for "all_view_with_line"
+            cam_observations["all_view_with_line"] = np.concatenate(
+                [
+                    cam_observations["front_view"],
+                    self.four_view_line,
+                    cam_observations["right_view"],
+                    self.four_view_line,
+                    cam_observations["back_view"],
+                    self.four_view_line,
+                    cam_observations["left_view"],
+                ],
+                axis=1,
+            )
+
+            # Recovery agent's state
+            self.agent.set_state(original_state)
+
+        else:
+            observations = self.get_sensor_observations()
+            cam_observations["all_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+
+        return cam_observations
+
+    def detect_img(self, cam_observations):
+        """Detect image with Yolo. Merge result images if needed."""
+        if self.is_four_view:
+            detect_img_front = self.yolo.detect_img(cam_observations["front_view"])
+            detect_img_right = self.yolo.detect_img(cam_observations["right_view"])
+            detect_img_back = self.yolo.detect_img(cam_observations["back_view"])
+            detect_img_left = self.yolo.detect_img(cam_observations["left_view"])
+            detect_img = np.concatenate(
+                [
+                    detect_img_front,
+                    self.four_view_line,
+                    detect_img_right,
+                    self.four_view_line,
+                    detect_img_back,
+                    self.four_view_line,
+                    detect_img_left,
+                ],
+                axis=1,
+            )
+
+        else:
+            detect_img = self.yolo.detect_img(cam_observations["all_view"])
+
+        return detect_img

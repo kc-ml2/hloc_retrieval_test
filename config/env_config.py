@@ -16,6 +16,7 @@ class CamNormalConfig:
     RGB_360_SENSOR = False
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
+    FOUR_VIEW = False
     WIDTH = 256
     HEIGHT = 256
     SENSOR_HEIGHT = 0.5
@@ -26,7 +27,19 @@ class Cam360Config:
     RGB_360_SENSOR = True
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
+    FOUR_VIEW = False
     WIDTH = 512
+    HEIGHT = 256
+    SENSOR_HEIGHT = 0.5
+
+
+class CamFourViewConfig:
+    RGB_SENSOR = True
+    RGB_360_SENSOR = False
+    DEPTH_SENSOR = True
+    SEMANTIC_SENSOR = False
+    FOUR_VIEW = True
+    WIDTH = 256
     HEIGHT = 256
     SENSOR_HEIGHT = 0.5
 

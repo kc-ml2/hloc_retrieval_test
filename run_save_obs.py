@@ -5,8 +5,7 @@ import os
 import cv2
 from habitat.utils.visualizations import maps
 
-from algorithms.yolo import Yolo
-from config.env_config import ActionConfig, Cam360Config, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import display_map, display_opencv_cam, init_map_display, init_opencv_cam, make_output_path
 
@@ -32,9 +31,6 @@ if __name__ == "__main__":
     if check_arg >= 2:
         raise ValueError("Argument Error. Put only one flag.")
 
-    if is_detection:
-        yolo = Yolo()
-
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 
@@ -45,7 +41,7 @@ if __name__ == "__main__":
         raise IndexError(f"Scene list index out of range. The range is from 0 to {len(scene_list) - 1}")
 
     scene_number = scene_list[scene_index]
-    sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
+    sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data, is_detection)
     observation_path, pos_record_json = make_output_path(output_path, scene_number)
 
     img_id = 0
@@ -58,8 +54,8 @@ if __name__ == "__main__":
 
     while True:
         # Get camera observation
-        observations = sim.get_sensor_observations()
-        color_img = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
+        observations = sim.get_cam_observations()
+        color_img = observations["all_view"]
 
         # Get current position
         current_state = sim.agent.get_state()
@@ -72,7 +68,7 @@ if __name__ == "__main__":
 
         # Display observation. If YOLO is available, display object detection result
         if is_detection:
-            detect_img = yolo.detect_img(color_img)
+            detect_img = sim.detect_img(observations)
             key = display_opencv_cam(detect_img)
         else:
             key = display_opencv_cam(color_img)
