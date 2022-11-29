@@ -11,7 +11,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from config.algorithm_config import TrainingConstant
-from config.env_config import ActionConfig, Cam360Config, DataConfig, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.skeletonize_utils import (
     convert_to_binarymap,
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     label = {}
     total_scene_num = 0
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
 
         print("total scene: ", total_scene_num)
 
@@ -164,5 +164,5 @@ if __name__ == "__main__":
         cv2.destroyAllWindows()
         sim.close()
 
-        with open(label_json_file, "w") as label_json:  # pylint: disable=unspecified-encoding
-            json.dump(label, label_json, indent=4)
+    with open(label_json_file, "w") as label_json:  # pylint: disable=unspecified-encoding
+        json.dump(label, label_json, indent=4)

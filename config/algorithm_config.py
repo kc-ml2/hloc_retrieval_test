@@ -30,6 +30,6 @@ class TestConstant:
 
 class NetworkConstant:
     # Input size
-    NET_WIDTH = 512
+    NET_WIDTH = 1024
     NET_HEIGHT = 256
     NET_CHANNELS = 3
