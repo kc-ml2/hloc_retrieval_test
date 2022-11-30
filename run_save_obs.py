@@ -119,5 +119,9 @@ if __name__ == "__main__":
 
         sim.step(action)
 
-    with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
-        json.dump(pos_record, record_json, indent=4)
+    file_saved = os.listdir(observation_path)
+    if is_save_all or is_save_except_rotation or file_saved:
+        with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
+            json.dump(pos_record, record_json, indent=4)
+    else:
+        os.rmdir(observation_path)
