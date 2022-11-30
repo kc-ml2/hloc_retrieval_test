@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 
 from config.algorithm_config import TestConstant
-from config.env_config import ActionConfig, Cam360Config, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 
 if __name__ == "__main__":
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if args.pos_record:
         pos_record = args.pos_record
     else:
-        pos_record = os.path.join(parent_dir, f"pos_record_{cache_index}.npy")
+        pos_record = os.path.join(parent_dir, f"pos_record_{cache_index}.json")
     if args.result_cache:
         result_cache = args.result_cache
     else:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # Similation initialize
     scene_number = pos_record["scene_number"]
-    sim = HabitatSimWithMap(scene_number, Cam360Config, ActionConfig, PathConfig, height_data)
+    sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
 
     position = pos_record["000000_sim"]
     sim.update_closest_map(position)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     similarity_list = []
     for combination in similarity_combination_list:
         probability = similarity_matrix[int(combination[0]), int(combination[1])]
-        if probability >= 0.99:
+        if probability >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD:
             similarity_list.append({"edge": combination, "probability": probability})
 
     # Initialize graph
