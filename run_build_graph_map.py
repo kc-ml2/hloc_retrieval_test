@@ -17,21 +17,28 @@ if __name__ == "__main__":
     parser.add_argument("--obs-path", required=True, help="directory containing observation images")
     parser.add_argument("--pos-record")
     parser.add_argument("--result-cache")
+    parser.add_argument("--save-img", action="store_true")
     args, _ = parser.parse_known_args()
     height_json_path = args.map_height_json
     obs_path = args.obs_path
 
-    # Get record and cached files from argument or from pre-defined name
+    # Open position record file to display result on map (From argument or from pre-defined name)
     cache_index = os.path.basename(os.path.normpath(obs_path))
     parent_dir = os.path.dirname(os.path.dirname(obs_path))
     if args.pos_record:
         pos_record = args.pos_record
     else:
         pos_record = os.path.join(parent_dir, f"pos_record_{cache_index}.json")
+
+    # Open similarity result cache files to build graph (From argument or from pre-defined name)
     if args.result_cache:
         result_cache = args.result_cache
     else:
         result_cache = os.path.join(parent_dir, f"similarity_matrix_{cache_index}.npy")
+
+    if args.save_img:
+        visualization_result_path = os.path.join(parent_dir, f"similarity_visualize_result_{cache_index}")
+        os.makedirs(visualization_result_path, exist_ok=True)
 
     # Open files
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
@@ -136,6 +143,9 @@ if __name__ == "__main__":
         cv2.namedWindow("similarity", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("similarity", 1152, 1152)
         cv2.imshow("similarity", map_image)
-        cv2.imwrite(f"./output/large_prob_sim_result/{img_id:06d}.jpg", map_image)
-        img_id = img_id + 1
+
+        if args.save_img:
+            cv2.imwrite(visualization_result_path + os.sep + f"{img_id:06d}.jpg", map_image)
+            img_id = img_id + 1
+
         cv2.waitKey()
