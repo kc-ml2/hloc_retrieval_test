@@ -26,6 +26,7 @@ class TestConstant:
     BATCH_SIZE = 32
     SIMILARITY_PROBABILITY_THRESHOLD = 0.8
     VISUAL_SHORTCUT_WITH_MAX_VALUE = False
+    IGNORE_CLOSE_NODES = False
 
 
 class NetworkConstant:

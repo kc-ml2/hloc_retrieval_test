@@ -34,12 +34,14 @@ if __name__ == "__main__":
 
     # Get list of node combinations that should be examined with similarity prediction (visual shortcut in paper)
     similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
-    temp_combination_list = similarity_combination_list.copy()
 
-    for combination in temp_combination_list:
-        gap_between_nodes = int(combination[1]) - int(combination[0])
-        if gap_between_nodes < TrainingConstant.POSITIVE_SAMPLE_DISTANCE:
-            similarity_combination_list.remove(combination)
+    # Remove close node pairs from similarity calculation if the flag is true
+    if TestConstant.IGNORE_CLOSE_NODES:
+        temp_combination_list = similarity_combination_list.copy()
+        for combination in temp_combination_list:
+            gap_between_nodes = int(combination[1]) - int(combination[0])
+            if gap_between_nodes < TrainingConstant.POSITIVE_SAMPLE_DISTANCE:
+                similarity_combination_list.remove(combination)
 
     with tf.device("/device:GPU:0"):
         record_dataset = tf.data.Dataset.from_tensor_slices(similarity_combination_list)
