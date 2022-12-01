@@ -61,33 +61,21 @@ if __name__ == "__main__":
     sorted_obs_image_file = sorted(os.listdir(obs_path))
     obs_id_list = [obs_image_file[:-4] for obs_image_file in sorted_obs_image_file]
     img_extension = sorted_obs_image_file[0][-4:]
-    consecutive_edge_list = [(obs_id_list[i], obs_id_list[i + 1]) for i in range(len(obs_id_list) - 1)]
+    consecutive_edge_id_list = [(obs_id_list[i], obs_id_list[i + 1]) for i in range(len(obs_id_list) - 1)]
 
-    # In case of visual shortcuts considering only max confidence(similarity probability)
-    if TestConstant.VISUAL_SHORTCUT_WITH_MAX_VALUE:
-        argmax_similarity_matrix = np.zeros((len(similarity_matrix), len(similarity_matrix)))
-        max_row_index = np.argmax(similarity_matrix, axis=0)
-        max_column_index = np.argmax(similarity_matrix, axis=1)
-
-        for i in range(len(similarity_matrix)):
-            argmax_similarity_matrix[max_row_index[i]][i] = 1
-            argmax_similarity_matrix[i][max_column_index[i]] = 1
-
-        similarity_matrix = argmax_similarity_matrix
-
-    # Make similarity dictionary to build graph
+    # Make visual shortcut dictionary list to build graph
+    visual_shortcut_list = []
     similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
-    similarity_list = []
     for combination in similarity_combination_list:
-        probability = similarity_matrix[int(combination[0]), int(combination[1])]
-        if probability >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD:
-            similarity_list.append({"edge": combination, "probability": probability})
+        similarity = similarity_matrix[int(combination[0]), int(combination[1])]
+        if similarity >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD:
+            visual_shortcut_list.append({"edge_id": combination, "similarity": similarity})
 
     # Initialize graph
     G = nx.Graph()
     G.add_nodes_from(obs_id_list)
-    G.add_edges_from(consecutive_edge_list)
-    G.add_edges_from([similarity["edge"] for similarity in similarity_list])
+    G.add_edges_from(consecutive_edge_id_list)
+    G.add_edges_from([shortcut["edge_id"] for shortcut in visual_shortcut_list])
 
     # Put values into graph nodes & edges
     # for obs_id in obs_id_list:
@@ -97,14 +85,14 @@ if __name__ == "__main__":
         G.nodes()[i]["o"] = pos_record[i + "_grid"]
 
     # Add edge between consecutive nodes
-    for edge in consecutive_edge_list:
-        G.edges[edge]["consecutive"] = 1
-        G.edges[edge]["similarity"] = 0
+    for edge_id in consecutive_edge_id_list:
+        G.edges[edge_id]["consecutive"] = 1
+        G.edges[edge_id]["similarity"] = 0
 
     # If visual shortcuts exists, remove consecutive edge & add similarity value
-    for similarity in similarity_list:
-        G.edges[similarity["edge"]]["consecutive"] = 0
-        G.edges[similarity["edge"]]["similarity"] = similarity["probability"]
+    for shortcut in visual_shortcut_list:
+        G.edges[shortcut["edge_id"]]["consecutive"] = 0
+        G.edges[shortcut["edge_id"]]["similarity"] = shortcut["similarity"]
 
     # Visualization
     img_id = 0
@@ -121,16 +109,25 @@ if __name__ == "__main__":
                 thickness=-1,
             )
 
-        for similarity in similarity_list:
-            if obs_id in similarity["edge"]:
-                (s, e) = similarity["edge"]
-                cv2.line(
-                    img=map_image,
-                    pt1=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
-                    pt2=(int(G.nodes[e]["o"][1]), int(G.nodes[e]["o"][0])),
-                    color=(int(255 * similarity["probability"]), 0, 0),
-                    thickness=1,
-                )
+        shortcuts_to_draw = []
+        for shortcut in visual_shortcut_list:
+            if obs_id in shortcut["edge_id"]:
+                shortcuts_to_draw.append(shortcut)
+
+        if TestConstant.VISUAL_SHORTCUT_WITH_MAX_VALUE:
+            similarities = [shortcut["similarity"] for shortcut in shortcuts_to_draw]
+            id_with_max_value = np.argmax(similarities)
+            shortcuts_to_draw = [shortcuts_to_draw[id_with_max_value]]
+
+        for shortcut in shortcuts_to_draw:
+            (s, e) = shortcut["edge_id"]
+            cv2.line(
+                img=map_image,
+                pt1=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
+                pt2=(int(G.nodes[e]["o"][1]), int(G.nodes[e]["o"][0])),
+                color=(int(255 * shortcut["similarity"]), 0, 0),
+                thickness=1,
+            )
 
         cv2.circle(
             img=map_image,
@@ -140,9 +137,9 @@ if __name__ == "__main__":
             thickness=-1,
         )
 
-        cv2.namedWindow("similarity", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("similarity", 1152, 1152)
-        cv2.imshow("similarity", map_image)
+        cv2.namedWindow("visual_shortcut", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("visual_shortcut", 1152, 1152)
+        cv2.imshow("visual_shortcut", map_image)
 
         if args.save_img:
             cv2.imwrite(visualization_result_path + os.sep + f"{img_id:06d}.jpg", map_image)
