@@ -12,6 +12,7 @@ from scipy.spatial.distance import pdist
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import draw_line_from_edge, draw_point_from_node, highlight_point_from_node
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -119,17 +120,9 @@ if __name__ == "__main__":
     img_id = 0
     for obs_id in obs_id_list:
         map_image = cv2.cvtColor(sim.recolored_topdown_map, cv2.COLOR_GRAY2BGR)
-        node_points = np.array([G.nodes()[i]["o"] for i in G.nodes()])
 
-        # Draw all nodes on map
-        for pnt in node_points:
-            cv2.circle(
-                img=map_image,
-                center=(int(pnt[1]), int(pnt[0])),
-                radius=0,
-                color=(0, 0, 255),
-                thickness=-1,
-            )
+        for i in G.nodes():
+            draw_point_from_node(map_image, G, i)
 
         # Get observation id numbers which is in the same cluster
         cluster_list = np.where(cluster_table[int(obs_id)] == 1)[0]
@@ -144,13 +137,7 @@ if __name__ == "__main__":
 
         # Mark nodes which is in the same cluster
         for id_same_cluster in obs_id_in_same_cluster:
-            cv2.circle(
-                img=map_image,
-                center=(int(G.nodes[id_same_cluster]["o"][1]), int(G.nodes[id_same_cluster]["o"][0])),
-                radius=1,
-                color=(0, 122, 255),
-                thickness=-1,
-            )
+            highlight_point_from_node(map_image, G, id_same_cluster, (0, 122, 255))
 
         # Draw all shortcuts
         shortcuts_to_draw = []
@@ -159,40 +146,15 @@ if __name__ == "__main__":
                 shortcuts_to_draw.append(shortcut)
 
         for shortcut in shortcuts_to_draw:
-            (s, e) = shortcut["edge_id"]
-            cv2.line(
-                img=map_image,
-                pt1=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
-                pt2=(int(G.nodes[e]["o"][1]), int(G.nodes[e]["o"][0])),
-                color=(int(255 * shortcut["similarity"]), 122, 0),
-                thickness=1,
-            )
+            draw_line_from_edge(map_image, G, shortcut["edge_id"], shortcut["similarity"])
 
         # Mark the shortcut node with maximum value
         id_max_value = np.argmax([shortcut["similarity"] for shortcut in shortcuts_to_draw])
         (s, e) = shortcuts_to_draw[id_max_value]["edge_id"]
-
-        if s == obs_id:
-            id_max_shortcut = e
-        else:
-            id_max_shortcut = s
-
-        cv2.circle(
-            img=map_image,
-            center=(int(G.nodes[id_max_shortcut]["o"][1]), int(G.nodes[id_max_shortcut]["o"][0])),
-            radius=1,
-            color=(0, 255, 255),
-            thickness=-1,
-        )
-
-        # Mark current observation node
-        cv2.circle(
-            img=map_image,
-            center=(int(G.nodes[obs_id]["o"][1]), int(G.nodes[obs_id]["o"][0])),
-            radius=1,
-            color=(0, 255, 0),
-            thickness=-1,
-        )
+        id_max_shortcut = e if s == obs_id else s
+        highlight_point_from_node(map_image, G, id_max_shortcut, (0, 255, 255))
+        # Mark the current observation node
+        highlight_point_from_node(map_image, G, obs_id, (0, 255, 0))
 
         cv2.namedWindow("visual_shortcut", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("visual_shortcut", 1152, 1152)

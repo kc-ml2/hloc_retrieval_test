@@ -389,3 +389,36 @@ def remove_duplicate_matrix(extrinsic_mat_list):
         deduplicated_mat_list.append(ext_trans_mat)
 
     return deduplicated_mat_list
+
+
+def draw_point_from_node(map_img, graph, node_id):
+    """Draw point(circle) on map with negative radius."""
+    cv2.circle(
+        img=map_img,
+        center=(int(graph.nodes()[node_id]["o"][1]), int(graph.nodes()[node_id]["o"][0])),
+        radius=0,
+        color=(0, 0, 255),
+        thickness=-1,
+    )
+
+
+def highlight_point_from_node(map_img, graph, node_id, color):
+    """Draw highlighted point(circle) on map with 1 radius."""
+    cv2.circle(
+        img=map_img,
+        center=(int(graph.nodes()[node_id]["o"][1]), int(graph.nodes()[node_id]["o"][0])),
+        radius=1,
+        color=color,
+        thickness=-1,
+    )
+
+
+def draw_line_from_edge(map_img, graph, edge_tuple, brightness):
+    """Draw line with edge id tuple."""
+    cv2.line(
+        img=map_img,
+        pt1=(int(graph.nodes[edge_tuple[0]]["o"][1]), int(graph.nodes[edge_tuple[0]]["o"][0])),
+        pt2=(int(graph.nodes[edge_tuple[1]]["o"][1]), int(graph.nodes[edge_tuple[1]]["o"][0])),
+        color=(int(255 * brightness), 122, 0),
+        thickness=1,
+    )
