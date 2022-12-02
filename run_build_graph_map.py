@@ -6,6 +6,8 @@ import os
 import cv2
 import networkx as nx
 import numpy as np
+from scipy.cluster.hierarchy import fcluster, ward
+from scipy.spatial.distance import pdist
 
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
@@ -71,6 +73,25 @@ if __name__ == "__main__":
         if similarity >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD:
             visual_shortcut_list.append({"edge_id": combination, "similarity": similarity})
 
+    # Make linkage for clustering
+    linkage_dataset = similarity_matrix >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
+    linkage_list = []
+    for index, data in np.ndenumerate(linkage_dataset):
+        if data:
+            linkage_list.append([index[0], index[1]])
+    distance_matrix = pdist(linkage_list)
+    dendrogram = ward(distance_matrix)
+
+    # Assign cluster number to each obsercation id
+    cluster_assign_list = fcluster(dendrogram, t=500, criterion="distance")
+    # cluster_assign_list = fcluster(dendrogram, t=0.5)
+    print("The number of clusters : ", np.max(cluster_assign_list))
+    cluster_table = np.zeros([len(obs_id_list), np.max(cluster_assign_list)], dtype=np.int32)
+    for i, linkage in enumerate(linkage_list):
+        s, e = linkage
+        cluster_table[s][cluster_assign_list[i] - 1] = 1
+        cluster_table[e][cluster_assign_list[i] - 1] = 1
+
     # Initialize graph
     G = nx.Graph()
     G.add_nodes_from(obs_id_list)
@@ -100,6 +121,7 @@ if __name__ == "__main__":
         map_image = cv2.cvtColor(sim.recolored_topdown_map, cv2.COLOR_GRAY2BGR)
         node_points = np.array([G.nodes()[i]["o"] for i in G.nodes()])
 
+        # Draw all nodes on map
         for pnt in node_points:
             cv2.circle(
                 img=map_image,
@@ -109,15 +131,32 @@ if __name__ == "__main__":
                 thickness=-1,
             )
 
+        # Get observation id numbers which is in the same cluster
+        cluster_list = np.where(cluster_table[int(obs_id)] == 1)[0]
+        obs_id_in_same_cluster = []
+        for cluster in cluster_list:
+            obs_in_cluster = np.where(cluster_table[:, cluster] == 1)[0]
+            obs_id_in_same_cluster = np.concatenate([obs_id_in_same_cluster, obs_in_cluster])
+            obs_id_in_same_cluster = np.int32(obs_id_in_same_cluster)
+        obs_id_in_same_cluster = [*set(obs_id_in_same_cluster)]
+        obs_id_in_same_cluster = [f"{id:06d}" for id in obs_id_in_same_cluster]
+        print("All forward : ", f"{len(obs_id_in_same_cluster) + np.max(cluster_assign_list):06d}")
+
+        # Mark nodes which is in the same cluster
+        for id_same_cluster in obs_id_in_same_cluster:
+            cv2.circle(
+                img=map_image,
+                center=(int(G.nodes[id_same_cluster]["o"][1]), int(G.nodes[id_same_cluster]["o"][0])),
+                radius=1,
+                color=(0, 122, 255),
+                thickness=-1,
+            )
+
+        # Draw all shortcuts
         shortcuts_to_draw = []
         for shortcut in visual_shortcut_list:
             if obs_id in shortcut["edge_id"]:
                 shortcuts_to_draw.append(shortcut)
-
-        if TestConstant.VISUAL_SHORTCUT_WITH_MAX_VALUE:
-            similarities = [shortcut["similarity"] for shortcut in shortcuts_to_draw]
-            id_with_max_value = np.argmax(similarities)
-            shortcuts_to_draw = [shortcuts_to_draw[id_with_max_value]]
 
         for shortcut in shortcuts_to_draw:
             (s, e) = shortcut["edge_id"]
@@ -125,10 +164,28 @@ if __name__ == "__main__":
                 img=map_image,
                 pt1=(int(G.nodes[s]["o"][1]), int(G.nodes[s]["o"][0])),
                 pt2=(int(G.nodes[e]["o"][1]), int(G.nodes[e]["o"][0])),
-                color=(int(255 * shortcut["similarity"]), 0, 0),
+                color=(int(255 * shortcut["similarity"]), 122, 0),
                 thickness=1,
             )
 
+        # Mark the shortcut node with maximum value
+        id_max_value = np.argmax([shortcut["similarity"] for shortcut in shortcuts_to_draw])
+        (s, e) = shortcuts_to_draw[id_max_value]["edge_id"]
+
+        if s == obs_id:
+            id_max_shortcut = e
+        else:
+            id_max_shortcut = s
+
+        cv2.circle(
+            img=map_image,
+            center=(int(G.nodes[id_max_shortcut]["o"][1]), int(G.nodes[id_max_shortcut]["o"][0])),
+            radius=1,
+            color=(0, 255, 255),
+            thickness=-1,
+        )
+
+        # Mark current observation node
         cv2.circle(
             img=map_image,
             center=(int(G.nodes[obs_id]["o"][1]), int(G.nodes[obs_id]["o"][0])),
