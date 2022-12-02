@@ -80,12 +80,13 @@ if __name__ == "__main__":
     for index, data in np.ndenumerate(linkage_dataset):
         if data:
             linkage_list.append([index[0], index[1]])
+
+    # Hierarchical clustering
     distance_matrix = pdist(linkage_list)
     dendrogram = ward(distance_matrix)
 
-    # Assign cluster number to each obsercation id
+    # Assign cluster number to each observation id
     cluster_assign_list = fcluster(dendrogram, t=500, criterion="distance")
-    # cluster_assign_list = fcluster(dendrogram, t=0.5)
     print("The number of clusters : ", np.max(cluster_assign_list))
     cluster_table = np.zeros([len(obs_id_list), np.max(cluster_assign_list)], dtype=np.int32)
     for i, linkage in enumerate(linkage_list):
