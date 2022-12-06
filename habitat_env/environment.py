@@ -5,6 +5,7 @@ import cv2
 import habitat_sim
 import numpy as np
 import quaternion
+from scipy.spatial.transform import Rotation
 
 from algorithms.yolo import Yolo
 from utils.habitat_utils import make_cfg, make_sim_setting_dict
@@ -95,6 +96,20 @@ class HabitatSimWithMap(habitat_sim.Simulator):
 
         self.closest_level = average_list.index(min(average_list))
         self.recolored_topdown_map = self.recolored_topdown_map_list[self.closest_level]
+
+    def set_random_position(self):
+        """Set random position & rotation of agent."""
+        agent_state = habitat_sim.AgentState()
+
+        nav_point = self.pathfinder.get_random_navigable_point()
+        random_rotation = random.randint(0, 359)
+        r = Rotation.from_euler("y", random_rotation, degrees=True)
+
+        agent_state.position = nav_point  # world space
+        agent_state.rotation = r.as_quat()
+
+        self.agent.set_state(agent_state)
+        self.update_closest_map(nav_point)
 
     def get_cam_observations(self):
         """Inherit the 'get_sensor_observations' method of the parent class."""
