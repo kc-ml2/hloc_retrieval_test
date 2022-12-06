@@ -68,9 +68,9 @@ if __name__ == "__main__":
 
         print("total scene: ", total_scene_num)
 
-        for i, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
-            print("scene: ", scene_number, "    level: ", i)
-            topdown_map = sim.topdown_map_list[i]
+        for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
+            print("scene: ", scene_number, "    level: ", level)
+            topdown_map = sim.topdown_map_list[level]
             visual_binary_map = convert_to_visual_binarymap(topdown_map)
 
             if DataConfig.REMOVE_ISOLATED:
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
                     # Set random rotation at current position
                     agent_state = habitat_sim.AgentState()
-                    agent_state.position = np.array([pos[1], sim.height_list[i], pos[0]])
+                    agent_state.position = np.array([pos[1], sim.height_list[level], pos[0]])
                     random_rotation = random.randint(0, 359)
                     r = Rotation.from_euler("y", random_rotation, degrees=True)
                     agent_state.rotation = r.as_quat()
@@ -147,21 +147,19 @@ if __name__ == "__main__":
                     observations = sim.get_cam_observations()
                     color_img = observations["all_view"]
 
-                    cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{i:06d}_{k:06d}_{j}.bmp", color_img)
+                    cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{level:06d}_{k:06d}_{j}.bmp", color_img)
                     label_pos = {
-                        f"{scene_number}_{i:06d}_{k:06d}_{j}": [
-                            [float(pos[1]), float(sim.height_list[i]), float(pos[0])],
+                        f"{scene_number}_{level:06d}_{k:06d}_{j}": [
+                            [float(pos[1]), float(sim.height_list[level]), float(pos[0])],
                             random_rotation,
                         ]
                     }
                     label.update(label_pos)
 
-                label_similarity = {f"{scene_number}_{i:06d}_{k:06d}_similarity": y}
+                label_similarity = {f"{scene_number}_{level:06d}_{k:06d}_similarity": y}
                 label.update(label_similarity)
 
         total_scene_num = total_scene_num + 1
-
-        cv2.destroyAllWindows()
         sim.close()
 
     with open(label_json_file, "w") as label_json:  # pylint: disable=unspecified-encoding
