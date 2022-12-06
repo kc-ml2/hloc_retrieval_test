@@ -407,7 +407,7 @@ def highlight_point_from_node(map_img, graph, node_id, color):
     cv2.circle(
         img=map_img,
         center=(int(graph.nodes()[node_id]["o"][1]), int(graph.nodes()[node_id]["o"][0])),
-        radius=1,
+        radius=2,
         color=color,
         thickness=-1,
     )

@@ -7,7 +7,7 @@ import cv2
 import networkx as nx
 import numpy as np
 from scipy.cluster.hierarchy import fcluster, ward
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import squareform
 
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
@@ -74,25 +74,14 @@ if __name__ == "__main__":
         if similarity >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD:
             visual_shortcut_list.append({"edge_id": combination, "similarity": similarity})
 
-    # Make linkage for clustering
-    linkage_dataset = similarity_matrix >= TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
-    linkage_list = []
-    for index, data in np.ndenumerate(linkage_dataset):
-        if data:
-            linkage_list.append([index[0], index[1]])
-
     # Hierarchical clustering
-    distance_matrix = pdist(linkage_list)
-    dendrogram = ward(distance_matrix)
+    distance_matrix = 1.0 - similarity_matrix
+    np.fill_diagonal(distance_matrix, 0)
+    dendrogram = ward(squareform(distance_matrix))
 
     # Assign cluster number to each observation id
-    cluster_assign_list = fcluster(dendrogram, t=500, criterion="distance")
+    cluster_assign_list = fcluster(dendrogram, t=1, criterion="distance")  # ward
     print("The number of clusters : ", np.max(cluster_assign_list))
-    cluster_table = np.zeros([len(obs_id_list), np.max(cluster_assign_list)], dtype=np.int32)
-    for i, linkage in enumerate(linkage_list):
-        s, e = linkage
-        cluster_table[s][cluster_assign_list[i] - 1] = 1
-        cluster_table[e][cluster_assign_list[i] - 1] = 1
 
     # Initialize graph
     G = nx.Graph()
@@ -126,15 +115,10 @@ if __name__ == "__main__":
             draw_point_from_node(map_image, G, i)
 
         # Get observation id numbers which is in the same cluster
-        cluster_list = np.where(cluster_table[int(obs_id)] == 1)[0]
-        obs_id_in_same_cluster = []
-        for cluster in cluster_list:
-            obs_in_cluster = np.where(cluster_table[:, cluster] == 1)[0]
-            obs_id_in_same_cluster = np.concatenate([obs_id_in_same_cluster, obs_in_cluster])
-            obs_id_in_same_cluster = np.int32(obs_id_in_same_cluster)
-        obs_id_in_same_cluster = [*set(obs_id_in_same_cluster)]
+        cluster_id = cluster_assign_list[int(obs_id)]
+        obs_id_in_same_cluster = np.where(cluster_assign_list == cluster_id)[0]
         obs_id_in_same_cluster = [f"{id:06d}" for id in obs_id_in_same_cluster]
-        print("All forward : ", f"{len(obs_id_in_same_cluster) + np.max(cluster_assign_list):06d}")
+        print("Number of observations in cluster : ", len(obs_id_in_same_cluster))
 
         # Mark nodes which is in the same cluster
         for id_same_cluster in obs_id_in_same_cluster:
@@ -153,7 +137,7 @@ if __name__ == "__main__":
         id_max_value = np.argmax([shortcut["similarity"] for shortcut in shortcuts_to_draw])
         (s, e) = shortcuts_to_draw[id_max_value]["edge_id"]
         id_max_shortcut = e if s == obs_id else s
-        highlight_point_from_node(map_image, G, id_max_shortcut, (0, 255, 255))
+        highlight_point_from_node(map_image, G, id_max_shortcut, (0, 0, 122))
         # Mark the current observation node
         highlight_point_from_node(map_image, G, obs_id, (0, 255, 0))
 
