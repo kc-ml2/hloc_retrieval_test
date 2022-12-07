@@ -111,6 +111,8 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         self.agent.set_state(agent_state)
         self.update_closest_map(nav_point)
 
+        return nav_point, random_rotation
+
     def get_cam_observations(self):
         """Inherit the 'get_sensor_observations' method of the parent class."""
         cam_observations = {
