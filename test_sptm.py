@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
-from config.algorithm_config import TrainingConstant
+from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
 
 if __name__ == "__main__":
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     with tf.device("/device:GPU:1"):
         dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
         dataset = dataset.map(lambda x, y: preprocess_image(x, y, file_directory))
-        dataset = dataset.batch(TrainingConstant.BATCH_SIZE)
+        dataset = dataset.batch(TestConstant.BATCH_SIZE)
 
         # Test
         model = keras.models.load_model(loaded_model)

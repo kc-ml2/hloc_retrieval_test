@@ -28,6 +28,9 @@ if __name__ == "__main__":
     with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
         height_data = json.load(height_json)
 
+    if scene_index is not None:
+        scene_list = [scene_list[scene_index]]
+
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
 
