@@ -55,6 +55,23 @@ def preprocess_image_for_building_map(obs_id_pair, file_directory, extension):
     return input_image
 
 
+def preprocess_image_for_localization(obs_id_pair, file_directory_pair, extension_pair):
+    """Preprocess & concatenate two images for localization."""
+    anchor_file = file_directory_pair[0] + os.sep + obs_id_pair[0] + extension_pair[0]
+    target_file = file_directory_pair[1] + os.sep + obs_id_pair[1] + extension_pair[1]
+
+    anchor_image_string = tf.io.read_file(anchor_file)
+    target_image_string = tf.io.read_file(target_file)
+    anchor_image = tf.image.decode_bmp(anchor_image_string, channels=3)
+    target_image = tf.image.decode_bmp(target_image_string, channels=3)
+    anchor_image = tf.image.convert_image_dtype(anchor_image, tf.float32)
+    target_image = tf.image.convert_image_dtype(target_image, tf.float32)
+
+    input_image = tf.concat((anchor_image, target_image), 2)
+
+    return input_image
+
+
 def list_image_name_label_wo_index(sorted_image_file, label_data):
     image_name_list = []
     for image_file in sorted_image_file:
