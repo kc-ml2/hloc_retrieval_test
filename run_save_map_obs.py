@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
-from utils.habitat_utils import draw_point_from_node, highlight_point_from_node
+from utils.habitat_utils import draw_point_from_node
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -62,15 +62,14 @@ if __name__ == "__main__":
 
             if map_debug:
                 map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
-                for current_node in graph.nodes():
-                    for node_id in graph.nodes():
-                        draw_point_from_node(map_image, graph, node_id)
-                    highlight_point_from_node(map_image, graph, current_node, (0, 255, 0))
+                for node_id in graph.nodes():
+                    draw_point_from_node(map_image, graph, node_id)
 
-                    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
-                    cv2.resizeWindow("map", 1152, 1152)
-                    cv2.imshow("map", map_image)
-                    cv2.waitKey()
+                cv2.namedWindow("map", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("map", 1152, 1152)
+                cv2.imshow("map", map_image)
+                cv2.waitKey()
+                continue
 
             observation_path = os.path.join(output_path, f"observation_{scene_number}")
             map_obs_result_path = os.path.join(observation_path, f"map_node_observation_level_{level}")
@@ -96,6 +95,6 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                cv2.imwrite(map_obs_result_path + os.sep + f"{node_id}.bmp", color_img)
+                cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.bmp", color_img)
 
         sim.close()

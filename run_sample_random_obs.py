@@ -38,11 +38,10 @@ if __name__ == "__main__":
             print("scene: ", scene_number, "    level: ", level)
 
             observation_path = os.path.join(output_path, f"observation_{scene_number}")
-            map_obs_result_path = os.path.join(observation_path, f"map_node_observation_level_{level}")
-            test_sample_path = os.path.join(map_obs_result_path, "test_sample")
+            test_sample_path = os.path.join(observation_path, f"test_sample_{level}")
             os.makedirs(test_sample_path, exist_ok=True)
 
-            pos_record_json = os.path.join(test_sample_path, "pos_record.json")
+            pos_record_json = os.path.join(observation_path, f"pos_record_test_sample_{level}.json")
             pos_record = {}
             pos_record.update({"scene_number": scene_number})
             pos_record.update({"level": level})
