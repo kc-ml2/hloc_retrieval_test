@@ -67,10 +67,12 @@ if __name__ == "__main__":
 
             similarity_combination_list = list(itertools.product(map_obs_id_list, test_obs_id_list))
 
-            with tf.device("/device:GPU:1"):
+            with tf.device("/device:GPU:0"):
                 record_dataset = tf.data.Dataset.from_tensor_slices(similarity_combination_list)
                 record_dataset = record_dataset.map(
-                    lambda x: preprocess_image_for_localization(x, path_pair, extension_pair)
+                    lambda x, m_path=map_obs_per_level_path, s_path=test_sample_path: preprocess_image_for_localization(
+                        x, m_path, s_path
+                    )
                 )
                 record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
 

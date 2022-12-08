@@ -12,12 +12,7 @@ from scipy.spatial.transform import Rotation
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import draw_point_from_node
-from utils.skeletonize_utils import (
-    convert_to_binarymap,
-    convert_to_dense_topology,
-    convert_to_visual_binarymap,
-    remove_isolated_area,
-)
+from utils.skeletonize_utils import convert_to_binarymap, convert_to_dense_topology, remove_isolated_area
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -49,11 +44,8 @@ if __name__ == "__main__":
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
             topdown_map = sim.topdown_map_list[level]
-            visual_binary_map = convert_to_visual_binarymap(topdown_map)
-
             if DataConfig.REMOVE_ISOLATED:
                 topdown_map = remove_isolated_area(topdown_map)
-
             binary_map = convert_to_binarymap(topdown_map)
             _, graph = convert_to_dense_topology(binary_map)
 
@@ -95,6 +87,6 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.bmp", color_img)
+                cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.jpg", color_img)
 
         sim.close()

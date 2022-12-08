@@ -55,10 +55,10 @@ def preprocess_image_for_building_map(obs_id_pair, file_directory, extension):
     return input_image
 
 
-def preprocess_image_for_localization(obs_id_pair, file_directory_pair, extension_pair):
+def preprocess_image_for_localization(obs_id_pair, map_directory, sample_directory):
     """Preprocess & concatenate two images for localization."""
-    anchor_file = file_directory_pair[0] + os.sep + obs_id_pair[0] + extension_pair[0]
-    target_file = file_directory_pair[1] + os.sep + obs_id_pair[1] + extension_pair[1]
+    anchor_file = map_directory + os.sep + obs_id_pair[0] + ".bmp"
+    target_file = sample_directory + os.sep + obs_id_pair[1] + ".bmp"
 
     anchor_image_string = tf.io.read_file(anchor_file)
     target_image_string = tf.io.read_file(target_file)

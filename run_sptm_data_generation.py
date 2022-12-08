@@ -16,7 +16,6 @@ from habitat_env.environment import HabitatSimWithMap
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
-    convert_to_visual_binarymap,
     get_one_random_directed_adjacent_node,
     remove_isolated_area,
 )
@@ -71,11 +70,8 @@ if __name__ == "__main__":
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
             topdown_map = sim.topdown_map_list[level]
-            visual_binary_map = convert_to_visual_binarymap(topdown_map)
-
             if DataConfig.REMOVE_ISOLATED:
                 topdown_map = remove_isolated_area(topdown_map)
-
             binary_map = convert_to_binarymap(topdown_map)
             _, graph = convert_to_dense_topology(binary_map)
 
