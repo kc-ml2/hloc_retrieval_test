@@ -21,15 +21,21 @@ def downsample(input, factor):
     return input
 
 
-def preprocess_image(image_name, label, file_directory):
+def preprocess_image(image_name, label, file_directory, extension):
     """Preprocess & concatenate two images."""
-    anchor_file = file_directory + os.sep + image_name + "_0.bmp"
-    target_file = file_directory + os.sep + image_name + "_1.bmp"
+    anchor_file = file_directory + os.sep + image_name + f"_0{extension}"
+    target_file = file_directory + os.sep + image_name + f"_1{extension}"
 
     anchor_image_string = tf.io.read_file(anchor_file)
     target_image_string = tf.io.read_file(target_file)
-    anchor_image = tf.image.decode_bmp(anchor_image_string, channels=3)
-    target_image = tf.image.decode_bmp(target_image_string, channels=3)
+
+    if extension == ".bmp":
+        anchor_image = tf.image.decode_bmp(anchor_image_string, channels=3)
+        target_image = tf.image.decode_bmp(target_image_string, channels=3)
+    if extension == ".jpg":
+        anchor_image = tf.image.decode_jpeg(anchor_image_string, channels=3)
+        target_image = tf.image.decode_jpeg(target_image_string, channels=3)
+
     anchor_image = tf.image.convert_image_dtype(anchor_image, tf.float32)
     target_image = tf.image.convert_image_dtype(target_image, tf.float32)
 
@@ -38,32 +44,21 @@ def preprocess_image(image_name, label, file_directory):
     return input_image, label
 
 
-def preprocess_image_for_building_map(obs_id_pair, file_directory, extension):
+def preprocess_image_wo_label(obs_id_pair, anchor_file_dir, target_file_dir, extension):
     """Preprocess & concatenate two images from observations."""
-    anchor_file = file_directory + os.sep + obs_id_pair[0] + extension
-    target_file = file_directory + os.sep + obs_id_pair[1] + extension
+    anchor_file = anchor_file_dir + os.sep + obs_id_pair[0] + extension
+    target_file = target_file_dir + os.sep + obs_id_pair[1] + extension
 
     anchor_image_string = tf.io.read_file(anchor_file)
     target_image_string = tf.io.read_file(target_file)
-    anchor_image = tf.image.decode_jpeg(anchor_image_string, channels=3)
-    target_image = tf.image.decode_jpeg(target_image_string, channels=3)
-    anchor_image = tf.image.convert_image_dtype(anchor_image, tf.float32)
-    target_image = tf.image.convert_image_dtype(target_image, tf.float32)
 
-    input_image = tf.concat((anchor_image, target_image), 2)
+    if extension == ".bmp":
+        anchor_image = tf.image.decode_bmp(anchor_image_string, channels=3)
+        target_image = tf.image.decode_bmp(target_image_string, channels=3)
+    if extension == ".jpg":
+        anchor_image = tf.image.decode_jpeg(anchor_image_string, channels=3)
+        target_image = tf.image.decode_jpeg(target_image_string, channels=3)
 
-    return input_image
-
-
-def preprocess_image_for_localization(obs_id_pair, map_directory, sample_directory):
-    """Preprocess & concatenate two images for localization."""
-    anchor_file = map_directory + os.sep + obs_id_pair[0] + ".bmp"
-    target_file = sample_directory + os.sep + obs_id_pair[1] + ".bmp"
-
-    anchor_image_string = tf.io.read_file(anchor_file)
-    target_image_string = tf.io.read_file(target_file)
-    anchor_image = tf.image.decode_bmp(anchor_image_string, channels=3)
-    target_image = tf.image.decode_bmp(target_image_string, channels=3)
     anchor_image = tf.image.convert_image_dtype(anchor_image, tf.float32)
     target_image = tf.image.convert_image_dtype(target_image, tf.float32)
 

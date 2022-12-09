@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
-from algorithms.sptm_utils import preprocess_image_for_building_map
+from algorithms.sptm_utils import preprocess_image_wo_label
 from config.algorithm_config import NetworkConstant, TestConstant, TrainingConstant
 
 if __name__ == "__main__":
@@ -30,7 +30,6 @@ if __name__ == "__main__":
     sorted_obs_image_file = sorted(os.listdir(obs_path))
     obs_id_list = [obs_image_file[:-4] for obs_image_file in sorted_obs_image_file]
     img_extension = sorted_obs_image_file[0][-4:]
-    consecutive_edge_list = [(obs_id_list[i], obs_id_list[i + 1]) for i in range(len(obs_id_list) - 1)]
 
     # Get list of node combinations that should be examined with similarity prediction (visual shortcut in paper)
     similarity_combination_list = list(itertools.combinations(obs_id_list, 2))
@@ -45,7 +44,7 @@ if __name__ == "__main__":
 
     with tf.device("/device:GPU:0"):
         record_dataset = tf.data.Dataset.from_tensor_slices(similarity_combination_list)
-        record_dataset = record_dataset.map(lambda x: preprocess_image_for_building_map(x, obs_path, img_extension))
+        record_dataset = record_dataset.map(lambda x: preprocess_image_wo_label(x, obs_path, obs_path, img_extension))
         record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
 
         siamese = ResnetBuilder.build_siamese_resnet_18

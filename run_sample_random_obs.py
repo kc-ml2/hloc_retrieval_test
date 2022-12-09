@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.bmp", color_img)
+                cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
 
                 node_point = maps.to_grid(random_point[2], random_point[0], sim.recolored_topdown_map.shape[0:2], sim)
                 sim_pos = {f"{k:06d}_sim": [[float(pos) for pos in random_point], random_rotation]}

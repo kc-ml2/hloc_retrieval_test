@@ -143,7 +143,7 @@ if __name__ == "__main__":
                     observations = sim.get_cam_observations()
                     color_img = observations["all_view"]
 
-                    cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{level:06d}_{k:06d}_{j}.bmp", color_img)
+                    cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{level:06d}_{k:06d}_{j}.jpg", color_img)
                     label_pos = {
                         f"{scene_number}_{level:06d}_{k:06d}_{j}": [
                             [float(pos[1]), float(sim.height_list[level]), float(pos[0])],

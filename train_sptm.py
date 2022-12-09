@@ -23,6 +23,8 @@ if __name__ == "__main__":
     sorted_train_image_file = sorted(os.listdir(train_file_directory))
     sorted_valid_image_file = sorted(os.listdir(valid_file_directory))
 
+    img_extension = sorted_train_image_file[0][-4:]
+
     with open(train_label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
         train_label_data = json.load(label_json)
     with open(valid_label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
@@ -37,8 +39,8 @@ if __name__ == "__main__":
 
         train_dataset = train_dataset.shuffle(len(train_image_list), reshuffle_each_iteration=True)
 
-        train_dataset = train_dataset.map(lambda x, y: preprocess_image(x, y, train_file_directory))
-        valid_dataset = valid_dataset.map(lambda x, y: preprocess_image(x, y, valid_file_directory))
+        train_dataset = train_dataset.map(lambda x, y: preprocess_image(x, y, train_file_directory, img_extension))
+        valid_dataset = valid_dataset.map(lambda x, y: preprocess_image(x, y, valid_file_directory, img_extension))
 
         train_dataset = train_dataset.batch(TrainingConstant.BATCH_SIZE)
         valid_dataset = valid_dataset.batch(TrainingConstant.BATCH_SIZE)

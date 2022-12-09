@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
-from algorithms.sptm_utils import preprocess_image_for_localization
+from algorithms.sptm_utils import preprocess_image_wo_label
 from config.algorithm_config import NetworkConstant, TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
@@ -45,33 +45,31 @@ if __name__ == "__main__":
             print("scene: ", scene_number, "    level: ", level)
 
             # Set file path
-            map_obs_per_level_path = os.path.join(observation_path, f"map_node_observation_level_{level}")
-            test_sample_path = os.path.join(observation_path, f"test_sample_{level}")
-            path_pair = [map_obs_per_level_path, test_sample_path]
+            map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
+            sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Set output npy file name
             if args.output:
                 output = args.output
             else:
-                cache_index = os.path.basename(os.path.normpath(test_sample_path))
+                cache_index = os.path.basename(os.path.normpath(sample_dir))
                 output = os.path.join(observation_path, f"similarity_matrix_{cache_index}.npy")
 
             # Make list to iterate
-            sorted_map_obs_file = sorted(os.listdir(map_obs_per_level_path))
-            sorted_test_sample_file = sorted(os.listdir(test_sample_path))
+            sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
+            sorted_test_sample_file = sorted(os.listdir(sample_dir))
             map_obs_id_list = [map_image_file[:-4] for map_image_file in sorted_map_obs_file]
             test_obs_id_list = [test_image_file[:-4] for test_image_file in sorted_test_sample_file]
-            map_img_extension = sorted_map_obs_file[0][-4:]
-            test_img_extension = sorted_test_sample_file[0][-4:]
-            extension_pair = [map_img_extension, test_img_extension]
+
+            img_extension = sorted_map_obs_file[0][-4:]
 
             similarity_combination_list = list(itertools.product(map_obs_id_list, test_obs_id_list))
 
             with tf.device("/device:GPU:0"):
                 record_dataset = tf.data.Dataset.from_tensor_slices(similarity_combination_list)
                 record_dataset = record_dataset.map(
-                    lambda x, m_path=map_obs_per_level_path, s_path=test_sample_path: preprocess_image_for_localization(
-                        x, m_path, s_path
+                    lambda x, m_dir=map_obs_dir, s_dir=sample_dir, ext=img_extension: preprocess_image_wo_label(
+                        x, m_dir, s_dir, ext
                     )
                 )
                 record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)

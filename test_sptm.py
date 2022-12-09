@@ -32,6 +32,7 @@ if __name__ == "__main__":
     with open(label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
         label_data = json.load(label_json)
 
+    img_extension = sorted_image_file[0][-4:]
     image_name_list, y_list = list_image_name_label_wo_index(sorted_image_file, label_data)
 
     y_list_for_compare = []
@@ -41,7 +42,7 @@ if __name__ == "__main__":
 
     with tf.device("/device:GPU:1"):
         dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
-        dataset = dataset.map(lambda x, y: preprocess_image(x, y, file_directory))
+        dataset = dataset.map(lambda x, y: preprocess_image(x, y, file_directory, img_extension))
         dataset = dataset.batch(TestConstant.BATCH_SIZE)
 
         # Test
@@ -69,8 +70,8 @@ if __name__ == "__main__":
                 output_path = wrong_directory
 
             if generate_img:
-                anchor_img = cv2.imread(file_directory + os.sep + image_name + "_0.bmp")
-                target_img = cv2.imread(file_directory + os.sep + image_name + "_1.bmp")
+                anchor_img = cv2.imread(file_directory + os.sep + image_name + f"_0{img_extension}")
+                target_img = cv2.imread(file_directory + os.sep + image_name + f"_1{img_extension}")
                 separation_block = np.zeros((np.shape(anchor_img)[0], 100, 3), dtype=np.uint8)
                 concatenated_img = np.concatenate((anchor_img, separation_block), axis=1)
                 concatenated_img = np.concatenate((concatenated_img, target_img), axis=1)
@@ -88,7 +89,7 @@ if __name__ == "__main__":
                     lineType=cv2.LINE_AA,
                 )
 
-                cv2.imwrite(output_path + os.sep + f"{image_name}_{distance}_{prediction}.bmp", concatenated_img)
+                cv2.imwrite(output_path + os.sep + f"{image_name}_{distance}_{prediction}.jpg", concatenated_img)
 
             print(i)
         print("Number of correct answer: ", num_correct)
