@@ -8,7 +8,7 @@ import numpy as np
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
-from utils.habitat_utils import draw_point_from_node, highlight_point_from_node
+from utils.habitat_utils import draw_point_from_node, highlight_point_from_node, open_env_related_files
 from utils.skeletonize_utils import convert_to_binarymap, convert_to_dense_topology, remove_isolated_area
 
 if __name__ == "__main__":
@@ -26,14 +26,7 @@ if __name__ == "__main__":
     save_img = args.save_img
 
     # Open files
-    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
-        scene_list = f.read().splitlines()
-
-    if scene_index is not None:
-        scene_list = [scene_list[scene_index]]
-
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
+    scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
     # Main loop
     for scene_number in scene_list:
@@ -98,3 +91,5 @@ if __name__ == "__main__":
                     cv2.imwrite(visualization_result_path + os.sep + f"{i:06d}.jpg", map_image)
 
                 cv2.waitKey()
+
+        sim.close()

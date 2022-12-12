@@ -13,6 +13,7 @@ from scipy.spatial.transform import Rotation
 from config.algorithm_config import TrainingConstant
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import open_env_related_files
 from utils.skeletonize_utils import (
     convert_to_binarymap,
     convert_to_dense_topology,
@@ -54,11 +55,7 @@ if __name__ == "__main__":
     os.makedirs(output_image_path, exist_ok=True)
 
     # Open files
-    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
-        scene_list = f.read().splitlines()
-
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
+    scene_list, height_data = open_env_related_files(scene_list_file, height_json_path)
 
     label = {}
     total_scene_num = 0

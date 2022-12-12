@@ -7,12 +7,19 @@ from habitat.utils.visualizations import maps
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
-from utils.habitat_utils import display_map, display_opencv_cam, init_map_display, init_opencv_cam, make_output_path
+from utils.habitat_utils import (
+    display_map,
+    display_opencv_cam,
+    init_map_display,
+    init_opencv_cam,
+    make_output_path,
+    open_env_related_files,
+)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
-    parser.add_argument("--scene-index", type=int, default=0)
+    parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--output-path", default="./output")
     parser.add_argument("--save-all", action="store_true")
@@ -31,97 +38,92 @@ if __name__ == "__main__":
     if check_arg >= 2:
         raise ValueError("Argument Error. Put only one flag.")
 
-    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
-        scene_list = f.read().splitlines()
+    scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
+    for scene_number in scene_list:
+        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data, is_detection)
+        observation_path, pos_record_json = make_output_path(output_path, scene_number)
 
-    if scene_index >= len(scene_list):
-        raise IndexError(f"Scene list index out of range. The range is from 0 to {len(scene_list) - 1}")
+        img_id = 0
+        pos_record = {}
+        pos_record.update({"scene_number": scene_number})
 
-    scene_number = scene_list[scene_index]
-    sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data, is_detection)
-    observation_path, pos_record_json = make_output_path(output_path, scene_number)
+        # Initialize opencv display window
+        init_map_display()
+        init_opencv_cam()
 
-    img_id = 0
-    pos_record = {}
-    pos_record.update({"scene_number": scene_number})
+        while True:
+            # Get camera observation
+            observations = sim.get_cam_observations()
+            color_img = observations["all_view"]
 
-    # Initialize opencv display window
-    init_map_display()
-    init_opencv_cam()
+            # Get current position
+            current_state = sim.agent.get_state()
+            position = current_state.position
 
-    while True:
-        # Get camera observation
-        observations = sim.get_cam_observations()
-        color_img = observations["all_view"]
+            # Update map data
+            sim.update_closest_map(position)
+            node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
+            display_map(sim.recolored_topdown_map, key_points=[node_point])
 
-        # Get current position
-        current_state = sim.agent.get_state()
-        position = current_state.position
-
-        # Update map data
-        sim.update_closest_map(position)
-        node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
-        display_map(sim.recolored_topdown_map, key_points=[node_point])
-
-        # Display observation. If YOLO is available, display object detection result
-        if is_detection:
-            detect_img = sim.detect_img(observations)
-            key = display_opencv_cam(detect_img)
-        else:
-            key = display_opencv_cam(color_img)
-
-        # Set action according to key input
-        if key == ord("w"):
-            action = "move_forward"
-        if key == ord("s"):
-            action = "move_backward"
-        if key == ord("a"):
-            action = "turn_left"
-        if key == ord("d"):
-            action = "turn_right"
-        if key == ord("q"):
-            break
-
-        # Save observation & position record according to the flag
-        # Save observation every step
-        if is_save_all:
-            cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
-            sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
-            grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
-            pos_record.update(sim_pos)
-            pos_record.update(grid_pos)
-            img_id = img_id + 1
-        # Save observation only when forward & backward movement
-        if is_save_except_rotation:
-            if key == ord("w") or key == ord("s"):
-                cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
-                sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
-                grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
-                pos_record.update(sim_pos)
-                pos_record.update(grid_pos)
-                img_id = img_id + 1
-        # Save observation when "o" key input
-        if key == ord("o"):
-            if is_save_all or is_save_except_rotation:
-                pass
+            # Display observation. If YOLO is available, display object detection result
+            if is_detection:
+                detect_img = sim.detect_img(observations)
+                key = display_opencv_cam(detect_img)
             else:
-                print("save image")
+                key = display_opencv_cam(color_img)
+
+            # Set action according to key input
+            if key == ord("w"):
+                action = "move_forward"
+            if key == ord("s"):
+                action = "move_backward"
+            if key == ord("a"):
+                action = "turn_left"
+            if key == ord("d"):
+                action = "turn_right"
+            if key == ord("q"):
+                break
+
+            # Save observation & position record according to the flag
+            # Save observation every step
+            if is_save_all:
                 cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
                 sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
                 grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
                 pos_record.update(sim_pos)
                 pos_record.update(grid_pos)
                 img_id = img_id + 1
-                continue
+            # Save observation only when forward & backward movement
+            if is_save_except_rotation:
+                if key == ord("w") or key == ord("s"):
+                    cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
+                    sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
+                    grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+                    pos_record.update(sim_pos)
+                    pos_record.update(grid_pos)
+                    img_id = img_id + 1
+            # Save observation when "o" key input
+            if key == ord("o"):
+                if is_save_all or is_save_except_rotation:
+                    pass
+                else:
+                    print("save image")
+                    cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
+                    sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
+                    grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+                    pos_record.update(sim_pos)
+                    pos_record.update(grid_pos)
+                    img_id = img_id + 1
+                    continue
 
-        sim.step(action)
+            sim.step(action)
 
-    file_saved = os.listdir(observation_path)
-    if is_save_all or is_save_except_rotation or file_saved:
-        with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
-            json.dump(pos_record, record_json, indent=4)
-    else:
-        os.rmdir(observation_path)
+        file_saved = os.listdir(observation_path)
+        if is_save_all or is_save_except_rotation or file_saved:
+            with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
+                json.dump(pos_record, record_json, indent=4)
+        else:
+            os.rmdir(observation_path)
+
+        sim.close()

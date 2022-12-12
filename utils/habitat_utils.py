@@ -1,4 +1,5 @@
 import gzip
+import json
 import os
 import time
 
@@ -103,6 +104,22 @@ def make_cfg(settings):
     }
 
     return habitat_sim.Configuration(sim_cfg, [agent_cfg])
+
+
+def open_env_related_files(scene_list_file, height_json_path, scene_index=None):
+    """Open cached file related to habitat environment."""
+    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
+        scene_list = f.read().splitlines()
+
+    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
+        height_data = json.load(height_json)
+
+    if scene_index is not None:
+        if scene_index >= len(scene_list):
+            raise IndexError(f"Scene list index out of range. The range is from 0 to {len(scene_list) - 1}")
+        scene_list = [scene_list[scene_index]]
+
+    return scene_list, height_data
 
 
 def make_output_path(output_path, scene_number):

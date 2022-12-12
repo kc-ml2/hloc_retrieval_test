@@ -8,6 +8,7 @@ from habitat.utils.visualizations import maps
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -22,14 +23,7 @@ if __name__ == "__main__":
     height_json_path = args.map_height_json
 
     # Open files
-    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
-        scene_list = f.read().splitlines()
-
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
-
-    if scene_index is not None:
-        scene_list = [scene_list[scene_index]]
+    scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)

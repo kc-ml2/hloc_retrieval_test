@@ -1,6 +1,5 @@
 import argparse
 import itertools
-import json
 import os
 
 import numpy as np
@@ -9,8 +8,7 @@ import tensorflow as tf
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import preprocess_image_wo_label
 from config.algorithm_config import NetworkConstant, TestConstant
-from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
+from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -19,7 +17,6 @@ if __name__ == "__main__":
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--map-obs-path", default="./output")
-    parser.add_argument("--output")
     args, _ = parser.parse_known_args()
     loaded_model = args.load_model
     scene_list_file = args.scene_list_file
@@ -27,33 +24,34 @@ if __name__ == "__main__":
     height_json_path = args.map_height_json
     map_obs_path = args.map_obs_path
 
+    total_list_to_iterate = []
+
     # Open files
-    with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
-        scene_list = f.read().splitlines()
+    scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
-    if scene_index is not None:
-        scene_list = [scene_list[scene_index]]
-
-    with open(height_json_path, "r") as height_json:  # pylint: disable=unspecified-encoding
-        height_data = json.load(height_json)
-
+    # Make list to iterate for Siamese forward
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
         observation_path = os.path.join(map_obs_path, f"observation_{scene_number}")
 
-        for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
+        # Find number of levels
+        num_level = 0
+        for height in height_data:
+            if scene_number in height:
+                num_level = num_level + 1
+        if num_level == 0:
+            print("Height data is not found.")
+
+        for level in range(num_level):
             print("scene: ", scene_number, "    level: ", level)
+            list_to_iterate_by_level = []
 
             # Set file path
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Set output npy file name
-            if args.output:
-                output = args.output
-            else:
-                cache_index = os.path.basename(os.path.normpath(sample_dir))
-                output = os.path.join(observation_path, f"similarity_matrix_{cache_index}.npy")
+            cache_index = os.path.basename(os.path.normpath(sample_dir))
+            output = os.path.join(observation_path, f"similarity_matrix_{cache_index}.npy")
 
             # Make list to iterate
             sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
@@ -89,5 +87,3 @@ if __name__ == "__main__":
 
             with open(output, "wb") as f:
                 np.save(f, similarity_matrix)
-
-        sim.close()
