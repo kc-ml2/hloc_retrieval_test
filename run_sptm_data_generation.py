@@ -4,11 +4,7 @@ import os
 import random
 
 import cv2
-from habitat.utils.visualizations import maps
-import habitat_sim
 import networkx as nx
-import numpy as np
-from scipy.spatial.transform import Rotation
 
 from config.algorithm_config import TrainingConstant
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
@@ -121,22 +117,7 @@ if __name__ == "__main__":
                 node_list = [start, end]
 
                 for j, node in enumerate(node_list):
-                    pos = maps.from_grid(
-                        int(graph.nodes[node]["o"][0]),
-                        int(graph.nodes[node]["o"][1]),
-                        recolored_topdown_map.shape[0:2],
-                        sim,
-                        sim.pathfinder,
-                    )
-
-                    # Set random rotation at current position
-                    agent_state = habitat_sim.AgentState()
-                    agent_state.position = np.array([pos[1], sim.height_list[level], pos[0]])
-                    random_rotation = random.randint(0, 359)
-                    r = Rotation.from_euler("y", random_rotation, degrees=True)
-                    agent_state.rotation = r.as_quat()
-                    sim.agent.set_state(agent_state)
-
+                    pos, random_rotation = sim.set_state_from_grid(graph.nodes[node]["o"], level)
                     observations = sim.get_cam_observations()
                     color_img = observations["all_view"]
 

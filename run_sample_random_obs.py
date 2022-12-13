@@ -1,14 +1,16 @@
 import argparse
 import json
 import os
+import random
 
 import cv2
-from habitat.utils.visualizations import maps
+import numpy as np
 
 from config.algorithm_config import TestConstant
-from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
+from utils.skeletonize_utils import convert_to_binarymap, convert_to_dense_topology, remove_isolated_area
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -40,22 +42,27 @@ if __name__ == "__main__":
             pos_record.update({"scene_number": scene_number})
             pos_record.update({"level": level})
 
+            topdown_map = sim.topdown_map_list[level]
+            if DataConfig.REMOVE_ISOLATED:
+                topdown_map = remove_isolated_area(topdown_map)
+            binary_map = convert_to_binarymap(topdown_map)
+            _, graph = convert_to_dense_topology(binary_map)
+
+            explorable_area_index = list(zip(*np.where(topdown_map == 1)))
+
             for k in range(TestConstant.NUM_SAMPLING_PER_LEVEL):
-                while True:
-                    random_point, random_rotation = sim.set_random_position()
-                    if sim.closest_level == level:
-                        break
+                grid_pos = random.sample(explorable_area_index, 1)[0]
+                sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
 
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
                 cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
 
-                node_point = maps.to_grid(random_point[2], random_point[0], sim.recolored_topdown_map.shape[0:2], sim)
-                sim_pos = {f"{k:06d}_sim": [[float(pos) for pos in random_point], random_rotation]}
-                grid_pos = {f"{k:06d}_grid": [int(pnt) for pnt in node_point]}
-                pos_record.update(sim_pos)
-                pos_record.update(grid_pos)
+                record_sim_pos = {f"{k:06d}_sim": [[float(pos) for pos in sim_pos], random_rotation]}
+                record_grid_pos = {f"{k:06d}_grid": [int(grid_pos[0]), int(grid_pos[1])]}
+                pos_record.update(record_sim_pos)
+                pos_record.update(record_grid_pos)
 
             with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
                 json.dump(pos_record, record_json, indent=4)

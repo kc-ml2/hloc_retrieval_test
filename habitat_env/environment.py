@@ -2,6 +2,7 @@ import os
 import random
 
 import cv2
+from habitat.utils.visualizations import maps
 import habitat_sim
 import numpy as np
 import quaternion
@@ -97,21 +98,29 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         self.closest_level = average_list.index(min(average_list))
         self.recolored_topdown_map = self.recolored_topdown_map_list[self.closest_level]
 
-    def set_random_position(self):
-        """Set random position & rotation of agent."""
+    def set_state_from_grid(self, grid_pos, level, random_rotation=True, rotation=None):
+        """Set agent state from position from grid."""
         agent_state = habitat_sim.AgentState()
+        pos = maps.from_grid(
+            int(grid_pos[0]),
+            int(grid_pos[1]),
+            self.recolored_topdown_map_list[level].shape[0:2],
+            self,
+            self.pathfinder,
+        )
 
-        nav_point = self.pathfinder.get_random_navigable_point()
-        random_rotation = random.randint(0, 359)
-        r = Rotation.from_euler("y", random_rotation, degrees=True)
+        if random_rotation & bool(rotation):
+            raise ValueError("Input Error. Put only one value between random_rotation and rotation.")
+        if random_rotation:
+            random_rotation = random.randint(0, 359)
+            r = Rotation.from_euler("y", random_rotation, degrees=True)
+            agent_state.rotation = r.as_quat()
 
-        agent_state.position = nav_point  # world space
-        agent_state.rotation = r.as_quat()
-
+        agent_state.position = np.array([pos[1], self.height_list[level], pos[0]])
         self.agent.set_state(agent_state)
-        self.update_closest_map(nav_point)
+        self.update_closest_map(agent_state.position)
 
-        return nav_point, random_rotation
+        return pos, random_rotation
 
     def get_cam_observations(self):
         """Inherit the 'get_sensor_observations' method of the parent class."""

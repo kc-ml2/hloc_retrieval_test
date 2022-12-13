@@ -1,12 +1,7 @@
 import argparse
 import os
-import random
 
 import cv2
-from habitat.utils.visualizations import maps
-import habitat_sim
-import numpy as np
-from scipy.spatial.transform import Rotation
 
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
@@ -60,22 +55,7 @@ if __name__ == "__main__":
             os.makedirs(map_obs_result_path, exist_ok=True)
 
             for node_id in graph.nodes():
-                pos = maps.from_grid(
-                    int(graph.nodes[node_id]["o"][0]),
-                    int(graph.nodes[node_id]["o"][1]),
-                    recolored_topdown_map.shape[0:2],
-                    sim,
-                    sim.pathfinder,
-                )
-
-                # Set random rotation at current position
-                agent_state = habitat_sim.AgentState()
-                agent_state.position = np.array([pos[1], sim.height_list[level], pos[0]])
-                random_rotation = random.randint(0, 359)
-                r = Rotation.from_euler("y", random_rotation, degrees=True)
-                agent_state.rotation = r.as_quat()
-                sim.agent.set_state(agent_state)
-
+                _, _ = sim.set_state_from_grid(graph.nodes[node_id]["o"], level)
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
