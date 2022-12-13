@@ -44,10 +44,14 @@ def preprocess_image(image_name, label, file_directory, extension):
     return input_image, label
 
 
-def preprocess_image_wo_label(obs_id_pair, anchor_file_dir, target_file_dir, extension):
+def preprocess_image_wo_label(obs_id_pair, anchor_file_dir=None, target_file_dir=None, extension=None):
     """Preprocess & concatenate two images from observations."""
-    anchor_file = anchor_file_dir + os.sep + obs_id_pair[0] + extension
-    target_file = target_file_dir + os.sep + obs_id_pair[1] + extension
+    if anchor_file_dir is not None:
+        anchor_file = anchor_file_dir + os.sep + obs_id_pair[0] + extension
+        target_file = target_file_dir + os.sep + obs_id_pair[1] + extension
+    else:
+        anchor_file = obs_id_pair[0]
+        target_file = obs_id_pair[1]
 
     anchor_image_string = tf.io.read_file(anchor_file)
     target_image_string = tf.io.read_file(target_file)
