@@ -7,7 +7,7 @@ from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
-from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
+from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 from config.algorithm_config import NetworkConstant, TrainingConstant
 from config.env_config import PathConfig
 
@@ -39,8 +39,12 @@ if __name__ == "__main__":
 
         train_dataset = train_dataset.shuffle(len(train_image_list), reshuffle_each_iteration=True)
 
-        train_dataset = train_dataset.map(lambda x, y: preprocess_image(x, y, train_file_directory, img_extension))
-        valid_dataset = valid_dataset.map(lambda x, y: preprocess_image(x, y, valid_file_directory, img_extension))
+        train_dataset = train_dataset.map(
+            lambda x, y: preprocess_paired_image_file(x, y, train_file_directory, img_extension)
+        )
+        valid_dataset = valid_dataset.map(
+            lambda x, y: preprocess_paired_image_file(x, y, valid_file_directory, img_extension)
+        )
 
         train_dataset = train_dataset.batch(TrainingConstant.BATCH_SIZE)
         valid_dataset = valid_dataset.batch(TrainingConstant.BATCH_SIZE)

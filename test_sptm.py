@@ -7,7 +7,7 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_image
+from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     with tf.device("/device:GPU:1"):
         dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
-        dataset = dataset.map(lambda x, y: preprocess_image(x, y, file_directory, img_extension))
+        dataset = dataset.map(lambda x, y: preprocess_paired_image_file(x, y, file_directory, img_extension))
         dataset = dataset.batch(TestConstant.BATCH_SIZE)
 
         # Test

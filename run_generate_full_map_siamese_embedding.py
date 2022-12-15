@@ -1,6 +1,12 @@
 import argparse
 import os
 
+import numpy as np
+import tensorflow as tf
+
+from algorithms.resnet import ResnetBuilder
+from algorithms.sptm_utils import preprocess_single_image_file
+from config.algorithm_config import NetworkConstant, TestConstant
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
@@ -60,3 +66,34 @@ if __name__ == "__main__":
             output_size_list.append((map_output, len(sorted_map_obs_file)))
             total_list_to_iterate = total_list_to_iterate + sample_list
             output_size_list.append((sample_output, len(sorted_test_sample_file)))
+
+    with tf.device("/device:GPU:1"):
+        record_dataset = tf.data.Dataset.from_tensor_slices(total_list_to_iterate)
+        record_dataset = record_dataset.map(lambda x: preprocess_single_image_file(x))
+        record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
+
+        siamese = ResnetBuilder.build_siamese_resnet_18
+        model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+        model.load_weights(loaded_model, by_name=True)
+
+        bottom_network = ResnetBuilder.build_bottom_network(
+            model,
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+        )
+
+        predictions = bottom_network.predict(record_dataset)
+
+    # Save siamese embedding
+    index = 0
+    for output in output_size_list:
+        output_name, output_size = output
+        end_index = index + output_size
+        embedding = predictions[index:end_index]
+        print("File name: ", output_name)
+        print("File size: ", np.shape(embedding))
+        print("File index: ", f"[{index}:{end_index}]")
+
+        index = end_index
+
+        with open(output_name, "wb") as f:
+            np.save(f, embedding)

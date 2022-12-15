@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
-from algorithms.sptm_utils import preprocess_image_wo_label
+from algorithms.sptm_utils import preprocess_single_image_file
 from config.algorithm_config import NetworkConstant, TestConstant, TrainingConstant
 
 if __name__ == "__main__":
@@ -44,7 +44,9 @@ if __name__ == "__main__":
 
     with tf.device("/device:GPU:0"):
         record_dataset = tf.data.Dataset.from_tensor_slices(similarity_combination_list)
-        record_dataset = record_dataset.map(lambda x: preprocess_image_wo_label(x, obs_path, obs_path, img_extension))
+        record_dataset = record_dataset.map(
+            lambda x: preprocess_single_image_file(x, obs_path, obs_path, img_extension)
+        )
         record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
 
         siamese = ResnetBuilder.build_siamese_resnet_18
