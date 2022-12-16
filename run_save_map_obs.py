@@ -18,14 +18,14 @@ if __name__ == "__main__":
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--output-path", default="./output")
-    parser.add_argument("--generate-test-sample", action="store_true")
+    parser.add_argument("--not-generate-test-sample", action="store_true")
     parser.add_argument("--map-debug", action="store_true")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
     output_path = args.output_path
     height_json_path = args.map_height_json
-    generate_test_sample = args.generate_test_sample
+    not_generate_test_sample = args.not_generate_test_sample
     map_debug = args.map_debug
 
     # Open files
@@ -72,34 +72,36 @@ if __name__ == "__main__":
 
                 cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.jpg", color_img)
 
+            if not_generate_test_sample:
+                continue
+
             # Generate random sample observation for test
-            if generate_test_sample:
-                test_sample_path = os.path.join(observation_path, f"test_sample_{level}")
-                os.makedirs(test_sample_path, exist_ok=True)
+            test_sample_path = os.path.join(observation_path, f"test_sample_{level}")
+            os.makedirs(test_sample_path, exist_ok=True)
 
-                pos_record_json = os.path.join(observation_path, f"pos_record_test_sample_{level}.json")
-                pos_record = {}
-                pos_record.update({"scene_number": scene_number})
-                pos_record.update({"level": level})
+            pos_record_json = os.path.join(observation_path, f"pos_record_test_sample_{level}.json")
+            pos_record = {}
+            pos_record.update({"scene_number": scene_number})
+            pos_record.update({"level": level})
 
-                # Sample only from explorable area, not outside the wall, not at the wall
-                explorable_area_index = list(zip(*np.where(topdown_map == 1)))
+            # Sample only from explorable area, not outside the wall, not at the wall
+            explorable_area_index = list(zip(*np.where(topdown_map == 1)))
 
-                for k in range(TestConstant.NUM_SAMPLING_PER_LEVEL):
-                    grid_pos = random.sample(explorable_area_index, 1)[0]
-                    sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
+            for k in range(TestConstant.NUM_SAMPLING_PER_LEVEL):
+                grid_pos = random.sample(explorable_area_index, 1)[0]
+                sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
 
-                    observations = sim.get_cam_observations()
-                    color_img = observations["all_view"]
+                observations = sim.get_cam_observations()
+                color_img = observations["all_view"]
 
-                    cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
+                cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
 
-                    record_sim_pos = {f"{k:06d}_sim": [[float(pos) for pos in sim_pos], random_rotation]}
-                    record_grid_pos = {f"{k:06d}_grid": [int(grid_pos[0]), int(grid_pos[1])]}
-                    pos_record.update(record_sim_pos)
-                    pos_record.update(record_grid_pos)
+                record_sim_pos = {f"{k:06d}_sim": [[float(pos) for pos in sim_pos], random_rotation]}
+                record_grid_pos = {f"{k:06d}_grid": [int(grid_pos[0]), int(grid_pos[1])]}
+                pos_record.update(record_sim_pos)
+                pos_record.update(record_grid_pos)
 
-                with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
-                    json.dump(pos_record, record_json, indent=4)
+            with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
+                json.dump(pos_record, record_json, indent=4)
 
         sim.close()
