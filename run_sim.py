@@ -5,7 +5,7 @@ import os
 import cv2
 from habitat.utils.visualizations import maps
 
-from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import (
     display_map,
@@ -15,6 +15,7 @@ from utils.habitat_utils import (
     make_output_path,
     open_env_related_files,
 )
+from utils.skeletonize_utils import topdown_map_to_graph
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
     parser.add_argument("--detection", action="store_true")
+    parser.add_argument("--localization", action="store_true")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
@@ -33,6 +35,7 @@ if __name__ == "__main__":
     is_save_all = args.save_all
     is_save_except_rotation = args.save_except_rotation
     is_detection = args.detection
+    is_localization = args.localization
 
     check_arg = is_save_all + is_save_except_rotation
     if check_arg >= 2:
@@ -45,6 +48,7 @@ if __name__ == "__main__":
         observation_path, pos_record_json = make_output_path(output_path, scene_number)
 
         img_id = 0
+        graph = 0
         pos_record = {}
         pos_record.update({"scene_number": scene_number})
 
@@ -62,7 +66,14 @@ if __name__ == "__main__":
             position = current_state.position
 
             # Update map data
+            previous_level = sim.closest_level
             sim.update_closest_map(position)
+            current_level = sim.closest_level
+
+            # If level is changed or graph is not initialized, build graph
+            if previous_level != current_level or graph == 0 and is_localization:
+                graph = topdown_map_to_graph(sim.topdown_map_list[current_level], DataConfig.REMOVE_ISOLATED)
+
             node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
             display_map(sim.recolored_topdown_map, key_points=[node_point])
 

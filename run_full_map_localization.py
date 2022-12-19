@@ -11,7 +11,7 @@ from config.algorithm_config import NetworkConstant, TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import draw_point_from_node, highlight_point_from_node, open_env_related_files
-from utils.skeletonize_utils import convert_to_binarymap, convert_to_dense_topology, remove_isolated_area
+from utils.skeletonize_utils import topdown_map_to_graph
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -48,11 +48,7 @@ if __name__ == "__main__":
             print("scene: ", scene_number, "    level: ", level)
 
             # Build binary top-down map & skeleton graph
-            topdown_map = sim.topdown_map_list[level]
-            if DataConfig.REMOVE_ISOLATED:
-                topdown_map = remove_isolated_area(topdown_map)
-            binary_map = convert_to_binarymap(topdown_map)
-            _, graph = convert_to_dense_topology(binary_map)
+            graph = topdown_map_to_graph(sim.topdown_map_list[level], DataConfig.REMOVE_ISOLATED)
 
             # Set file path
             map_cache_index = f"map_node_observation_level_{level}"

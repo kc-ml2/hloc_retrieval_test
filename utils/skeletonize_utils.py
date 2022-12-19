@@ -216,6 +216,15 @@ def remove_isolated_area(topdown_map, removal_threshold=1000):
     return topdown_map
 
 
+def topdown_map_to_graph(topdown_map, is_remove_isolated):
+    if is_remove_isolated:
+        topdown_map = remove_isolated_area(topdown_map)
+    binary_map = convert_to_binarymap(topdown_map)
+    _, graph = convert_to_dense_topology(binary_map)
+
+    return graph
+
+
 def prune_graph(graph, topdown_map, check_radius):
     end_node_list = []
     isolated_node_list = []
