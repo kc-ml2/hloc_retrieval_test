@@ -10,6 +10,7 @@ from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
+    draw_point_from_node,
     init_map_display,
     init_opencv_cam,
     make_output_path,
@@ -69,13 +70,18 @@ if __name__ == "__main__":
             previous_level = sim.closest_level
             sim.update_closest_map(position)
             current_level = sim.closest_level
+            map_image = cv2.cvtColor(sim.recolored_topdown_map, cv2.COLOR_GRAY2BGR)
 
             # If level is changed or graph is not initialized, build graph
             if previous_level != current_level or graph == 0 and is_localization:
                 graph = topdown_map_to_graph(sim.topdown_map_list[current_level], DataConfig.REMOVE_ISOLATED)
 
+            if is_localization:
+                for node in graph.nodes():
+                    draw_point_from_node(map_image, graph, node)
+
             node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
-            display_map(sim.recolored_topdown_map, key_points=[node_point])
+            display_map(map_image, key_points=[node_point])
 
             # Display observation. If YOLO is available, display object detection result
             if is_detection:
@@ -93,6 +99,8 @@ if __name__ == "__main__":
                 action = "turn_left"
             if key == ord("d"):
                 action = "turn_right"
+            if key == ord("n"):
+                break
             if key == ord("q"):
                 break
 
@@ -138,3 +146,6 @@ if __name__ == "__main__":
             os.rmdir(observation_path)
 
         sim.close()
+
+        if key == ord("q"):
+            break
