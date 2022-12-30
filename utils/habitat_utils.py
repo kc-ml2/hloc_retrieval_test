@@ -408,6 +408,17 @@ def remove_duplicate_matrix(extrinsic_mat_list):
     return deduplicated_mat_list
 
 
+def draw_point_from_grid_pos(map_img, grid_pos, color):
+    """Draw highlighted point(circle) on map with pixer position."""
+    cv2.circle(
+        img=map_img,
+        center=(int(grid_pos[1]), int(grid_pos[0])),
+        radius=2,
+        color=color,
+        thickness=-1,
+    )
+
+
 def draw_point_from_node(map_img, graph, node_id):
     """Draw point(circle) on map with negative radius."""
     cv2.circle(
