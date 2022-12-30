@@ -6,16 +6,18 @@ import numpy as np
 import tensorflow as tf
 
 from config.algorithm_config import TestConstant
-from config.env_config import PathConfig
+from config.env_config import DataConfig, PathConfig
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
+from utils.skeletonize_utils import topdown_map_to_graph
 
 
 class Localization:
     """Class for localization methods according to the given map."""
 
-    def __init__(self, sim, top_network, bottom_network, map_obs_dir, sample_dir=None):
+    def __init__(self, sim, top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir=None):
         """Initialize localization instance with specific model & map data."""
         self.sim = sim
+        self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             self.top_network = top_network
@@ -62,7 +64,7 @@ class Localization:
 
         return map_node_with_max_value, high_similarity_set, similarity
 
-    def iterate_localization_with_sample(self, graph, recolored_topdown_map):
+    def iterate_localization_with_sample(self, recolored_topdown_map):
         """Visualize localization result from test sample iteratively."""
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
             print("Sample No.: ", i)
@@ -74,13 +76,13 @@ class Localization:
 
             print("Max value: ", similarity[map_node_with_max_value], "   Node: ", map_node_with_max_value)
 
-            for node in graph.nodes():
-                draw_point_from_node(map_image, graph, node)
+            for node in self.graph.nodes():
+                draw_point_from_node(map_image, self.graph, node)
 
             for node in high_similarity_set:
-                highlight_point_from_node(map_image, graph, node, (0, 0, 122))
+                highlight_point_from_node(map_image, self.graph, node, (0, 0, 122))
 
-            highlight_point_from_node(map_image, graph, map_node_with_max_value, (255, 255, 0))
+            highlight_point_from_node(map_image, self.graph, map_node_with_max_value, (255, 255, 0))
             draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
             cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
