@@ -40,7 +40,7 @@ if __name__ == "__main__":
         label_value = label_data[image_name + "_similarity"]
         y_list_for_compare.append(label_value)
 
-    with tf.device("/device:GPU:1"):
+    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
         dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
         dataset = dataset.map(lambda x, y: preprocess_paired_image_file(x, y, file_directory, img_extension))
         dataset = dataset.batch(TestConstant.BATCH_SIZE)

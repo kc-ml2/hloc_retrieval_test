@@ -7,6 +7,7 @@ import tensorflow as tf
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import preprocess_single_image_file
 from config.algorithm_config import NetworkConstant, TestConstant
+from config.env_config import PathConfig
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
@@ -67,7 +68,7 @@ if __name__ == "__main__":
             total_list_to_iterate = total_list_to_iterate + sample_list
             output_size_list.append((sample_output, len(sorted_test_sample_file)))
 
-    with tf.device("/device:GPU:1"):
+    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
         record_dataset = tf.data.Dataset.from_tensor_slices(total_list_to_iterate)
         record_dataset = record_dataset.map(lambda x: preprocess_single_image_file(x))
         record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)

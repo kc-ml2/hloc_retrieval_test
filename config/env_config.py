@@ -15,6 +15,7 @@ class PathConfig:
     TEST_LABEL_PATH = "./data/label_test_four_view.json"
     EDGE_MODEL_WEIGHTS = ""
     SHORTCUTS_CACHE_FILE = ""
+    GPU_ID = 1
 
 
 class CamNormalConfig:

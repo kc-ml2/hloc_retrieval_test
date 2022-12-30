@@ -33,7 +33,7 @@ if __name__ == "__main__":
     train_image_list, train_y_list = list_image_name_label_wo_index(sorted_train_image_file, train_label_data)
     valid_image_list, valid_y_list = list_image_name_label_wo_index(sorted_valid_image_file, valid_label_data)
 
-    with tf.device("/device:GPU:1"):
+    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
         train_dataset = tf.data.Dataset.from_tensor_slices((train_image_list, train_y_list))
         valid_dataset = tf.data.Dataset.from_tensor_slices((valid_image_list, valid_y_list))
 

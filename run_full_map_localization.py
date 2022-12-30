@@ -33,7 +33,7 @@ if __name__ == "__main__":
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
     # Load pre-trained model & top network
-    with tf.device("/device:GPU:1"):
+    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
         siamese = ResnetBuilder.build_siamese_resnet_18
         model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
         model.load_weights(loaded_model, by_name=True)
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                 for input_embedding in input_embedding_mat:
                     input_embedding[map_embedding_dimension:] = sample_embedding
 
-                with tf.device("/device:GPU:1"):
+                with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
                     predictions = top_network.predict_on_batch(input_embedding_mat)
 
                 similarity = predictions[:, 1]
