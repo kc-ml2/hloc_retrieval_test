@@ -47,10 +47,11 @@ class Localization:
 
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
-        observation = np.expand_dims(observation, axis=0)
-
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-            obs_embedding = self.bottom_network.predict(observation)
+            regulized_img = tf.image.convert_image_dtype(observation, tf.float32)
+            obs_embedding = self.bottom_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
+
+        obs_embedding = np.squeeze(obs_embedding)
 
         return obs_embedding
 
