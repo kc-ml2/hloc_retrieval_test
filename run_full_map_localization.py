@@ -54,7 +54,7 @@ if __name__ == "__main__":
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Initialize localization instance
-            localization = Localization(sim, top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir)
+            localization = Localization(top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir)
             localization.iterate_localization_with_sample(recolored_topdown_map)
 
         sim.close()

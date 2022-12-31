@@ -5,18 +5,16 @@ import os
 import cv2
 from habitat.utils.visualizations import maps
 
-from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
-    draw_point_from_node,
     init_map_display,
     init_opencv_cam,
     make_output_path,
     open_env_related_files,
 )
-from utils.skeletonize_utils import topdown_map_to_graph
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -28,6 +26,8 @@ if __name__ == "__main__":
     parser.add_argument("--save-except-rotation", action="store_true")
     parser.add_argument("--detection", action="store_true")
     parser.add_argument("--localization", action="store_true")
+    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
+    parser.add_argument("--map-obs-path", default="./output")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
@@ -37,6 +37,8 @@ if __name__ == "__main__":
     is_save_except_rotation = args.save_except_rotation
     is_detection = args.detection
     is_localization = args.localization
+    loaded_model = args.load_model
+    map_obs_path = args.map_obs_path
 
     check_arg = is_save_all + is_save_except_rotation
     if check_arg >= 2:
@@ -44,14 +46,45 @@ if __name__ == "__main__":
 
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
+    # Load pre-trained model
+    if is_localization:
+        import tensorflow as tf
+
+        from algorithms.resnet import ResnetBuilder
+        from config.algorithm_config import NetworkConstant  # pylint: disable=ungrouped-imports
+        from habitat_env.localization import Localization  # pylint: disable=ungrouped-imports
+
+        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+            siamese = ResnetBuilder.build_siamese_resnet_18
+            model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+            model.load_weights(loaded_model, by_name=True)
+            top_network = ResnetBuilder.build_top_network(model)
+            bottom_network = ResnetBuilder.build_bottom_network(
+                model,
+                (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+            )
+
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data, is_detection)
         observation_path, pos_record_json = make_output_path(output_path, scene_number)
 
         img_id = 0
-        graph = 0
         pos_record = {}
         pos_record.update({"scene_number": scene_number})
+
+        if is_localization:
+            current_state = sim.agent.get_state()
+            position = current_state.position
+            sim.update_closest_map(position)
+
+            # Read binary topdown map
+            binary_topdown_map = sim.topdown_map_list[sim.closest_level]
+            # Set file path
+            current_map_dir = os.path.join(
+                map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{sim.closest_level}"
+            )
+            # Initialize localization instance
+            localization = Localization(top_network, bottom_network, binary_topdown_map, current_map_dir)
 
         # Initialize opencv display window
         init_map_display()
@@ -69,16 +102,23 @@ if __name__ == "__main__":
             # Update map data
             previous_level = sim.closest_level
             sim.update_closest_map(position)
-            current_level = sim.closest_level
             map_image = cv2.cvtColor(sim.recolored_topdown_map, cv2.COLOR_GRAY2BGR)
 
             # If level is changed or graph is not initialized, build graph
-            if previous_level != current_level or graph == 0 and is_localization:
-                graph = topdown_map_to_graph(sim.topdown_map_list[current_level], DataConfig.REMOVE_ISOLATED)
+            current_level = sim.closest_level
+            if previous_level != current_level and is_localization:
+                current_map_dir = os.path.join(
+                    map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{current_level}"
+                )
+                localization = Localization(
+                    top_network, bottom_network, sim.topdown_map_list[current_level], current_map_dir
+                )
 
+            # Execute localization
             if is_localization:
-                for node in graph.nodes():
-                    draw_point_from_node(map_image, graph, node)
+                obs_embedding = localization.calculate_embedding_from_observation(color_img)
+                localization_result = localization.localize_with_observation(obs_embedding)
+                map_image = localization.visualize_on_map(map_image, localization_result)
 
             node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
             display_map(map_image, key_points=[node_point])
