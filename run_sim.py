@@ -103,14 +103,16 @@ if __name__ == "__main__":
             init_opencv_cam()
 
             while True:
+                # Get current position
+                current_state = sim.agent.get_state()
+                current_state.position[1] = sim.height_list[level]
+                position = current_state.position
+                sim.agent.set_state(current_state)
+                print("current height: ", position[1], "height list value: ", sim.height_list[level])
+
                 # Get camera observation
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
-
-                # Get current position
-                current_state = sim.agent.get_state()
-                position = current_state.position
-                print("current height: ", position[1], "height list value: ", sim.height_list[level])
 
                 # Update map data
                 previous_level = sim.closest_level
