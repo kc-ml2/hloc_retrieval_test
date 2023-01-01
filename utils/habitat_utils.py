@@ -450,3 +450,12 @@ def draw_line_from_edge(map_img, graph, edge_tuple, brightness):
         color=(int(255 * brightness), 122, 0),
         thickness=1,
     )
+
+
+def save_observation(color_img, observation_path, img_id, pos_record, position, node_point):
+    print("save image")
+    cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
+    sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
+    grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+    pos_record.update(sim_pos)
+    pos_record.update(grid_pos)

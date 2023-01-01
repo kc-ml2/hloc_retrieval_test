@@ -16,6 +16,7 @@ from utils.habitat_utils import (
     init_opencv_cam,
     make_output_path,
     open_env_related_files,
+    save_observation,
 )
 
 if __name__ == "__main__":
@@ -79,18 +80,12 @@ if __name__ == "__main__":
 
             # Sample initial agent position from topdown map grey area
             # This is for fixing height of agent position
-            topdown_map = sim.topdown_map_list[level]
-            explorable_area_index = list(zip(*np.where(topdown_map == 1)))
+            binary_topdown_map = sim.topdown_map_list[level]
+            explorable_area_index = list(zip(*np.where(binary_topdown_map == 1)))
             grid_pos = random.sample(explorable_area_index, 1)[0]
             sim.set_state_from_grid(grid_pos, level)
 
             if is_localization:
-                current_state = sim.agent.get_state()
-                position = current_state.position
-                sim.update_closest_map(position)
-
-                # Read binary topdown map
-                binary_topdown_map = sim.topdown_map_list[sim.closest_level]
                 # Set file path
                 current_map_dir = os.path.join(
                     map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{sim.closest_level}"
@@ -118,7 +113,7 @@ if __name__ == "__main__":
                 sim.update_closest_map(position)
                 map_image = cv2.cvtColor(sim.recolored_topdown_map, cv2.COLOR_GRAY2BGR)
 
-                # If level is changed or graph is not initialized, build graph
+                # If level is changed, re-initialize localization instance
                 current_level = sim.closest_level
                 if previous_level != current_level and is_localization:
                     current_map_dir = os.path.join(
@@ -161,39 +156,26 @@ if __name__ == "__main__":
                 # Save observation & position record according to the flag
                 # Save observation every step
                 if is_save_all:
-                    cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
-                    sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
-                    grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
-                    pos_record.update(sim_pos)
-                    pos_record.update(grid_pos)
+                    save_observation(color_img, observation_path, img_id, pos_record, position, node_point)
                     img_id = img_id + 1
                 # Save observation only when forward & backward movement
                 if is_save_except_rotation:
                     if key == ord("w") or key == ord("s"):
-                        cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
-                        sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
-                        grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
-                        pos_record.update(sim_pos)
-                        pos_record.update(grid_pos)
+                        save_observation(color_img, observation_path, img_id, pos_record, position, node_point)
                         img_id = img_id + 1
                 # Save observation when "o" key input
                 if key == ord("o"):
                     if is_save_all or is_save_except_rotation:
                         pass
                     else:
-                        print("save image")
-                        cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
-                        sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
-                        grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
-                        pos_record.update(sim_pos)
-                        pos_record.update(grid_pos)
+                        save_observation(color_img, observation_path, img_id, pos_record, position, node_point)
                         img_id = img_id + 1
                         continue
 
                 sim.step(action)
 
             file_saved = os.listdir(observation_path)
-            if is_save_all or is_save_except_rotation or file_saved:
+            if file_saved:
                 with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
                     json.dump(pos_record, record_json, indent=4)
             else:
