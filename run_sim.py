@@ -76,7 +76,7 @@ if __name__ == "__main__":
             img_id = 0
             pos_record = {}
             pos_record.update({"scene_number": scene_number})
-            
+
             # Sample initial agent position from topdown map grey area
             # This is for fixing height of agent position
             topdown_map = sim.topdown_map_list[level]
@@ -103,12 +103,11 @@ if __name__ == "__main__":
             init_opencv_cam()
 
             while True:
-                # Get current position
+                # Get current position & set it to unified height
                 current_state = sim.agent.get_state()
                 current_state.position[1] = sim.height_list[level]
                 position = current_state.position
                 sim.agent.set_state(current_state)
-                print("current height: ", position[1], "height list value: ", sim.height_list[level])
 
                 # Get camera observation
                 observations = sim.get_cam_observations()

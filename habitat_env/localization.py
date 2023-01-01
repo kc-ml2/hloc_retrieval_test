@@ -47,6 +47,7 @@ class Localization:
 
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
+        observation = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             regulized_img = tf.image.convert_image_dtype(observation, tf.float32)
             obs_embedding = self.bottom_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
