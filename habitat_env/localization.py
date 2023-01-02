@@ -45,6 +45,10 @@ class Localization:
         self.input_embedding_mat = np.zeros((num_map_embedding, 2 * self.dimension_map_embedding))
         self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat
 
+        self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
+        for node_id in self.graph.nodes():
+            self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
+
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
         observation = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
@@ -103,4 +107,37 @@ class Localization:
             cv2.resizeWindow("localization", 1152, 1152)
             cv2.imshow("localization", map_image)
 
-            cv2.waitKey()
+            key = cv2.waitKey()
+
+            if key == ord("n"):
+                break
+
+    def get_ground_truth_nearest_node(self, grid_pos):
+        """Get the nearest node by Euclidean distance."""
+        current_pos_mat = np.zeros([len(self.graph.nodes()), 2])
+        current_pos_mat[:] = grid_pos
+        distance_set = np.linalg.norm(self.map_pos_mat - current_pos_mat, axis=1)
+        nearest_node = np.argmin(distance_set)
+
+        return nearest_node
+
+    def evaluate_pos_distance(self, map_node_with_max_value, grid_pos):
+        """How far is the predicted node from current position?"""
+        predicted_grid_pos = self.graph.nodes[map_node_with_max_value]["o"]
+        distance = np.linalg.norm(predicted_grid_pos - grid_pos)
+
+        return distance
+
+    def evaluate_node_distance(self, grid_pos):
+        """How far is the predicted node from the ground-truth nearest node?"""
+        ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
+        ground_truth_nearest_node_pos = self.graph.nodes[ground_truth_nearest_node]["o"]
+        distance = np.linalg.norm(ground_truth_nearest_node_pos - grid_pos)
+
+        return distance
+
+    def evaluate_accuracy(self, map_node_with_max_value, grid_pos):
+        """Is it the nearest node?"""
+        ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
+
+        return ground_truth_nearest_node == map_node_with_max_value
