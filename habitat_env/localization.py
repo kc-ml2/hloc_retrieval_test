@@ -103,6 +103,10 @@ class Localization:
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
             draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
+            print("Accuracy", self.evaluate_accuracy(result[0], grid_pos))
+            print("Pose D: ", self.evaluate_pos_distance(result[0], grid_pos))
+            print("Node D: ", self.evaluate_node_distance(result[0], grid_pos))
+
             cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
             cv2.resizeWindow("localization", 1152, 1152)
             cv2.imshow("localization", map_image)
@@ -128,11 +132,12 @@ class Localization:
 
         return distance
 
-    def evaluate_node_distance(self, grid_pos):
+    def evaluate_node_distance(self, map_node_with_max_value, grid_pos):
         """How far is the predicted node from the ground-truth nearest node?"""
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
         ground_truth_nearest_node_pos = self.graph.nodes[ground_truth_nearest_node]["o"]
-        distance = np.linalg.norm(ground_truth_nearest_node_pos - grid_pos)
+        predicted_nearest_node_pos = self.graph.nodes[map_node_with_max_value]["o"]
+        distance = np.linalg.norm(ground_truth_nearest_node_pos - predicted_nearest_node_pos)
 
         return distance
 
