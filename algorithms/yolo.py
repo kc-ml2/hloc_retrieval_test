@@ -37,7 +37,7 @@ class Yolo:
         self.ln = self.net.getLayerNames()
         self.ln = [self.ln[i - 1] for i in self.net.getUnconnectedOutLayers()]
 
-    def detect_img(self, image):
+    def detect_object(self, image):
         if isinstance(image, str):
             image = cv2.imread(image)
 
@@ -82,6 +82,11 @@ class Yolo:
         # Apply non-maxima suppression to suppress weak, overlapping bounding boxes
         idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.confidence, self.threshold)
 
+        return idxs, boxes, confidences, classIDs
+
+    def display_detection_on_img(self, detection_result, image):
+        idxs, boxes, confidences, classIDs = detection_result
+
         # Ensure at least one detection exists
         if len(idxs) > 0:
             # Loop over the indexes we are keeping
@@ -95,5 +100,11 @@ class Yolo:
                 cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
                 text = f"{self.labels[classIDs[i]]}: {confidences[i]:.4f}"
                 cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+        return image
+
+    def detect_and_display(self, image):
+        detection_result = self.detect_object(image)
+        image = self.display_detection_on_img(detection_result, image)
 
         return image

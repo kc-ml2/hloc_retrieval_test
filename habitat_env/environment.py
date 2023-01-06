@@ -207,10 +207,10 @@ class HabitatSimWithMap(habitat_sim.Simulator):
     def detect_img(self, cam_observations):
         """Detect image with Yolo. Merge result images if needed."""
         if self.is_four_view:
-            detect_img_front = self.yolo.detect_img(cam_observations["front_view"])
-            detect_img_right = self.yolo.detect_img(cam_observations["right_view"])
-            detect_img_back = self.yolo.detect_img(cam_observations["back_view"])
-            detect_img_left = self.yolo.detect_img(cam_observations["left_view"])
+            detect_img_front = self.yolo.detect_and_display(cam_observations["front_view"])
+            detect_img_right = self.yolo.detect_and_display(cam_observations["right_view"])
+            detect_img_back = self.yolo.detect_and_display(cam_observations["back_view"])
+            detect_img_left = self.yolo.detect_and_display(cam_observations["left_view"])
             detect_img = np.concatenate(
                 [
                     detect_img_front,
@@ -225,6 +225,6 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             )
 
         else:
-            detect_img = self.yolo.detect_img(cam_observations["all_view"])
+            detect_img = self.yolo.detect_and_display(cam_observations["all_view"])
 
         return detect_img
