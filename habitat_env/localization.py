@@ -14,7 +14,9 @@ from utils.skeletonize_utils import topdown_map_to_graph
 class Localization:
     """Class for localization methods according to the given map."""
 
-    def __init__(self, top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir=None):
+    def __init__(
+        self, top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir=None, is_detection=False
+    ):
         """Initialize localization instance with specific model & map data."""
         self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
 

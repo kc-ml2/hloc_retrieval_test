@@ -107,4 +107,4 @@ class Yolo:
         detection_result = self.detect_object(image)
         image = self.display_detection_on_img(detection_result, image)
 
-        return image
+        return image, detection_result

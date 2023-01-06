@@ -91,7 +91,9 @@ if __name__ == "__main__":
                     map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{sim.closest_level}"
                 )
                 # Initialize localization instance
-                localization = Localization(top_network, bottom_network, binary_topdown_map, current_map_dir)
+                localization = Localization(
+                    top_network, bottom_network, binary_topdown_map, current_map_dir, is_detection=is_detection
+                )
 
             # Initialize opencv display window
             init_map_display()
@@ -108,6 +110,13 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
+                # Display observation. If YOLO is available, display object detection result
+                if is_detection:
+                    detect_img, detection_result = sim.detect_img(observations)
+                    key = display_opencv_cam(detect_img)
+                else:
+                    key = display_opencv_cam(color_img)
+
                 # Update map data
                 previous_level = sim.closest_level
                 sim.update_closest_map(position)
@@ -120,7 +129,11 @@ if __name__ == "__main__":
                         map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{current_level}"
                     )
                     localization = Localization(
-                        top_network, bottom_network, sim.topdown_map_list[current_level], current_map_dir
+                        top_network,
+                        bottom_network,
+                        sim.topdown_map_list[current_level],
+                        current_map_dir,
+                        is_detection=is_detection,
                     )
 
                 # Execute localization
@@ -131,13 +144,6 @@ if __name__ == "__main__":
 
                 node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
                 display_map(map_image, key_points=[node_point])
-
-                # Display observation. If YOLO is available, display object detection result
-                if is_detection:
-                    detect_img = sim.detect_img(observations)
-                    key = display_opencv_cam(detect_img)
-                else:
-                    key = display_opencv_cam(color_img)
 
                 # Set action according to key input
                 if key == ord("w"):
