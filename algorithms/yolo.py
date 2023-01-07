@@ -77,20 +77,28 @@ class Yolo:
 
         # Apply non-maxima suppression to suppress weak, overlapping bounding boxes
         idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.confidence, self.threshold)
+        suppressed_boxes = []
+        suppressed_confidences = []
+        suppressed_classIDs = []
 
-        return idxs, boxes, confidences, classIDs
+        for idx in idxs:
+            suppressed_boxes.append(boxes[idx])
+            suppressed_confidences.append(confidences[idx])
+            suppressed_classIDs.append(classIDs[idx])
+
+        return suppressed_boxes, suppressed_confidences, suppressed_classIDs
 
     def display_detection_on_img(self, detection_result, image):
-        idxs, boxes, confidences, classIDs = detection_result
+        boxes, confidences, classIDs = detection_result
 
         # Ensure at least one detection exists
-        if len(idxs) > 0:
+        if len(boxes) > 0:
             # Loop over the indexes we are keeping
-            for i in idxs.flatten():
-                width = boxes[i][2]
-                height = boxes[i][3]
-                corner_x = int(boxes[i][0] - width / 2)
-                corner_y = int(boxes[i][1] - height / 2)
+            for i, box in enumerate(boxes):
+                width = box[2]
+                height = box[3]
+                corner_x = int(box[0] - width / 2)
+                corner_y = int(box[1] - height / 2)
 
                 # Draw a bounding box rectangle and label on the image
                 color = [int(c) for c in self.colors[classIDs[i]]]
