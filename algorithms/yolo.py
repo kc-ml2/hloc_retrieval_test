@@ -70,12 +70,8 @@ class Yolo:
                     box = detection[0:4] * np.array([W, H, W, H])
                     (centerX, centerY, width, height) = box.astype("int")
 
-                    # Use the center (x, y)-coordinates to derive the top and and left corner of the bounding box
-                    x = int(centerX - (width / 2))
-                    y = int(centerY - (height / 2))
-
                     # Update our list of bounding box coordinates, confidences, and class IDs
-                    boxes.append([x, y, int(width), int(height)])
+                    boxes.append([int(centerX), int(centerY), int(width), int(height)])
                     confidences.append(float(confidence))
                     classIDs.append(classID)
 
@@ -91,15 +87,16 @@ class Yolo:
         if len(idxs) > 0:
             # Loop over the indexes we are keeping
             for i in idxs.flatten():
-                # Extract the bounding box coordinates
-                (x, y) = (boxes[i][0], boxes[i][1])
-                (w, h) = (boxes[i][2], boxes[i][3])
+                width = boxes[i][2]
+                height = boxes[i][3]
+                corner_x = int(boxes[i][0] - width / 2)
+                corner_y = int(boxes[i][1] - height / 2)
 
                 # Draw a bounding box rectangle and label on the image
                 color = [int(c) for c in self.colors[classIDs[i]]]
-                cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+                cv2.rectangle(image, (corner_x, corner_y), (corner_x + width, corner_y + height), color, 2)
                 text = f"{self.labels[classIDs[i]]}: {confidences[i]:.4f}"
-                cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                cv2.putText(image, text, (corner_x, corner_y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
         return image
 
