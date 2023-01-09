@@ -18,6 +18,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
     def __init__(self, scene_number, cam_config, action_config, path_config, height_data=None, is_detection=None):
         self.scene_number = scene_number
         self.height_data = height_data
+        self.cam_config = cam_config
 
         # Make config
         scene = path_config.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
@@ -223,10 +224,20 @@ class HabitatSimWithMap(habitat_sim.Simulator):
                 ],
                 axis=1,
             )
-            detection_result = [detection_front, detection_right, detection_back, detection_left]
+
+            for i, detect in enumerate([detection_front, detection_right, detection_back, detection_left]):
+                boxes = detect[0]
+                for box in boxes:
+                    if len(box) > 0:
+                        box[0] = box[0] + self.cam_config.WIDTH * i
+
+            merged_box = detection_front[0] + detection_right[0] + detection_back[0] + detection_left[0]
+            merged_confidence = detection_front[1] + detection_right[1] + detection_back[1] + detection_left[1]
+            merged_classIDs = detection_front[2] + detection_right[2] + detection_back[2] + detection_left[2]
+
+            detection_result = merged_box, merged_confidence, merged_classIDs
 
         else:
-            detect_img, detection = self.yolo.detect_and_display(cam_observations["all_view"])
-            detection_result = [detection]
+            detect_img, detection_result = self.yolo.detect_and_display(cam_observations["all_view"])
 
         return detect_img, detection_result

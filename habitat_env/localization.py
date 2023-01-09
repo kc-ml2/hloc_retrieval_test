@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import TestConstant
+from config.algorithm_config import NetworkConstant, TestConstant
 from config.env_config import DataConfig, PathConfig
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
@@ -15,7 +15,14 @@ class Localization:
     """Class for localization methods according to the given map."""
 
     def __init__(
-        self, top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir=None, is_detection=False
+        self,
+        top_network,
+        bottom_network,
+        binary_topdown_map,
+        map_obs_dir,
+        sample_dir=None,
+        is_detection=False,
+        num_support=80,
     ):
         """Initialize localization instance with specific model & map data."""
         self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
@@ -48,8 +55,12 @@ class Localization:
         self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat
 
         self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
+
         for node_id in self.graph.nodes():
             self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
+
+        if is_detection:
+            self.num_support = num_support
 
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
@@ -148,3 +159,29 @@ class Localization:
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
 
         return ground_truth_nearest_node == map_node_with_max_value
+
+    def make_spatial_histogram(self, detection_result, pyramid_level=2, split_per_level=4, height_criteria=100):
+        """Make spatial pyramid histogram for matching."""
+        boxes, _, classIDs = detection_result
+        spatial_width_interval = NetworkConstant.NET_WIDTH / (split_per_level ^ pyramid_level)
+
+        histogram_low = np.zeros([self.num_support, split_per_level ^ pyramid_level], dtype=np.int32)
+        histogram_middle = np.zeros([self.num_support, split_per_level ^ pyramid_level - 1], dtype=np.int32)
+
+        if len(boxes) > 0:
+            for i, box in enumerate(boxes):
+                spatial_pos = int(box[0] // spatial_width_interval)
+                histogram_low[classIDs[i], spatial_pos] = histogram_low[classIDs[i], spatial_pos] + 1
+
+            for i in range(split_per_level):
+                start_idx = i * split_per_level
+                end_idx = start_idx + 4
+                histogram_middle[:, i] = np.sum(histogram_low[:, start_idx:end_idx], axis=1)
+
+            histogram_top = np.sum(histogram_low, axis=1)
+
+            histogram_total = (
+                histogram_top.tolist() + histogram_middle.flatten().tolist() + histogram_low.flatten().tolist()
+            )
+
+        return histogram_total
