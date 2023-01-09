@@ -26,6 +26,7 @@ class Localization:
     ):
         """Initialize localization instance with specific model & map data."""
         self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
+        self.is_detection = is_detection
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             self.top_network = top_network
@@ -73,8 +74,11 @@ class Localization:
 
         return obs_embedding
 
-    def localize_with_observation(self, observation_embedding):
+    def localize_with_observation(self, observation_embedding, detection_result=None):
         """Get localization result of current map according to input observation embedding."""
+        if self.is_detection is True and detection_result is None:
+            raise ValueError("Detection result is required for localization with object detection.")
+
         self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
@@ -85,6 +89,14 @@ class Localization:
         high_similarity_set = [
             id for id in range(len(similarity)) if similarity[id] > TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
         ]
+
+        if detection_result is not None:
+            histogram = self.make_spatial_histogram(detection_result)
+
+            # TODO: add weight on each level
+            # TODO: add regularization on histogram
+            # TODO: add wasserstein distance
+            # TODO: merge wasserstein distance & similarity (method is not decided yet)
 
         return map_node_with_max_value, high_similarity_set, similarity
 
@@ -163,10 +175,11 @@ class Localization:
     def make_spatial_histogram(self, detection_result, pyramid_level=2, split_per_level=4, height_criteria=100):
         """Make spatial pyramid histogram for matching."""
         boxes, _, classIDs = detection_result
-        spatial_width_interval = NetworkConstant.NET_WIDTH / (split_per_level ^ pyramid_level)
+        spatial_width_interval = NetworkConstant.NET_WIDTH / split_per_level**pyramid_level
 
-        histogram_low = np.zeros([self.num_support, split_per_level ^ pyramid_level], dtype=np.int32)
-        histogram_middle = np.zeros([self.num_support, split_per_level ^ pyramid_level - 1], dtype=np.int32)
+        histogram_low = np.zeros([self.num_support, split_per_level**pyramid_level], dtype=np.int32)
+        histogram_middle = np.zeros([self.num_support, split_per_level ** (pyramid_level - 1)], dtype=np.int32)
+        histogram_total = []
 
         if len(boxes) > 0:
             for i, box in enumerate(boxes):
