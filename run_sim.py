@@ -57,6 +57,15 @@ if __name__ == "__main__":
         from config.algorithm_config import NetworkConstant  # pylint: disable=ungrouped-imports
         from habitat_env.localization import Localization  # pylint: disable=ungrouped-imports
 
+        gpus = tf.config.experimental.list_physical_devices("GPU")
+        if gpus:
+            try:
+                tf.config.experimental.set_virtual_device_configuration(
+                    gpus[PathConfig.GPU_ID], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]
+                )
+            except RuntimeError as e:
+                print(e)
+
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             siamese = ResnetBuilder.build_siamese_resnet_18
             model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
