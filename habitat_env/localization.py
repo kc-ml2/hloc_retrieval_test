@@ -93,11 +93,6 @@ class Localization:
         if detection_result is not None:
             histogram = self.make_spatial_histogram(detection_result)
 
-            # TODO: add weight on each level
-            # TODO: add regularization on histogram
-            # TODO: add wasserstein distance
-            # TODO: merge wasserstein distance & similarity (method is not decided yet)
-
         return map_node_with_max_value, high_similarity_set, similarity
 
     def visualize_on_map(self, map_image, result):
@@ -177,9 +172,13 @@ class Localization:
         boxes, _, classIDs = detection_result
         spatial_width_interval = NetworkConstant.NET_WIDTH / split_per_level**pyramid_level
 
-        histogram_low = np.zeros([self.num_support, split_per_level**pyramid_level], dtype=np.int32)
-        histogram_middle = np.zeros([self.num_support, split_per_level ** (pyramid_level - 1)], dtype=np.int32)
-        histogram_total = []
+        histogram_low = np.zeros([self.num_support, split_per_level**pyramid_level])
+        histogram_middle = np.zeros([self.num_support, split_per_level ** (pyramid_level - 1)])
+        histogram_top = np.zeros(self.num_support)
+
+        histogram_total = (
+            histogram_top.tolist() + histogram_middle.flatten().tolist() + histogram_low.flatten().tolist()
+        )
 
         if len(boxes) > 0:
             for i, box in enumerate(boxes):
@@ -192,6 +191,11 @@ class Localization:
                 histogram_middle[:, i] = np.sum(histogram_low[:, start_idx:end_idx], axis=1)
 
             histogram_top = np.sum(histogram_low, axis=1)
+
+            histogram_sum = np.sum(histogram_top, axis=0)
+            histogram_low = histogram_low / histogram_sum
+            histogram_middle = histogram_middle / histogram_sum
+            histogram_top = histogram_top / histogram_sum
 
             histogram_total = (
                 histogram_top.tolist() + histogram_middle.flatten().tolist() + histogram_low.flatten().tolist()
