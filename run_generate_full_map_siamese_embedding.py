@@ -6,8 +6,9 @@ import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
 from algorithms.sptm_utils import preprocess_single_image_file
-from config.algorithm_config import NetworkConstant, TestConstant
+from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
+from habitat_env.localization import Localization
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
@@ -26,6 +27,9 @@ if __name__ == "__main__":
 
     total_list_to_iterate = []
     output_size_list = []
+
+    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+        model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
 
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
@@ -58,9 +62,10 @@ if __name__ == "__main__":
             map_obs_list = [map_obs_dir + os.sep + file for file in sorted_map_obs_file]
             sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
 
-            # Set output npy file name & expected size in prediction list
-            map_output = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")
-            sample_output = os.path.join(observation_path, f"siamese_embedding_{sample_cache_index}.npy")
+            # Set output npy file name
+            localization = Localization(top_network, bottom_network, map_obs_dir, sample_dir=sample_dir)
+            map_output = localization.map_embedding_file
+            sample_output = localization.sample_embedding_file
 
             # Append to total iteration list
             total_list_to_iterate = total_list_to_iterate + map_obs_list
@@ -72,15 +77,6 @@ if __name__ == "__main__":
         record_dataset = tf.data.Dataset.from_tensor_slices(total_list_to_iterate)
         record_dataset = record_dataset.map(lambda x: preprocess_single_image_file(x))
         record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
-
-        siamese = ResnetBuilder.build_siamese_resnet_18
-        model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
-        model.load_weights(loaded_model, by_name=True)
-
-        bottom_network = ResnetBuilder.build_bottom_network(
-            model,
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
-        )
 
         predictions = bottom_network.predict(record_dataset)
 

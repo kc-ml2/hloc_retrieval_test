@@ -55,27 +55,12 @@ if __name__ == "__main__":
         import tensorflow as tf
 
         from algorithms.resnet import ResnetBuilder  # pylint: disable=ungrouped-imports
-        from config.algorithm_config import NetworkConstant  # pylint: disable=ungrouped-imports
         from habitat_env.localization import Localization  # pylint: disable=ungrouped-imports
 
-        gpus = tf.config.experimental.list_physical_devices("GPU")
-        if gpus:
-            try:
-                tf.config.experimental.set_virtual_device_configuration(
-                    gpus[PathConfig.GPU_ID], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]
-                )
-            except RuntimeError as e:
-                print(e)
+        ResnetBuilder.restrict_gpu_memory()
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-            siamese = ResnetBuilder.build_siamese_resnet_18
-            model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
-            model.load_weights(loaded_model, by_name=True)
-            top_network = ResnetBuilder.build_top_network(model)
-            bottom_network = ResnetBuilder.build_bottom_network(
-                model,
-                (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
-            )
+            model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
 
     if is_detection:
         yolo = Yolo()
@@ -105,7 +90,11 @@ if __name__ == "__main__":
                 )
                 # Initialize localization instance
                 localization = Localization(
-                    top_network, bottom_network, binary_topdown_map, current_map_dir, is_detection=is_detection
+                    top_network,
+                    bottom_network,
+                    current_map_dir,
+                    binary_topdown_map=binary_topdown_map,
+                    is_detection=is_detection,
                 )
 
             # Initialize opencv display window
@@ -145,8 +134,8 @@ if __name__ == "__main__":
                     localization = Localization(
                         top_network,
                         bottom_network,
-                        sim.topdown_map_list[current_level],
                         current_map_dir,
+                        binary_topdown_map=sim.topdown_map_list[current_level],
                         is_detection=is_detection,
                     )
 

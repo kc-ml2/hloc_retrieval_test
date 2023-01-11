@@ -4,7 +4,6 @@ import os
 import tensorflow as tf
 
 from algorithms.resnet import ResnetBuilder
-from config.algorithm_config import NetworkConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from habitat_env.localization import Localization
@@ -29,14 +28,7 @@ if __name__ == "__main__":
 
     # Load pre-trained model & top network
     with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-        siamese = ResnetBuilder.build_siamese_resnet_18
-        model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
-        model.load_weights(loaded_model, by_name=True)
-        top_network = ResnetBuilder.build_top_network(model)
-        bottom_network = ResnetBuilder.build_bottom_network(
-            model,
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
-        )
+        model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
 
     # Main loop
     for scene_number in scene_list:
@@ -54,7 +46,13 @@ if __name__ == "__main__":
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Initialize localization instance
-            localization = Localization(top_network, bottom_network, binary_topdown_map, map_obs_dir, sample_dir)
+            localization = Localization(
+                top_network,
+                bottom_network,
+                map_obs_dir,
+                sample_dir=sample_dir,
+                binary_topdown_map=binary_topdown_map,
+            )
             localization.iterate_localization_with_sample(recolored_topdown_map)
 
         sim.close()

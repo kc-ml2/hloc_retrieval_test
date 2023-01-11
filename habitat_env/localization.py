@@ -19,10 +19,10 @@ class Localization:
         self,
         top_network,
         bottom_network,
-        binary_topdown_map,
         map_obs_dir,
         sample_dir=None,
         is_detection=False,
+        binary_topdown_map=None,
         load_cache=True,
     ):
         """Initialize localization instance with specific model & map data."""
@@ -55,12 +55,12 @@ class Localization:
         if load_cache:
             self._load_cache()
 
-        # Initialize graph from binary topdown map
-        self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
-        self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
+            # Initialize graph map from binary topdown map image
+            self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
+            self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
 
-        for node_id in self.graph.nodes():
-            self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
+            for node_id in self.graph.nodes():
+                self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
 
         # Initialize spatial pyramid matching instance
         if is_detection:

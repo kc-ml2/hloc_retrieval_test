@@ -10,8 +10,10 @@ from keras.layers.core import Lambda
 from keras.models import Model
 from keras.regularizers import l2
 import six
+import tensorflow as tf
 
 from config.algorithm_config import NetworkConstant
+from config.env_config import PathConfig
 
 NUM_EMBEDDING = NetworkConstant.NUM_EMBEDDING
 TOP_HIDDEN = NetworkConstant.TOP_HIDDEN
@@ -269,3 +271,27 @@ class ResnetBuilder:
         output = _top_network(raw_result)
 
         return Model(inputs=input, outputs=output)
+
+    @staticmethod
+    def load_model(loaded_model):
+        siamese = ResnetBuilder.build_siamese_resnet_18
+        model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+        model.load_weights(loaded_model, by_name=True)
+        top_network = ResnetBuilder.build_top_network(model)
+        bottom_network = ResnetBuilder.build_bottom_network(
+            model,
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+        )
+
+        return model, top_network, bottom_network
+
+    @staticmethod
+    def restrict_gpu_memory():
+        gpus = tf.config.experimental.list_physical_devices("GPU")
+        if gpus:
+            try:
+                tf.config.experimental.set_virtual_device_configuration(
+                    gpus[PathConfig.GPU_ID], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]
+                )
+            except RuntimeError as e:
+                print(e)
