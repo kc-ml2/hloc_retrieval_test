@@ -7,6 +7,7 @@ import cv2
 from habitat.utils.visualizations import maps
 import numpy as np
 
+from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from utils.habitat_utils import (
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     if is_localization:
         import tensorflow as tf
 
-        from algorithms.resnet import ResnetBuilder
+        from algorithms.resnet import ResnetBuilder  # pylint: disable=ungrouped-imports
         from config.algorithm_config import NetworkConstant  # pylint: disable=ungrouped-imports
         from habitat_env.localization import Localization  # pylint: disable=ungrouped-imports
 
@@ -76,8 +77,11 @@ if __name__ == "__main__":
                 (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
             )
 
+    if is_detection:
+        yolo = Yolo()
+
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data, is_detection)
+        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
@@ -121,7 +125,7 @@ if __name__ == "__main__":
 
                 # Display observation. If YOLO is available, display object detection result
                 if is_detection:
-                    detect_img, detection_result = sim.detect_img(observations)
+                    detect_img, detection_result = sim.detect_img(observations, yolo)
                     key = display_opencv_cam(detect_img)
                 else:
                     key = display_opencv_cam(color_img)

@@ -15,7 +15,7 @@ from utils.habitat_utils import make_cfg, make_sim_setting_dict
 class HabitatSimWithMap(habitat_sim.Simulator):
     """Inheritance instance of habitat_sim.Simulator. This class inlcudes config init, map loading, agent init."""
 
-    def __init__(self, scene_number, cam_config, action_config, path_config, height_data=None, is_detection=None):
+    def __init__(self, scene_number, cam_config, action_config, path_config, height_data=None):
         self.scene_number = scene_number
         self.height_data = height_data
         self.cam_config = cam_config
@@ -53,10 +53,6 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         nav_point = self.pathfinder.get_random_navigable_point()
         agent_state.position = nav_point  # world space
         self.agent.set_state(agent_state)
-
-        # Initialize Yolo
-        if is_detection:
-            self.yolo = Yolo()
 
     def get_map_from_database(
         self, topdown_directory="./data/topdown/", recolored_directory="./data/recolored_topdown/"
@@ -125,16 +121,11 @@ class HabitatSimWithMap(habitat_sim.Simulator):
 
     def get_cam_observations(self):
         """Inherit the 'get_sensor_observations' method of the parent class."""
-        cam_observations = {
-            "all_view": None,
-            "all_view_with_line": None,
-            "front_view": None,
-            "right_view": None,
-            "back_view": None,
-            "left_view": None,
-        }
+        cam_observations = {"all_view": None}
 
         if self.is_four_view:
+            cam_observations.update({"front_view": None, "right_view": None, "back_view": None, "left_view": None})
+
             # Store original view for agent state restoration
             original_state = self.agent.get_state()
             current_state = self.agent.get_state()
@@ -182,20 +173,6 @@ class HabitatSimWithMap(habitat_sim.Simulator):
                 axis=1,
             )
 
-            # Merge every view for "all_view_with_line"
-            cam_observations["all_view_with_line"] = np.concatenate(
-                [
-                    cam_observations["front_view"],
-                    self.four_view_line,
-                    cam_observations["right_view"],
-                    self.four_view_line,
-                    cam_observations["back_view"],
-                    self.four_view_line,
-                    cam_observations["left_view"],
-                ],
-                axis=1,
-            )
-
             # Recovery agent's state
             self.agent.set_state(original_state)
 
@@ -205,13 +182,13 @@ class HabitatSimWithMap(habitat_sim.Simulator):
 
         return cam_observations
 
-    def detect_img(self, cam_observations):
+    def detect_img(self, cam_observations, yolo: Yolo):
         """Detect image with Yolo. Merge result images if needed."""
         if self.is_four_view:
-            detect_img_front, detection_front = self.yolo.detect_and_display(cam_observations["front_view"])
-            detect_img_right, detection_right = self.yolo.detect_and_display(cam_observations["right_view"])
-            detect_img_back, detection_back = self.yolo.detect_and_display(cam_observations["back_view"])
-            detect_img_left, detection_left = self.yolo.detect_and_display(cam_observations["left_view"])
+            detect_img_front, detection_front = yolo.detect_and_display(cam_observations["front_view"])
+            detect_img_right, detection_right = yolo.detect_and_display(cam_observations["right_view"])
+            detect_img_back, detection_back = yolo.detect_and_display(cam_observations["back_view"])
+            detect_img_left, detection_left = yolo.detect_and_display(cam_observations["left_view"])
             detect_img = np.concatenate(
                 [
                     detect_img_front,
@@ -238,6 +215,6 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             detection_result = merged_box, merged_confidence, merged_classIDs
 
         else:
-            detect_img, detection_result = self.yolo.detect_and_display(cam_observations["all_view"])
+            detect_img, detection_result = yolo.detect_and_display(cam_observations["all_view"])
 
         return detect_img, detection_result
