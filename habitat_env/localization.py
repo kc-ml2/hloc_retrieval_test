@@ -7,7 +7,7 @@ import tensorflow as tf
 
 from config.algorithm_config import NetworkConstant, TestConstant
 from config.env_config import DataConfig, PathConfig
-from habitat_env.spatial_pyramid import SpatialPyramid
+from habitat_env.object_spatial_pyramid import ObjectSpatialPyramid
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
 
@@ -64,7 +64,7 @@ class Localization:
 
         # Initialize spatial pyramid matching instance
         if is_detection:
-            self.spatial_pyramid = SpatialPyramid(map_obs_dir=map_obs_dir, sample_dir=sample_dir)
+            self.object_spatial_pyramid = ObjectSpatialPyramid(map_obs_dir=map_obs_dir, sample_dir=sample_dir)
 
     def _load_cache(self):
         """Load cached npy embedding file from map & sample observations."""
@@ -107,7 +107,7 @@ class Localization:
         ]
 
         if detection_result is not None:
-            histogram = self.spatial_pyramid.make_spatial_histogram(detection_result)
+            histogram = self.object_spatial_pyramid.make_spatial_histogram(detection_result)
 
         return map_node_with_max_value, high_similarity_set, similarity
 

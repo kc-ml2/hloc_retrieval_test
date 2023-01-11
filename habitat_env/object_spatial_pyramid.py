@@ -5,22 +5,22 @@ import numpy as np
 from config.algorithm_config import NetworkConstant
 
 
-class SpatialPyramid:
+class ObjectSpatialPyramid:
     """Class for object-based spatial pyramid matching."""
 
     def __init__(self, map_obs_dir, sample_dir=None, num_support=80):
         """Initialize spatial pyramid instance with specific map data."""
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
-        map_histogram_file = os.path.join(observation_path, f"spatial_histogram_{map_cache_index}.npy")
+        self.map_histogram_file = os.path.join(observation_path, f"spatial_histogram_{map_cache_index}.npy")
 
         if sample_dir:
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            sample_histogram_file = os.path.join(observation_path, f"spatial_histogram_{sample_cache_index}.npy")
+            self.sample_histogram_file = os.path.join(observation_path, f"spatial_histogram_{sample_cache_index}.npy")
 
         self.num_support = num_support
 
-    def make_spatial_histogram(self, detection_result, pyramid_level=2, split_per_level=4, height_criteria=100):
+    def make_spatial_histogram(self, detection_result, pyramid_level=2, split_per_level=4):
         """Make spatial pyramid histogram for matching."""
         boxes, _, classIDs = detection_result
         spatial_width_interval = NetworkConstant.NET_WIDTH / split_per_level**pyramid_level
@@ -52,8 +52,9 @@ class SpatialPyramid:
 
         return histogram_total
 
-    def calculate_histogram_intersection(self, histogram_a, histogram_b):
-        """Calculate histogram intersection."""
+    # TODO
+    # def calculate_histogram_intersection(self, histogram_a, histogram_b):
+    #     """Calculate histogram intersection."""
 
-    def calculate_batch_histogram_intersection(self, map_hostogram, current_histogram):
-        """Calculate histogram intersection with all histogram from map observations."""
+    # def calculate_batch_histogram_intersection(self, map_hostogram, current_histogram):
+    #     """Calculate histogram intersection with all histogram from map observations."""
