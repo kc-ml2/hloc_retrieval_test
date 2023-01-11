@@ -11,9 +11,10 @@ from keras.models import Model
 from keras.regularizers import l2
 import six
 
-NUM_EMBEDDING = 256  # 256 #512 #1024 #256 #1024 #256
-TOP_HIDDEN = 3  # 1 #4
-NORMALIZATION_ON = False  # True #False #True
+from config.algorithm_config import NetworkConstant
+
+NUM_EMBEDDING = NetworkConstant.NUM_EMBEDDING
+TOP_HIDDEN = NetworkConstant.TOP_HIDDEN
 
 ROW_AXIS = 1
 COL_AXIS = 2

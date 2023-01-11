@@ -34,3 +34,6 @@ class NetworkConstant:
     NET_WIDTH = 1024
     NET_HEIGHT = 256
     NET_CHANNELS = 3
+    # Architecture
+    NUM_EMBEDDING = 256
+    TOP_HIDDEN = 3

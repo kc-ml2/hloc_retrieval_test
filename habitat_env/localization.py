@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import TestConstant
+from config.algorithm_config import NetworkConstant, TestConstant
 from config.env_config import DataConfig, PathConfig
 from habitat_env.spatial_pyramid import SpatialPyramid
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
@@ -23,45 +23,61 @@ class Localization:
         map_obs_dir,
         sample_dir=None,
         is_detection=False,
+        load_cache=True,
     ):
         """Initialize localization instance with specific model & map data."""
-        self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
+        self.sample_dir = sample_dir
         self.is_detection = is_detection
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             self.top_network = top_network
             self.bottom_network = bottom_network
 
+        # Set file name from environment & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
-        map_embedding_file = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")
+        self.map_embedding_file = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")
 
-        with open(map_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
-            map_embedding_mat = np.load(f)
-
-        if sample_dir:
+        if self.sample_dir:
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            sample_embedding_file = os.path.join(observation_path, f"siamese_embedding_{sample_cache_index}.npy")
-            sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
+            self.sample_embedding_file = os.path.join(observation_path, f"siamese_embedding_{sample_cache_index}.npy")
+            self.sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
 
-            with open(sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
-                self.sample_embedding_mat = np.load(f)
-            with open(sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
+            with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
                 self.sample_pos_record = json.load(f)
 
-        num_map_embedding = np.shape(map_embedding_mat)[0]
-        self.dimension_map_embedding = np.shape(map_embedding_mat)[1]
+        # Initialize emny matrix and parameters for handling embeddings
+        self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
+        self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
+        self.input_embedding_mat = np.zeros((self.num_map_embedding, 2 * self.dimension_map_embedding))
 
-        self.input_embedding_mat = np.zeros((num_map_embedding, 2 * self.dimension_map_embedding))
-        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat
+        # Load cached npy file if the flag is true
+        if load_cache:
+            self._load_cache()
 
+        # Initialize graph from binary topdown map
+        self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
         self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
 
         for node_id in self.graph.nodes():
             self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
 
+        # Initialize spatial pyramid matching instance
         if is_detection:
             self.spatial_pyramid = SpatialPyramid(map_obs_dir=map_obs_dir, sample_dir=sample_dir)
+
+    def _load_cache(self):
+        """Load cached npy embedding file from map & sample observations."""
+        with open(self.map_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
+            map_embedding_mat = np.load(f)
+            if np.shape(map_embedding_mat)[0] != self.num_map_embedding:
+                raise ValueError("Dimension of the cache file is different with map record.")
+
+        if self.sample_dir:
+            with open(self.sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
+                self.sample_embedding_mat = np.load(f)
+
+        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat
 
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
