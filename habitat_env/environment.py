@@ -191,11 +191,6 @@ class HabitatSimWithMap(habitat_sim.Simulator):
                 np.array([obs["front_view"], obs["right_view"], obs["back_view"], obs["left_view"]])
             )
 
-            # img_front, detection_front = yolo.detect_and_display(obs["front_view"])
-            # img_right, detection_right = yolo.detect_and_display(obs["right_view"])
-            # img_back, detection_back = yolo.detect_and_display(obs["back_view"])
-            # img_left, detection_left = yolo.detect_and_display(obs["left_view"])
-
             detection_front, detection_right, detection_back, detection_left = detections
             img_front, img_right, img_back, img_left = detect_imgs
 
@@ -217,8 +212,8 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             detection_result = merged_box, merged_confidence, merged_classIDs
 
         else:
-            detect_img, detection_result = yolo.detect_and_display(np.expand_dims(obs["all_view"], axis=0))
-
-            # detect_img, detection_result = yolo.detect_and_display(obs["all_view"])
+            detect_imgs, detections = yolo.detect_and_display(np.expand_dims(obs["all_view"], axis=0))
+            detect_img = detect_imgs[0]
+            detection_result = detections[0]
 
         return detect_img, detection_result

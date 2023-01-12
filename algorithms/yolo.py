@@ -37,95 +37,100 @@ class Yolo:
         self.ln = self.net.getLayerNames()
         self.ln = [self.ln[i - 1] for i in self.net.getUnconnectedOutLayers()]
 
-    # def detect_object(self, image):
-    #     if isinstance(image, str):
-    #         image = cv2.imread(image)
-
-    #     (H, W) = image.shape[:2]
-
-    #     # Construct a blob from the input image and then perform a forward pass of the YOLO object detector,
-    #     # giving us our bounding boxes and associated probabilities
-    #     blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-
     def detect_object(self, image_batch):
+        batch_size = image_batch.shape[0]
         (H, W) = image_batch[0].shape[:2]
-        image_list = np.array([image_batch[0], image_batch[1]])
 
         # Construct a blob from the input image and then perform a forward pass of the YOLO object detector,
         # giving us our bounding boxes and associated probabilities
-        blob = cv2.dnn.blobFromImage(image_list, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-        print(blob.shape)
-        input()
+        blob = cv2.dnn.blobFromImages(image_batch, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+
         self.net.setInput(blob)
         layer_outputs = self.net.forward(self.ln)
 
-        # Initialize our lists of detected bounding boxes, confidences, and class IDs, respectively
+        # Initialize lists of detected bounding boxes, confidences, and class IDs, respectively
+        idxs_list = []
+        detection_results = []
         boxes = []
         confidences = []
         classIDs = []
-
-        for output in layer_outputs:
-            for detection in output:
-                # Extract the class ID and confidence (i.e., probability) of the current object detection
-                scores = detection[5:]
-                classID = np.argmax(scores)
-                confidence = scores[classID]
-
-                # Filter out weak predictions by ensuring the detected probability is
-                # greater than the minimum probability
-                if confidence > self.confidence:
-                    # Scale the bounding box coordinates back relative to the size of the image,
-                    # keeping in mind that YOLO actually returns the center (x, y)-coordinates of the bounding box
-                    # followed by the boxes' width and height
-                    box = detection[0:4] * np.array([W, H, W, H])
-                    (centerX, centerY, width, height) = box.astype("int")
-
-                    # Update our list of bounding box coordinates, confidences, and class IDs
-                    boxes.append([int(centerX), int(centerY), int(width), int(height)])
-                    confidences.append(float(confidence))
-                    classIDs.append(classID)
-
-        # Apply non-maxima suppression to suppress weak, overlapping bounding boxes
-        idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.confidence, self.threshold)
         suppressed_boxes = []
         suppressed_confidences = []
         suppressed_classIDs = []
 
-        for idx in idxs:
-            suppressed_boxes.append(boxes[idx])
-            suppressed_confidences.append(confidences[idx])
-            suppressed_classIDs.append(classIDs[idx])
+        for i in range(batch_size):
+            boxes.append([])
+            confidences.append([])
+            classIDs.append([])
+            suppressed_boxes.append([])
+            suppressed_confidences.append([])
+            suppressed_classIDs.append([])
 
-        return suppressed_boxes, suppressed_confidences, suppressed_classIDs
+            for output in layer_outputs:
+                detection_list = output[i]
+                for detection in detection_list:
+                    # Extract the class ID and confidence (i.e., probability) of the current object detection
+                    scores = detection[5:]
+                    classID = np.argmax(scores)
+                    confidence = scores[classID]
 
-    def display_detection_on_img(self, detection_result, image):
-        boxes, confidences, classIDs = detection_result
+                    # Filter out weak predictions by probability
+                    if confidence > self.confidence:
+                        # Scale the bounding box coordinates back relative to the size of the image,
+                        # keeping in mind that YOLO actually returns the center (x, y)-coordinates of the bounding box
+                        # followed by the boxes' width and height
+                        box = detection[0:4] * np.array([W, H, W, H])
+                        (centerX, centerY, width, height) = box.astype("int")
 
-        # Ensure at least one detection exists
-        if len(boxes) > 0:
-            # Loop over the indexes we are keeping
-            for i, box in enumerate(boxes):
-                width = box[2]
-                height = box[3]
-                corner_x = int(box[0] - width / 2)
-                corner_y = int(box[1] - height / 2)
+                        # Update our list of bounding box coordinates, confidences, and class IDs
+                        boxes[i].append([int(centerX), int(centerY), int(width), int(height)])
+                        confidences[i].append(float(confidence))
+                        classIDs[i].append(classID)
 
-                # Draw a bounding box rectangle and label on the image
-                color = [int(c) for c in self.colors[classIDs[i]]]
-                cv2.rectangle(image, (corner_x, corner_y), (corner_x + width, corner_y + height), color, 2)
-                text = f"{self.labels[classIDs[i]]}: {confidences[i]:.4f}"
-                cv2.putText(image, text, (corner_x, corner_y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            # Apply non-maxima suppression to suppress weak, overlapping bounding boxes
+            idxs = cv2.dnn.NMSBoxes(boxes[i], confidences[i], self.confidence, self.threshold)
+            idxs_list.append(idxs)
 
-        return image
+        for i in range(batch_size):
+            idxs = idxs_list[i]
+            for idx in idxs:
+                suppressed_boxes[i].append(boxes[i][idx])
+                suppressed_confidences[i].append(confidences[i][idx])
+                suppressed_classIDs[i].append(classIDs[i][idx])
+
+            suppressed_detection = (suppressed_boxes[i], suppressed_confidences[i], suppressed_classIDs[i])
+            detection_results.append(suppressed_detection)
+
+        return detection_results
+
+    def display_detection_on_img(self, image_batch, detection_results):
+        batch_size = image_batch.shape[0]
+
+        for batch_idx in range(batch_size):
+            boxes, confidences, classIDs = detection_results[batch_idx]
+            # Ensure at least one detection exists
+            if len(boxes) > 0:
+                # Loop over the indexes we are keeping
+                for i, box in enumerate(boxes):
+                    width = box[2]
+                    height = box[3]
+                    corner_x = int(box[0] - width / 2)
+                    corner_y = int(box[1] - height / 2)
+
+                    # Draw a bounding box rectangle and label on the image
+                    color = [int(c) for c in self.colors[classIDs[i]]]
+                    cv2.rectangle(
+                        image_batch[batch_idx], (corner_x, corner_y), (corner_x + width, corner_y + height), color, 2
+                    )
+                    text = f"{self.labels[classIDs[i]]}: {confidences[i]:.4f}"
+                    cv2.putText(
+                        image_batch[batch_idx], text, (corner_x, corner_y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
+                    )
+
+        return image_batch
 
     def detect_and_display(self, image_batch):
-        detection_result_batch = self.detect_object(image_batch)
-        image_batch = self.display_detection_on_img(detection_result_batch, image_batch)
+        detection_results = self.detect_object(image_batch)
+        image_batch = self.display_detection_on_img(image_batch, detection_results)
 
-        return image_batch, detection_result_batch
-
-    # def detect_and_display(self, image):
-    #     detection_result = self.detect_object(image)
-    #     image = self.display_detection_on_img(detection_result, image)
-
-    #     return image, detection_result
+        return image_batch, detection_results
