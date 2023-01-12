@@ -73,10 +73,11 @@ if __name__ == "__main__":
                 }
 
                 cam_observations["all_view"] = img
-                cam_observations["front_view"] = img[:, 0:256]
-                cam_observations["right_view"] = img[:, 256:512]
-                cam_observations["back_view"] = img[:, 512:768]
-                cam_observations["left_view"] = img[:, 768:1024]
+                if sim.is_four_view:
+                    cam_observations["front_view"] = img[:, 0:256]
+                    cam_observations["right_view"] = img[:, 256:512]
+                    cam_observations["back_view"] = img[:, 512:768]
+                    cam_observations["left_view"] = img[:, 768:1024]
 
                 detect_img, detection_result = sim.detect_img(cam_observations, yolo)
                 display_opencv_cam(detect_img)
@@ -94,10 +95,11 @@ if __name__ == "__main__":
                 }
 
                 cam_observations["all_view"] = img
-                cam_observations["front_view"] = img[:, 0:256]
-                cam_observations["right_view"] = img[:, 256:512]
-                cam_observations["back_view"] = img[:, 512:768]
-                cam_observations["left_view"] = img[:, 768:1024]
+                if sim.is_four_view:
+                    cam_observations["front_view"] = img[:, 0:256]
+                    cam_observations["right_view"] = img[:, 256:512]
+                    cam_observations["back_view"] = img[:, 512:768]
+                    cam_observations["left_view"] = img[:, 768:1024]
 
                 _, detection_result = sim.detect_img(cam_observations, yolo)
                 histogram = object_spatial_pyramid.make_spatial_histogram(detection_result)
