@@ -72,6 +72,7 @@ if __name__ == "__main__":
                     "left_view": None,
                 }
 
+                cam_observations["all_view"] = img
                 cam_observations["front_view"] = img[:, 0:256]
                 cam_observations["right_view"] = img[:, 256:512]
                 cam_observations["back_view"] = img[:, 512:768]
@@ -92,6 +93,7 @@ if __name__ == "__main__":
                     "left_view": None,
                 }
 
+                cam_observations["all_view"] = img
                 cam_observations["front_view"] = img[:, 0:256]
                 cam_observations["right_view"] = img[:, 256:512]
                 cam_observations["back_view"] = img[:, 512:768]

@@ -37,15 +37,25 @@ class Yolo:
         self.ln = self.net.getLayerNames()
         self.ln = [self.ln[i - 1] for i in self.net.getUnconnectedOutLayers()]
 
-    def detect_object(self, image):
-        if isinstance(image, str):
-            image = cv2.imread(image)
+    # def detect_object(self, image):
+    #     if isinstance(image, str):
+    #         image = cv2.imread(image)
 
-        (H, W) = image.shape[:2]
+    #     (H, W) = image.shape[:2]
+
+    #     # Construct a blob from the input image and then perform a forward pass of the YOLO object detector,
+    #     # giving us our bounding boxes and associated probabilities
+    #     blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+
+    def detect_object(self, image_batch):
+        (H, W) = image_batch[0].shape[:2]
+        image_list = np.array([image_batch[0], image_batch[1]])
 
         # Construct a blob from the input image and then perform a forward pass of the YOLO object detector,
         # giving us our bounding boxes and associated probabilities
-        blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+        blob = cv2.dnn.blobFromImage(image_list, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+        print(blob.shape)
+        input()
         self.net.setInput(blob)
         layer_outputs = self.net.forward(self.ln)
 
@@ -108,8 +118,14 @@ class Yolo:
 
         return image
 
-    def detect_and_display(self, image):
-        detection_result = self.detect_object(image)
-        image = self.display_detection_on_img(detection_result, image)
+    def detect_and_display(self, image_batch):
+        detection_result_batch = self.detect_object(image_batch)
+        image_batch = self.display_detection_on_img(detection_result_batch, image_batch)
 
-        return image, detection_result
+        return image_batch, detection_result_batch
+
+    # def detect_and_display(self, image):
+    #     detection_result = self.detect_object(image)
+    #     image = self.display_detection_on_img(detection_result, image)
+
+    #     return image, detection_result
