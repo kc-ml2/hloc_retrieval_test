@@ -8,7 +8,7 @@ import numpy as np
 import quaternion
 from scipy.spatial.transform import Rotation
 
-from algorithms.yolo import Yolo
+from network.yolo import Yolo
 from utils.habitat_utils import make_cfg, make_sim_setting_dict
 
 

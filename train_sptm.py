@@ -6,10 +6,10 @@ import keras
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
-from algorithms.resnet import ResnetBuilder
-from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 from config.algorithm_config import NetworkConstant, TrainingConstant
 from config.env_config import PathConfig
+from network.resnet import ResnetBuilder
+from utils.network_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 
 if __name__ == "__main__":
     timestr = time.strftime("%Y%m%d-%H%M%S")

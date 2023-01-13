@@ -107,7 +107,7 @@ def make_cfg(settings):
 
 
 def open_env_related_files(scene_list_file, height_json_path, scene_index=None):
-    """Open cached file related to habitat environment."""
+    """Open cached file related to habitat sim."""
     with open(scene_list_file) as f:  # pylint: disable=unspecified-encoding
         scene_list = f.read().splitlines()
 

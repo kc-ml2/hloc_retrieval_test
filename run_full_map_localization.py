@@ -3,10 +3,10 @@ import os
 
 import tensorflow as tf
 
-from algorithms.resnet import ResnetBuilder
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
-from habitat_env.localization import Localization
+from network.resnet import ResnetBuilder
+from relocalization.localization import Localization
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":

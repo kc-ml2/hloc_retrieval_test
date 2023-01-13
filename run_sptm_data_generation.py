@@ -8,7 +8,7 @@ import networkx as nx
 
 from config.algorithm_config import TrainingConstant
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
 from utils.skeletonize_utils import (
     convert_to_binarymap,

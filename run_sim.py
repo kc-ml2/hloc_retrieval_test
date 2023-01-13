@@ -7,9 +7,9 @@ import cv2
 from habitat.utils.visualizations import maps
 import numpy as np
 
-from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
+from network.yolo import Yolo
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
@@ -54,8 +54,8 @@ if __name__ == "__main__":
     if is_localization:
         import tensorflow as tf
 
-        from algorithms.resnet import ResnetBuilder  # pylint: disable=ungrouped-imports
-        from habitat_env.localization import Localization  # pylint: disable=ungrouped-imports
+        from network.resnet import ResnetBuilder  # pylint: disable=ungrouped-imports
+        from relocalization.localization import Localization  # pylint: disable=ungrouped-imports
 
         ResnetBuilder.restrict_gpu_memory()
 

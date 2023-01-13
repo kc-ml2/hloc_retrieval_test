@@ -5,10 +5,10 @@ import os
 import cv2
 import numpy as np
 
-from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
-from habitat_env.object_spatial_pyramid import ObjectSpatialPyramid
+from network.yolo import Yolo
+from relocalization.object_spatial_pyramid import ObjectSpatialPyramid
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":

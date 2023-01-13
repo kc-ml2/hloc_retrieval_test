@@ -4,12 +4,12 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from algorithms.resnet import ResnetBuilder
-from algorithms.sptm_utils import preprocess_single_image_file
 from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
-from habitat_env.localization import Localization
+from network.resnet import ResnetBuilder
+from relocalization.localization import Localization
 from utils.habitat_utils import open_env_related_files
+from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -7,7 +7,7 @@ import tensorflow as tf
 
 from config.algorithm_config import NetworkConstant, TestConstant
 from config.env_config import DataConfig, PathConfig
-from habitat_env.object_spatial_pyramid import ObjectSpatialPyramid
+from relocalization.object_spatial_pyramid import ObjectSpatialPyramid
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
 
@@ -33,7 +33,7 @@ class Localization:
             self.top_network = top_network
             self.bottom_network = bottom_network
 
-        # Set file name from environment & record name
+        # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
         self.map_embedding_file = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")

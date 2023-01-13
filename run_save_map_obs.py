@@ -8,7 +8,7 @@ import numpy as np
 
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import draw_point_from_node, open_env_related_files
 from utils.skeletonize_utils import topdown_map_to_graph
 

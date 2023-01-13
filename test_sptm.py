@@ -7,9 +7,9 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from algorithms.sptm_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
+from utils.network_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

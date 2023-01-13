@@ -11,7 +11,7 @@ from scipy.spatial.distance import squareform
 
 from config.algorithm_config import TestConstant
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import draw_line_from_edge, draw_point_from_node, highlight_point_from_node
 
 if __name__ == "__main__":

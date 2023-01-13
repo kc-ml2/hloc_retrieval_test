@@ -5,7 +5,7 @@ import os
 import cv2
 
 from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
-from habitat_env.environment import HabitatSimWithMap
+from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import get_entire_maps_by_levels
 
 if __name__ == "__main__":
