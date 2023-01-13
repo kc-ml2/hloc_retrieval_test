@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 
 import cv2
@@ -8,7 +9,7 @@ from algorithms.yolo import Yolo
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from habitat_env.environment import HabitatSimWithMap
 from habitat_env.object_spatial_pyramid import ObjectSpatialPyramid
-from utils.habitat_utils import display_opencv_cam, init_opencv_cam, open_env_related_files
+from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -26,6 +27,15 @@ if __name__ == "__main__":
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
     yolo = Yolo()
 
+    num_iteration = 0
+    test_num_level = 0
+
+    for scene_number in scene_list:
+        # Find number of levels
+        for height in height_data:
+            if scene_number in height:
+                test_num_level = test_num_level + 1
+
     # Make list to iterate for Siamese forward
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
@@ -41,13 +51,15 @@ if __name__ == "__main__":
 
         for level in range(num_level):
             print("scene: ", scene_number, "    level: ", level)
+            num_iteration = num_iteration + 1
+            print(num_iteration, "/", test_num_level)
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Set output npy file name
             object_spatial_pyramid = ObjectSpatialPyramid(map_obs_dir, sample_dir)
-            map_output = object_spatial_pyramid.map_histogram_file
-            sample_output = object_spatial_pyramid.sample_histogram_file
+            map_output = object_spatial_pyramid.map_detection_file
+            sample_output = object_spatial_pyramid.sample_detection_file
 
             # Make list to iterate
             sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
@@ -60,7 +72,8 @@ if __name__ == "__main__":
             map_output_array = np.zeros([len(map_obs_list), shape_histogram])
             sample_output_array = np.zeros([len(sample_list), shape_histogram])
 
-            init_opencv_cam()
+            print("Generating map histogram...")
+            map_detection = {}
 
             for i, map_obs in enumerate(map_obs_list):
                 img = cv2.imread(map_obs)
@@ -79,10 +92,13 @@ if __name__ == "__main__":
                     cam_observations["back_view"] = img[:, 512:768]
                     cam_observations["left_view"] = img[:, 768:1024]
 
-                detect_img, detection_result = sim.detect_img(cam_observations, yolo)
-                display_opencv_cam(detect_img)
-                histogram = object_spatial_pyramid.make_spatial_histogram(detection_result)
-                map_output_array[i] = histogram
+                _, detection_result = sim.detect_img(cam_observations, yolo)
+                map_detection[f"{i:06d}"] = detection_result
+
+                print(i, "/", len(map_obs_list), end="\r")
+
+            print("Generating sample histogram...")
+            sample_detection = {}
 
             for i, sample_obs in enumerate(sample_list):
                 img = cv2.imread(sample_obs)
@@ -102,11 +118,14 @@ if __name__ == "__main__":
                     cam_observations["left_view"] = img[:, 768:1024]
 
                 _, detection_result = sim.detect_img(cam_observations, yolo)
-                histogram = object_spatial_pyramid.make_spatial_histogram(detection_result)
-                sample_output_array[i] = histogram
+                sample_detection[f"{i:06d}"] = detection_result
 
-            with open(map_output, "wb") as f:
-                np.save(f, map_output_array)
+                print(i, "/", len(sample_list), end="\r")
 
-            with open(sample_output, "wb") as f:
-                np.save(f, sample_output_array)
+            with open(map_output, "w") as f:  # pylint: disable=unspecified-encoding
+                json.dump(map_detection, f, indent=4)
+
+            with open(sample_output, "w") as f:  # pylint: disable=unspecified-encoding
+                json.dump(sample_detection, f, indent=4)
+
+        sim.close()

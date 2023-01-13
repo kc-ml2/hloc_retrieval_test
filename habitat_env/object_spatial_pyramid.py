@@ -13,10 +13,12 @@ class ObjectSpatialPyramid:
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
         self.map_histogram_file = os.path.join(observation_path, f"spatial_histogram_{map_cache_index}.npy")
+        self.map_detection_file = os.path.join(observation_path, f"object_detection_{map_cache_index}.json")
 
         if sample_dir:
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
             self.sample_histogram_file = os.path.join(observation_path, f"spatial_histogram_{sample_cache_index}.npy")
+            self.sample_detection_file = os.path.join(observation_path, f"object_detection_{sample_cache_index}.json")
 
         self.num_support = num_support
 

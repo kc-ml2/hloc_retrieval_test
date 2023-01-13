@@ -71,7 +71,7 @@ class Yolo:
                 for detection in detection_list:
                     # Extract the class ID and confidence (i.e., probability) of the current object detection
                     scores = detection[5:]
-                    classID = np.argmax(scores)
+                    classID = int(np.argmax(scores))
                     confidence = scores[classID]
 
                     # Filter out weak predictions by probability
