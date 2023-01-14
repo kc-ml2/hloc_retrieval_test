@@ -3,7 +3,6 @@ import json
 import os
 
 import cv2
-import numpy as np
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from network.yolo import Yolo
@@ -67,12 +66,7 @@ if __name__ == "__main__":
             map_obs_list = [map_obs_dir + os.sep + file for file in sorted_map_obs_file]
             sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
 
-            # Initialize output matrix
-            shape_histogram = object_spatial_pyramid.num_support * (1 + 4 + 16)
-            map_output_array = np.zeros([len(map_obs_list), shape_histogram])
-            sample_output_array = np.zeros([len(sample_list), shape_histogram])
-
-            print("Generating map histogram...")
+            print("Generating object detection result from map observations...")
             map_detection = {}
 
             for i, map_obs in enumerate(map_obs_list):

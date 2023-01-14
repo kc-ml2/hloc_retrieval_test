@@ -5,4 +5,4 @@ format:
 test:
 	black . --check
 	isort . --check-only
-	env PYTHONPATH=. pytest --pylint --flake8
+	env PYTHONPATH=. pytest --pylint --flake8 -W ignore::DeprecationWarning

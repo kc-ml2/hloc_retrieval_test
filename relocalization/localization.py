@@ -64,7 +64,7 @@ class Localization:
 
         # Initialize spatial pyramid matching instance
         if is_detection:
-            self.object_spatial_pyramid = ObjectSpatialPyramid(map_obs_dir=map_obs_dir, sample_dir=sample_dir)
+            self.object_pyramid = ObjectSpatialPyramid(map_obs_dir=map_obs_dir, sample_dir=sample_dir, load_cache=True)
 
     def _load_cache(self):
         """Load cached npy embedding file from map & sample observations."""
@@ -106,8 +106,11 @@ class Localization:
             id for id in range(len(similarity)) if similarity[id] > TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
         ]
 
-        if detection_result is not None:
-            histogram = self.object_spatial_pyramid.make_spatial_histogram(detection_result)
+        # TODO
+        # if self.is_detection:
+        # initialize rotation-free map histogram
+        # compare two histogram & get argmax
+        # histogram = self.object_pyramid.make_spatial_histogram(detection_result)
 
         return map_node_with_max_value, high_similarity_set, similarity
 
@@ -133,7 +136,12 @@ class Localization:
 
             map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
 
-            result = self.localize_with_observation(sample_embedding)
+            if self.is_detection:
+                detection_result = self.object_pyramid.sample_detection_result[f"{i:06d}"]
+                result = self.localize_with_observation(sample_embedding, detection_result)
+            else:
+                result = self.localize_with_observation(sample_embedding)
+
             map_image = self.visualize_on_map(map_image, result)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
