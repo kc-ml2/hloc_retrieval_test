@@ -106,7 +106,7 @@ class Localization:
             id for id in range(len(similarity)) if similarity[id] > TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
         ]
 
-        if self.is_detection:
+        if self.is_detection and detection_result[0] != []:
             if detection_result is None:
                 raise ValueError("Detection result is required for localization with object detection.")
 
@@ -115,12 +115,36 @@ class Localization:
             current_histogram_batch[:] = current_histogram
 
             scores = np.sum(np.minimum(self.object_pyramid.map_histogram_batch, current_histogram_batch), axis=1)
-            max_id = np.argmax(scores) // self.object_pyramid.low_pyramid_dim
 
-            if max_id in high_similarity_set:
-                map_node_with_max_value = max_id
+            all_max_ids = np.argwhere(scores == np.amax(scores))
+            all_max_ids = all_max_ids // self.object_pyramid.low_pyramid_dim
+            all_max_ids = all_max_ids.flatten().tolist()
+
+            for id in all_max_ids:
+                if id == map_node_with_max_value:
+                    return map_node_with_max_value, high_similarity_set, similarity
+
+            filtered_similarity = []
+
+            if high_similarity_set == []:
+                for id in all_max_ids:
+                    filtered_similarity.append(similarity[id])
+                map_node_with_max_value = all_max_ids[np.argmax(filtered_similarity)]
+
             else:
-                pass
+                for i, high_sim_id in enumerate(high_similarity_set):
+                    if (high_sim_id in all_max_ids) is False:
+                        high_similarity_set.pop(i)
+
+                if high_similarity_set == []:
+                    for id in all_max_ids:
+                        filtered_similarity.append(similarity[id])
+                    map_node_with_max_value = all_max_ids[np.argmax(filtered_similarity)]
+
+                else:
+                    for high_sim_id in high_similarity_set:
+                        filtered_similarity.append(similarity[high_sim_id])
+                    map_node_with_max_value = high_similarity_set[np.argmax(filtered_similarity)]
 
             # print("Detection: ", detection_result)
             # print("Max value id with detection: ", max_id)
