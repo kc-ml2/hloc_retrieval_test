@@ -14,7 +14,6 @@ class ObjectSpatialPyramid:
         # Initialize path
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
-        self.map_histogram_file = os.path.join(observation_path, f"spatial_histogram_{map_cache_index}.npy")
         self.map_detection_file = os.path.join(observation_path, f"object_detection_{map_cache_index}.json")
         self.map_detection_result = None
 
@@ -32,7 +31,6 @@ class ObjectSpatialPyramid:
         if sample_dir:
             # Initialize path
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            self.sample_histogram_file = os.path.join(observation_path, f"spatial_histogram_{sample_cache_index}.npy")
             self.sample_detection_file = os.path.join(observation_path, f"object_detection_{sample_cache_index}.json")
             self.sample_detection_result = None
 
@@ -53,8 +51,6 @@ class ObjectSpatialPyramid:
 
     def _generate_map_histogram_batch(self):
         """Generate map histogram batch with incremental rotation value."""
-        print("Generating map object histogram batch...")
-
         for i in range(self.num_map_node):
             current_map_detection = self.map_detection_result[f"{i:06d}"]
             current_map_histogram_set = self.make_spatial_histogram(current_map_detection)

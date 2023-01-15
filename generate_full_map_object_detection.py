@@ -52,6 +52,7 @@ if __name__ == "__main__":
             print("scene: ", scene_number, "    level: ", level)
             num_iteration = num_iteration + 1
             print(num_iteration, "/", test_num_level)
+
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 

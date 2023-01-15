@@ -28,17 +28,34 @@ if __name__ == "__main__":
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
+    num_iteration = 0
+    test_num_level = 0
+
+    for scene_number in scene_list:
+        # Find number of levels
+        for height in height_data:
+            if scene_number in height:
+                test_num_level = test_num_level + 1
+
     # Load pre-trained model & top network
     with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
         model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
 
     # Main loop
+
+    total_accuracy = []
+    total_d1 = []
+    total_d2 = []
+    total_samples = 0
+
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
         observation_path = os.path.join(map_obs_path, f"observation_{scene_number}")
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
+            num_iteration = num_iteration + 1
+            print(num_iteration, "/", test_num_level)
 
             # Read binary topdown map
             binary_topdown_map = sim.topdown_map_list[level]
@@ -56,6 +73,18 @@ if __name__ == "__main__":
                 binary_topdown_map=binary_topdown_map,
                 is_detection=is_detection,
             )
-            localization.iterate_localization_with_sample(recolored_topdown_map)
+
+            accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample(
+                recolored_topdown_map
+            )
+
+            total_accuracy = total_accuracy + accuracy_list
+            total_d1 = total_d1 + d1_list
+            total_d2 = total_d2 + d2_list
+            total_samples = total_samples + num_samples
 
         sim.close()
+
+    print("Accuracy: ", sum(total_accuracy) / total_samples)
+    print("Distance 1: ", sum(total_d1) / total_samples)
+    print("Distance 2: ", sum(total_d2) / total_samples)

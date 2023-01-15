@@ -24,10 +24,12 @@ class Localization:
         is_detection=False,
         binary_topdown_map=None,
         load_cache=True,
+        visualize=False,
     ):
         """Initialize localization instance with specific model & map data."""
         self.sample_dir = sample_dir
         self.is_detection = is_detection
+        self.is_visualize = visualize
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             self.top_network = top_network
@@ -92,8 +94,6 @@ class Localization:
 
     def localize_with_observation(self, observation_embedding, detection_result=None):
         """Get localization result of current map according to input observation embedding."""
-        if self.is_detection is True and detection_result is None:
-            raise ValueError("Detection result is required for localization with object detection.")
 
         self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
 
@@ -106,17 +106,32 @@ class Localization:
             id for id in range(len(similarity)) if similarity[id] > TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
         ]
 
-        # TODO
-        # if self.is_detection:
-        # initialize rotation-free map histogram
-        # compare two histogram & get argmax
-        # histogram = self.object_pyramid.make_spatial_histogram(detection_result)
+        if self.is_detection:
+            if detection_result is None:
+                raise ValueError("Detection result is required for localization with object detection.")
+
+            current_histogram, _, _, _ = self.object_pyramid.make_spatial_histogram(detection_result)
+            current_histogram_batch = np.zeros(self.object_pyramid.map_histogram_batch.shape)
+            current_histogram_batch[:] = current_histogram
+
+            scores = np.sum(np.minimum(self.object_pyramid.map_histogram_batch, current_histogram_batch), axis=1)
+            max_id = np.argmax(scores) // self.object_pyramid.low_pyramid_dim
+
+            if max_id in high_similarity_set:
+                map_node_with_max_value = max_id
+            else:
+                pass
+
+            # print("Detection: ", detection_result)
+            # print("Max value id with detection: ", max_id)
+            # print("node in high sim set: ", max_id in high_similarity_set)
 
         return map_node_with_max_value, high_similarity_set, similarity
 
     def visualize_on_map(self, map_image, result):
         """Visualize localization result."""
         map_node_with_max_value, high_similarity_set, similarity = result
+
         print("Max value: ", similarity[map_node_with_max_value], "   Node: ", map_node_with_max_value)
 
         for node in self.graph.nodes():
@@ -131,34 +146,48 @@ class Localization:
 
     def iterate_localization_with_sample(self, recolored_topdown_map):
         """Execute localization & visualize with test sample iteratively."""
+        accuracy_list = []
+        d1_list = []
+        d2_list = []
+        i = 0
+
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
-            print("Sample No.: ", i)
-
-            map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
-
             if self.is_detection:
                 detection_result = self.object_pyramid.sample_detection_result[f"{i:06d}"]
                 result = self.localize_with_observation(sample_embedding, detection_result)
             else:
                 result = self.localize_with_observation(sample_embedding)
 
-            map_image = self.visualize_on_map(map_image, result)
-
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
-            draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
-            print("Accuracy", self.evaluate_accuracy(result[0], grid_pos))
-            print("Pose D: ", self.evaluate_pos_distance(result[0], grid_pos))
-            print("Node D: ", self.evaluate_node_distance(result[0], grid_pos))
+            accuracy = self.evaluate_accuracy(result[0], grid_pos)
+            d1 = self.evaluate_pos_distance(result[0], grid_pos)
+            d2 = self.evaluate_node_distance(result[0], grid_pos)
 
-            cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
-            cv2.resizeWindow("localization", 1152, 1152)
-            cv2.imshow("localization", map_image)
+            accuracy_list.append(accuracy)
+            d1_list.append(d1)
+            d2_list.append(d2)
 
-            key = cv2.waitKey()
+            if self.is_visualize:
+                print("Sample No.: ", i)
+                print("Accuracy", accuracy)
+                print("Pose D: ", d1)
+                print("Node D: ", d2)
 
-            if key == ord("n"):
-                break
+                map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
+                map_image = self.visualize_on_map(map_image, result)
+                draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
+
+                cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("localization", 1152, 1152)
+                cv2.imshow("localization", map_image)
+
+                key = cv2.waitKey()
+
+                if key == ord("n"):
+                    break
+
+        return accuracy_list, d1_list, d2_list, i + 1
 
     def get_ground_truth_nearest_node(self, grid_pos):
         """Get the nearest node by Euclidean distance."""
