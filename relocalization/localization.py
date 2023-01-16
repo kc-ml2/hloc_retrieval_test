@@ -2,6 +2,7 @@ import json
 import os
 
 import cv2
+import networkx as nx
 import numpy as np
 import tensorflow as tf
 
@@ -241,5 +242,7 @@ class Localization:
     def evaluate_accuracy(self, map_node_with_max_value, grid_pos):
         """Is it the nearest node?"""
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
+        step = len(nx.shortest_path(self.graph, ground_truth_nearest_node, map_node_with_max_value))
+        result = step <= 5
 
-        return ground_truth_nearest_node == map_node_with_max_value
+        return result
