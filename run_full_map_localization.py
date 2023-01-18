@@ -17,6 +17,8 @@ if __name__ == "__main__":
     parser.add_argument("--map-obs-path", default="./output")
     parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
     parser.add_argument("--detection", action="store_true")
+    parser.add_argument("--sparse", action="store_true")
+    parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
@@ -24,6 +26,8 @@ if __name__ == "__main__":
     map_obs_path = args.map_obs_path
     loaded_model = args.load_model
     is_detection = args.detection
+    is_sparse = args.sparse
+    is_visualize = args.visualize
 
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
@@ -73,6 +77,8 @@ if __name__ == "__main__":
                 sample_dir=sample_dir,
                 binary_topdown_map=binary_topdown_map,
                 is_detection=is_detection,
+                sparse_map=is_sparse,
+                visualize=is_visualize,
             )
 
             accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample(

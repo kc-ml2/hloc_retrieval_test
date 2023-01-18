@@ -9,7 +9,7 @@ from config.algorithm_config import NetworkConstant
 class ObjectSpatialPyramid:
     """Class for object-based spatial pyramid matching."""
 
-    def __init__(self, map_obs_dir, sample_dir=None, num_support=80, load_cache=False):
+    def __init__(self, map_obs_dir, graph, sample_dir=None, num_support=80, load_cache=False):
         """Initialize spatial pyramid instance with specific map data."""
         # Initialize path
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
@@ -17,9 +17,11 @@ class ObjectSpatialPyramid:
         self.map_detection_file = os.path.join(observation_path, f"object_detection_{map_cache_index}.json")
         self.map_detection_result = None
 
+        self.graph = graph
+
         # Set parameters
         self.num_support = num_support
-        self.num_map_node = len(os.listdir(os.path.normpath(map_obs_dir)))
+        self.num_map_node = len(self.graph.nodes())
         self.pyramid_level = 2
         self.split_per_level = 4
         self.mid_pyramid_dim = self.split_per_level ** (self.pyramid_level - 1)

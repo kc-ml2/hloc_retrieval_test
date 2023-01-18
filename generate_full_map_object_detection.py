@@ -4,11 +4,12 @@ import os
 
 import cv2
 
-from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
+from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
 from network.yolo import Yolo
 from relocalization.object_spatial_pyramid import ObjectSpatialPyramid
 from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
+from utils.skeletonize_utils import topdown_map_to_graph
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -57,7 +58,9 @@ if __name__ == "__main__":
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Set output npy file name
-            object_spatial_pyramid = ObjectSpatialPyramid(map_obs_dir, sample_dir)
+            binary_topdown_map = sim.topdown_map_list[level]
+            graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
+            object_spatial_pyramid = ObjectSpatialPyramid(map_obs_dir, sample_dir=sample_dir, graph=graph)
             map_output = object_spatial_pyramid.map_detection_file
             sample_output = object_spatial_pyramid.sample_detection_file
 

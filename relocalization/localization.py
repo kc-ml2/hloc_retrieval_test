@@ -2,7 +2,6 @@ import json
 import os
 
 import cv2
-import networkx as nx
 import numpy as np
 import tensorflow as tf
 
@@ -25,12 +24,14 @@ class Localization:
         is_detection=False,
         binary_topdown_map=None,
         load_cache=True,
-        visualize=True,
+        visualize=False,
+        sparse_map=False,
     ):
         """Initialize localization instance with specific model & map data."""
         self.sample_dir = sample_dir
         self.is_detection = is_detection
         self.is_visualize = visualize
+        self.is_sparse_map = sparse_map
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             self.top_network = top_network
@@ -49,17 +50,20 @@ class Localization:
             with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
                 self.sample_pos_record = json.load(f)
 
+        # Initialize map graph from binary topdown map
+        self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
+
         # Initialize emny matrix and parameters for handling embeddings
         self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
+        self.num_map_graph_nodes = len(self.graph.nodes())
         self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
-        self.input_embedding_mat = np.zeros((self.num_map_embedding, 2 * self.dimension_map_embedding))
+        self.input_embedding_mat = np.zeros((self.num_map_graph_nodes, 2 * self.dimension_map_embedding))
 
         # Load cached npy file if the flag is true
         if load_cache:
             self._load_cache()
 
             # Initialize graph map from binary topdown map image
-            self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED)
             self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
 
             for node_id in self.graph.nodes():
@@ -67,7 +71,9 @@ class Localization:
 
         # Initialize spatial pyramid matching instance
         if is_detection:
-            self.object_pyramid = ObjectSpatialPyramid(map_obs_dir=map_obs_dir, sample_dir=sample_dir, load_cache=True)
+            self.object_pyramid = ObjectSpatialPyramid(
+                map_obs_dir=map_obs_dir, sample_dir=sample_dir, load_cache=True, graph=self.graph
+            )
 
     def _load_cache(self):
         """Load cached npy embedding file from map & sample observations."""
@@ -80,7 +86,7 @@ class Localization:
             with open(self.sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
                 self.sample_embedding_mat = np.load(f)
 
-        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat
+        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[: self.num_map_graph_nodes]
 
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
@@ -243,10 +249,11 @@ class Localization:
         """Is it the nearest node?"""
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
 
-        try:
-            step = len(nx.shortest_path(self.graph, ground_truth_nearest_node, map_node_with_max_value))
-            result = step <= 10
-        except nx.exception.NetworkXNoPath:
-            result = False
+        ground_truth_pos = self.graph.nodes()[ground_truth_nearest_node]["o"]
+        estimated_pos = self.graph.nodes()[map_node_with_max_value]["o"]
+
+        step = np.linalg.norm(ground_truth_pos - estimated_pos)
+
+        result = step <= 10
 
         return result
