@@ -1,6 +1,7 @@
 import argparse
 import os
 
+import numpy as np
 import tensorflow as tf
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
@@ -93,5 +94,8 @@ if __name__ == "__main__":
         sim.close()
 
     print("Accuracy: ", sum(total_accuracy) / total_samples)
+    print("Accuracy std: ", np.std(total_accuracy))
     print("Distance 1: ", sum(total_d1) / total_samples)
+    print("Distance 1 std: ", np.std(total_d1))
     print("Distance 2: ", sum(total_d2) / total_samples)
+    print("Distance 2 std: ", np.std(total_d2))

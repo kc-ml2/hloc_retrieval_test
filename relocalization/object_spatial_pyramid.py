@@ -39,7 +39,7 @@ class ObjectSpatialPyramid:
         if load_cache:
             self._load_cache()
             self.map_histogram_batch = np.zeros(
-                [self.num_map_node * self.low_pyramid_dim, num_support * self.all_pyramid_dim]
+                [self.num_map_node * self.low_pyramid_dim, self.num_support * self.all_pyramid_dim]
             )
             self._generate_map_histogram_batch()
 
@@ -99,11 +99,7 @@ class ObjectSpatialPyramid:
                 spatial_pos = int(box[0] // spatial_width_interval)
                 histogram_low[classIDs[i], spatial_pos] = histogram_low[classIDs[i], spatial_pos] + 1
 
-            for i in range(self.mid_pyramid_dim):
-                start_idx = i * self.mid_pyramid_dim
-                end_idx = start_idx + 4
-                histogram_mid[:, i] = np.sum(histogram_low[:, start_idx:end_idx], axis=1)
-
+            histogram_mid = histogram_low.reshape(-1, 4).sum(1).reshape(self.num_support, self.mid_pyramid_dim)
             histogram_top = np.sum(histogram_low, axis=1)
 
             histogram_sum = np.sum(histogram_top, axis=0)
