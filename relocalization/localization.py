@@ -28,6 +28,7 @@ class Localization:
         sparse_map=False,
     ):
         """Initialize localization instance with specific model & map data."""
+        self.map_obs_dir = map_obs_dir
         self.sample_dir = sample_dir
         self.is_detection = is_detection
         self.is_visualize = visualize
@@ -74,6 +75,20 @@ class Localization:
             self.object_pyramid = ObjectSpatialPyramid(
                 map_obs_dir=map_obs_dir, sample_dir=sample_dir, load_cache=True, graph=self.graph
             )
+
+        # Initiate ORB detector
+        self.orb = cv2.ORB_create(
+            nfeatures=40000,
+            scaleFactor=1.2,
+            nlevels=8,
+            edgeThreshold=31,
+            firstLevel=0,
+            WTA_K=2,
+            scoreType=cv2.ORB_HARRIS_SCORE,
+            patchSize=31,
+            fastThreshold=20,
+        )
+        self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
     def _load_cache(self):
         """Load cached npy embedding file from map & sample observations."""
@@ -153,10 +168,6 @@ class Localization:
                         filtered_similarity.append(similarity[high_sim_id])
                     map_node_with_max_value = high_similarity_set[np.argmax(filtered_similarity)]
 
-            # print("Detection: ", detection_result)
-            # print("Max value id with detection: ", max_id)
-            # print("node in high sim set: ", max_id in high_similarity_set)
-
         return map_node_with_max_value, high_similarity_set, similarity
 
     def visualize_on_map(self, map_image, result):
@@ -193,7 +204,7 @@ class Localization:
 
             accuracy = self.evaluate_accuracy(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
-            d2 = self.evaluate_node_distance(result[0], grid_pos)
+            d2, gt_node = self.evaluate_node_distance(result[0], grid_pos)
 
             accuracy_list.append(accuracy)
             d1_list.append(d1)
@@ -204,19 +215,65 @@ class Localization:
                 print("Accuracy", accuracy)
                 print("Pose D: ", d1)
                 print("Node D: ", d2)
+                print("Predicted node similarity: ", result[2][result[0]])
+                print("GT node similarity: ", result[2][gt_node])
 
                 map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
                 map_image = self.visualize_on_map(map_image, result)
                 draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
-                cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
-                cv2.resizeWindow("localization", 1152, 1152)
-                cv2.imshow("localization", map_image)
+                if accuracy is False:
+                    sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
+                    map_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
+                    true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
 
-                key = cv2.waitKey()
+                    sample_img = cv2.imread(sample_path)
+                    map_img = cv2.imread(map_path)
+                    true_img = cv2.imread(true_path)
+                    blank_img = np.zeros([10, map_img.shape[1] * 2, 3], dtype=np.uint8)
 
-                if key == ord("n"):
-                    break
+                    sample_kp, sample_des = self.orb.detectAndCompute(sample_img, None)
+                    map_kp, map_des = self.orb.detectAndCompute(map_img, None)
+                    true_kp, true_des = self.orb.detectAndCompute(true_img, None)
+
+                    true_matches = self.bf.match(sample_des, true_des)
+                    true_matches = sorted(true_matches, key=lambda x: x.distance)
+                    map_matches = self.bf.match(sample_des, map_des)
+                    map_matches = sorted(map_matches, key=lambda x: x.distance)
+
+                    map_match_img = cv2.drawMatches(
+                        sample_img.copy(),
+                        sample_kp,
+                        map_img,
+                        map_kp,
+                        map_matches[:30],
+                        None,
+                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+                    )
+                    true_match_img = cv2.drawMatches(
+                        sample_img.copy(),
+                        sample_kp,
+                        true_img,
+                        true_kp,
+                        true_matches[:30],
+                        None,
+                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+                    )
+
+                    match_img = np.concatenate([map_match_img, blank_img, true_match_img], axis=0)
+
+                    cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
+                    cv2.resizeWindow("localization", 1700, 700)
+                    cv2.imshow("localization", match_img)
+
+                    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
+                    cv2.resizeWindow("map", 512, 512)
+                    cv2.imshow("map", map_image)
+
+                    key = cv2.waitKey()
+
+                    if key == ord("n"):
+                        break
 
         return accuracy_list, d1_list, d2_list, i + 1
 
@@ -243,7 +300,7 @@ class Localization:
         predicted_nearest_node_pos = self.graph.nodes[map_node_with_max_value]["o"]
         distance = np.linalg.norm(ground_truth_nearest_node_pos - predicted_nearest_node_pos)
 
-        return distance
+        return distance, ground_truth_nearest_node
 
     def evaluate_accuracy(self, map_node_with_max_value, grid_pos):
         """Is it the nearest node?"""
@@ -256,4 +313,4 @@ class Localization:
 
         result = step <= 10
 
-        return result
+        return bool(result)
