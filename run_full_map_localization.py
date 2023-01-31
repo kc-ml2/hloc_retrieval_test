@@ -43,7 +43,6 @@ if __name__ == "__main__":
                 test_num_level = test_num_level + 1
 
     # Load pre-trained model & top network
-    ResnetBuilder.restrict_gpu_memory()
     with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
         model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
 

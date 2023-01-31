@@ -142,7 +142,7 @@ if __name__ == "__main__":
                 # Execute localization
                 if is_localization:
                     obs_embedding = localization.calculate_embedding_from_observation(color_img)
-                    localization_result = localization.localize_with_observation(obs_embedding, detection_result)
+                    localization_result = localization.localize_with_observation(obs_embedding)
                     map_image = localization.visualize_on_map(map_image, localization_result)
 
                 node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)

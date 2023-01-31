@@ -114,7 +114,7 @@ class Localization:
 
         return obs_embedding
 
-    def localize_with_observation(self, observation_embedding, detection_result=None):
+    def localize_with_observation(self, observation_embedding, current_img=None, detection_result=None):
         """Get localization result of current map according to input observation embedding."""
 
         self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
@@ -124,9 +124,40 @@ class Localization:
 
         similarity = predictions[:, 1]
         map_node_with_max_value = np.argmax(similarity)
-        high_similarity_set = [
-            id for id in range(len(similarity)) if similarity[id] > TestConstant.SIMILARITY_PROBABILITY_THRESHOLD
-        ]
+
+        num_high_similarity_set = int((1.0 - TestConstant.SIMILARITY_PROBABILITY_THRESHOLD) * len(similarity))
+        high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-num_high_similarity_set:]
+        # high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-20:]
+
+        if current_img is not None:
+            orb_distance_list = []
+            for high_id in high_similarity_set:
+                map_path = os.path.join(self.map_obs_dir, f"{high_id:06d}.jpg")
+                map_img = cv2.imread(map_path)
+
+                sample_kp, sample_des = self.orb.detectAndCompute(current_img, None)
+                map_kp, map_des = self.orb.detectAndCompute(map_img, None)
+
+                map_matches = self.bf.match(sample_des, map_des)
+                map_matches = sorted(map_matches, key=lambda x: x.distance)
+                map_matches = map_matches[:30]
+
+                match_df_list = []
+
+                for match in map_matches:
+                    sample_pt = sample_kp[match.queryIdx].pt
+                    map_pt = map_kp[match.trainIdx].pt
+
+                    dx = (map_pt[0] + 1024) - sample_pt[0]
+                    dy = map_pt[1] - sample_pt[1]
+                    df = dy / dx
+
+                    match_df_list.append(df)
+
+                orb_distance_list.append(np.std(match_df_list))
+
+            min_distance_index = np.argmin(orb_distance_list)
+            map_node_with_max_value = high_similarity_set[min_distance_index]
 
         if self.is_detection and detection_result[0] != []:
             if detection_result is None:
@@ -198,7 +229,9 @@ class Localization:
                 detection_result = self.object_pyramid.sample_detection_result[f"{i:06d}"]
                 result = self.localize_with_observation(sample_embedding, detection_result)
             else:
-                result = self.localize_with_observation(sample_embedding)
+                sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
+                sample_img = cv2.imread(sample_path)
+                result = self.localize_with_observation(sample_embedding, current_img=sample_img)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
@@ -222,58 +255,58 @@ class Localization:
                 map_image = self.visualize_on_map(map_image, result)
                 draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
-                if accuracy is False:
-                    sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-                    map_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
-                    true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
+                # if accuracy is False:
+                #     sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
+                #     map_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
+                #     true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
 
-                    sample_img = cv2.imread(sample_path)
-                    map_img = cv2.imread(map_path)
-                    true_img = cv2.imread(true_path)
-                    blank_img = np.zeros([10, map_img.shape[1] * 2, 3], dtype=np.uint8)
+                #     sample_img = cv2.imread(sample_path)
+                #     map_img = cv2.imread(map_path)
+                #     true_img = cv2.imread(true_path)
+                #     blank_img = np.zeros([10, map_img.shape[1] * 2, 3], dtype=np.uint8)
 
-                    sample_kp, sample_des = self.orb.detectAndCompute(sample_img, None)
-                    map_kp, map_des = self.orb.detectAndCompute(map_img, None)
-                    true_kp, true_des = self.orb.detectAndCompute(true_img, None)
+                #     sample_kp, sample_des = self.orb.detectAndCompute(sample_img, None)
+                #     map_kp, map_des = self.orb.detectAndCompute(map_img, None)
+                #     true_kp, true_des = self.orb.detectAndCompute(true_img, None)
 
-                    true_matches = self.bf.match(sample_des, true_des)
-                    true_matches = sorted(true_matches, key=lambda x: x.distance)
-                    map_matches = self.bf.match(sample_des, map_des)
-                    map_matches = sorted(map_matches, key=lambda x: x.distance)
+                #     true_matches = self.bf.match(sample_des, true_des)
+                #     true_matches = sorted(true_matches, key=lambda x: x.distance)
+                #     map_matches = self.bf.match(sample_des, map_des)
+                #     map_matches = sorted(map_matches, key=lambda x: x.distance)
 
-                    map_match_img = cv2.drawMatches(
-                        sample_img.copy(),
-                        sample_kp,
-                        map_img,
-                        map_kp,
-                        map_matches[:30],
-                        None,
-                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-                    )
-                    true_match_img = cv2.drawMatches(
-                        sample_img.copy(),
-                        sample_kp,
-                        true_img,
-                        true_kp,
-                        true_matches[:30],
-                        None,
-                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-                    )
+                #     map_match_img = cv2.drawMatches(
+                #         sample_img.copy(),
+                #         sample_kp,
+                #         map_img,
+                #         map_kp,
+                #         map_matches[:30],
+                #         None,
+                #         flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+                #     )
+                #     true_match_img = cv2.drawMatches(
+                #         sample_img.copy(),
+                #         sample_kp,
+                #         true_img,
+                #         true_kp,
+                #         true_matches[:30],
+                #         None,
+                #         flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+                #     )
 
-                    match_img = np.concatenate([map_match_img, blank_img, true_match_img], axis=0)
+                #     match_img = np.concatenate([map_match_img, blank_img, true_match_img], axis=0)
 
-                    cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
-                    cv2.resizeWindow("localization", 1700, 700)
-                    cv2.imshow("localization", match_img)
+                #     cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
+                #     cv2.resizeWindow("localization", 1700, 700)
+                #     cv2.imshow("localization", match_img)
 
-                    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
-                    cv2.resizeWindow("map", 512, 512)
-                    cv2.imshow("map", map_image)
+                cv2.namedWindow("map", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("map", 512, 512)
+                cv2.imshow("map", map_image)
 
-                    key = cv2.waitKey()
+                key = cv2.waitKey()
 
-                    if key == ord("n"):
-                        break
+                if key == ord("n"):
+                    break
 
         return accuracy_list, d1_list, d2_list, i + 1
 
