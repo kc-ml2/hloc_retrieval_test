@@ -8,7 +8,6 @@ import numpy as np
 import quaternion
 from scipy.spatial.transform import Rotation
 
-from network.yolo import Yolo
 from utils.habitat_utils import make_cfg, make_sim_setting_dict
 
 
@@ -181,39 +180,3 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             cam_observations["all_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
         return cam_observations
-
-    def detect_img(self, cam_observations, yolo: Yolo):
-        """Detect image with Yolo. Merge result images if needed."""
-        obs = cam_observations
-
-        if self.is_four_view:
-            detect_imgs, detections = yolo.detect_and_display(
-                np.array([obs["front_view"], obs["right_view"], obs["back_view"], obs["left_view"]])
-            )
-
-            detection_front, detection_right, detection_back, detection_left = detections
-            img_front, img_right, img_back, img_left = detect_imgs
-
-            detect_img = np.concatenate(
-                [img_front, self.blank_line, img_right, self.blank_line, img_back, self.blank_line, img_left],
-                axis=1,
-            )
-
-            for i, detect in enumerate([detection_front, detection_right, detection_back, detection_left]):
-                boxes = detect[0]
-                for box in boxes:
-                    if len(box) > 0:
-                        box[0] = box[0] + self.cam_config.WIDTH * i
-
-            merged_box = detection_front[0] + detection_right[0] + detection_back[0] + detection_left[0]
-            merged_confidence = detection_front[1] + detection_right[1] + detection_back[1] + detection_left[1]
-            merged_classIDs = detection_front[2] + detection_right[2] + detection_back[2] + detection_left[2]
-
-            detection_result = merged_box, merged_confidence, merged_classIDs
-
-        else:
-            detect_imgs, detections = yolo.detect_and_display(np.expand_dims(obs["all_view"], axis=0))
-            detect_img = detect_imgs[0]
-            detection_result = detections[0]
-
-        return detect_img, detection_result

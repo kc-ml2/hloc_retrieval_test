@@ -8,7 +8,6 @@ from habitat.utils.visualizations import maps
 import numpy as np
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from network.yolo import Yolo
 from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import (
     display_map,
@@ -28,7 +27,6 @@ if __name__ == "__main__":
     parser.add_argument("--output-path", default="./output")
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
-    parser.add_argument("--detection", action="store_true")
     parser.add_argument("--localization", action="store_true")
     parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
     parser.add_argument("--map-obs-path", default="./output")
@@ -39,7 +37,6 @@ if __name__ == "__main__":
     output_path = args.output_path
     is_save_all = args.save_all
     is_save_except_rotation = args.save_except_rotation
-    is_detection = args.detection
     is_localization = args.localization
     loaded_model = args.load_model
     map_obs_path = args.map_obs_path
@@ -61,9 +58,6 @@ if __name__ == "__main__":
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
-
-    if is_detection:
-        yolo = Yolo()
 
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
@@ -94,7 +88,6 @@ if __name__ == "__main__":
                     bottom_network,
                     current_map_dir,
                     binary_topdown_map=binary_topdown_map,
-                    is_detection=is_detection,
                 )
 
             # Initialize opencv display window
@@ -112,13 +105,7 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                # Display observation. If YOLO is available, display object detection result
-                if is_detection:
-                    detect_img, detection_result = sim.detect_img(observations, yolo)
-                    key = display_opencv_cam(detect_img)
-                else:
-                    key = display_opencv_cam(color_img)
-                    detect_img = None
+                key = display_opencv_cam(color_img)
 
                 # Update map data
                 previous_level = sim.closest_level
@@ -136,7 +123,6 @@ if __name__ == "__main__":
                         bottom_network,
                         current_map_dir,
                         binary_topdown_map=sim.topdown_map_list[current_level],
-                        is_detection=is_detection,
                     )
 
                 # Execute localization

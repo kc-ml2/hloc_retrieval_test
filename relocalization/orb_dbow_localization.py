@@ -3,25 +3,21 @@ import os
 
 import cv2
 import numpy as np
-import tensorflow as tf
 
-from config.algorithm_config import NetworkConstant, TestConstant
-from config.env_config import DataConfig, PathConfig
+from config.env_config import DataConfig
+from relocalization.dbow import dbow
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
 
 
-class Localization:
-    """Class for localization methods according to the given map."""
+class OrbDbowLocalization:
+    """Class for localization methods with orb bag of the binary words method."""
 
     def __init__(
         self,
-        top_network,
-        bottom_network,
         map_obs_dir,
         sample_dir=None,
         binary_topdown_map=None,
-        load_cache=True,
         visualize=False,
         sparse_map=False,
     ):
@@ -31,18 +27,17 @@ class Localization:
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-            self.top_network = top_network
-            self.bottom_network = bottom_network
-
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
-        map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
-        self.map_embedding_file = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")
+
+        # Make list to iterate
+        sorted_map_obs_id = sorted(os.listdir(map_obs_dir))
+        map_obs_file_list = [map_obs_dir + os.sep + file for file in sorted_map_obs_id]
 
         if self.sample_dir:
+            sorted_test_sample_file = sorted(os.listdir(sample_dir))
+            self.sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            self.sample_embedding_file = os.path.join(observation_path, f"siamese_embedding_{sample_cache_index}.npy")
             self.sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
 
             with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
@@ -50,22 +45,7 @@ class Localization:
 
         # Initialize map graph from binary topdown map
         self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
-
-        # Initialize emny matrix and parameters for handling embeddings
-        self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
         self.num_map_graph_nodes = len(self.graph.nodes())
-        self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
-        self.input_embedding_mat = np.zeros((self.num_map_graph_nodes, 2 * self.dimension_map_embedding))
-
-        # Load cached npy file if the flag is true
-        if load_cache:
-            self._load_cache()
-
-            # Initialize graph map from binary topdown map image
-            self.map_pos_mat = np.zeros([len(self.graph.nodes()), 2])
-
-            for node_id in self.graph.nodes():
-                self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
 
         # Initiate ORB detector
         self.orb = cv2.ORB_create(
@@ -81,76 +61,47 @@ class Localization:
         )
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
-    def _load_cache(self):
-        """Load cached npy embedding file from map & sample observations."""
-        with open(self.map_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
-            map_embedding_mat = np.load(f)
-            if np.shape(map_embedding_mat)[0] != self.num_map_embedding:
-                raise ValueError("Dimension of the cache file is different with map record.")
+        orb_db_images = []
+        for map_obs_file in map_obs_file_list:
+            orb_db_images.append(cv2.imread(map_obs_file))
 
-        if self.sample_dir:
-            with open(self.sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
-                self.sample_embedding_mat = np.load(f)
+        # Create Vocabulary
+        print("Creating vocabulary...")
+        n_clusters = 10
+        depth = 2
+        vocabulary = dbow.Vocabulary(orb_db_images, n_clusters, depth, self.orb)
 
-        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[: self.num_map_graph_nodes]
+        # Create a database
+        print("Creating database...")
+        self.db = dbow.Database(vocabulary)
+        for image in orb_db_images:
+            _, descs = self.orb.detectAndCompute(image, None)
+            descs = [dbow.ORB.from_cv_descriptor(desc) for desc in descs]
+            self.db.add(descs)
 
-    def calculate_embedding_from_observation(self, observation):
-        """Calculate siamese embedding from observation image with botton network."""
-        observation = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-            regulized_img = tf.image.convert_image_dtype(observation, tf.float32)
-            obs_embedding = self.bottom_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
+        # # Saving and Loading the vocabulary
+        # vocabulary.save('vocabulary.pickle')
+        # loaded_vocabulary = vocabulary.load('vocabulary.pickle')
+        # loaded_vocabulary.descs_to_bow(descs)
 
-        obs_embedding = np.squeeze(obs_embedding)
+        # # Saving and Loading the database
+        # self.db.save('database.pickle')
+        # loaded_db = self.db.load('database.pickle')
+        # for image in orb_db_images:
+        #     _, descs = self.orb.detectAndCompute(image, None)
+        #     descs = [dbow.ORB.from_cv_descriptor(desc) for desc in descs]
+        #     scores = loaded_db.query(descs)
+        #     print(loaded_db[np.argmax(scores)], np.argmax(scores))
 
-        return obs_embedding
-
-    def localize_with_observation(self, observation_embedding, current_img=None):
+    def localize_with_observation(self, current_img):
         """Get localization result of current map according to input observation embedding."""
+        # Query the database
+        _, descs = self.orb.detectAndCompute(current_img, None)
+        descs = [dbow.ORB.from_cv_descriptor(desc) for desc in descs]
+        scores = self.db.query(descs)
+        map_node_with_max_value = self.db[np.argmax(scores)]
 
-        self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
-
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-            predictions = self.top_network.predict_on_batch(self.input_embedding_mat)
-
-        similarity = predictions[:, 1]
-        map_node_with_max_value = np.argmax(similarity)
-
-        num_high_similarity_set = int((1.0 - TestConstant.SIMILARITY_PROBABILITY_THRESHOLD) * len(similarity))
-        # high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-num_high_similarity_set:]
-        high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-20:]
-
-        if current_img is not None:
-            orb_distance_list = []
-            for high_id in high_similarity_set:
-                predicted_path = os.path.join(self.map_obs_dir, f"{high_id:06d}.jpg")
-                predicted_img = cv2.imread(predicted_path)
-
-                sample_kp, sample_des = self.orb.detectAndCompute(current_img, None)
-                predicted_kp, predicted_des = self.orb.detectAndCompute(predicted_img, None)
-
-                predicted_matches = self.bf.match(sample_des, predicted_des)
-                predicted_matches = sorted(predicted_matches, key=lambda x: x.distance)
-                predicted_matches = predicted_matches[:30]
-
-                match_df_list = []
-
-                for match in predicted_matches:
-                    sample_pt = sample_kp[match.queryIdx].pt
-                    predicted_pt = predicted_kp[match.trainIdx].pt
-
-                    dx = (predicted_pt[0] + 1024) - sample_pt[0]
-                    dy = predicted_pt[1] - sample_pt[1]
-                    df = dy / dx
-
-                    match_df_list.append(df)
-
-                orb_distance_list.append(np.std(match_df_list))
-
-            min_distance_index = np.argmin(orb_distance_list)
-            map_node_with_max_value = high_similarity_set[min_distance_index]
-
-        return map_node_with_max_value, high_similarity_set, similarity
+        return map_node_with_max_value
 
     def visualize_on_map(self, map_image, result):
         """Visualize localization result."""
@@ -175,16 +126,15 @@ class Localization:
         d2_list = []
         i = 0
 
-        for i, sample_embedding in enumerate(self.sample_embedding_mat):
-            sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
+        for i, sample_path in enumerate(self.sample_list):
             sample_img = cv2.imread(sample_path)
-            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+            map_node_with_max_value = self.localize_with_observation(sample_img)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
-            accuracy = self.evaluate_accuracy(result[0], grid_pos)
-            d1 = self.evaluate_pos_distance(result[0], grid_pos)
-            d2, gt_node = self.evaluate_node_distance(result[0], grid_pos)
+            accuracy = self.evaluate_accuracy(map_node_with_max_value, grid_pos)
+            d1 = self.evaluate_pos_distance(map_node_with_max_value, grid_pos)
+            d2, gt_node = self.evaluate_node_distance(map_node_with_max_value, grid_pos)
 
             accuracy_list.append(accuracy)
             d1_list.append(d1)
@@ -195,16 +145,14 @@ class Localization:
                 print("Accuracy", accuracy)
                 print("Pose D: ", d1)
                 print("Node D: ", d2)
-                print("Predicted node similarity: ", result[2][result[0]])
-                print("GT node similarity: ", result[2][gt_node])
 
                 map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
-                map_image = self.visualize_on_map(map_image, result)
+                map_image = self.visualize_on_map(map_image, map_node_with_max_value)
                 draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
                 if accuracy is False:
                     sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-                    predicted_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
+                    predicted_path = os.path.join(self.map_obs_dir, f"{map_node_with_max_value:06d}.jpg")
                     true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
 
                     sample_img = cv2.imread(sample_path)
