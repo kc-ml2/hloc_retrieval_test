@@ -2,7 +2,6 @@ from collections import Counter
 import pickle
 from typing import List
 
-import cv2
 import numpy as np
 
 from .orb_descriptor import ORB, mean_value
@@ -43,10 +42,12 @@ class BoW:
 class Vocabulary:
     def __init__(self, images, n_clusters: int, depth: int, orb):
         descriptors = []
-        for image in images:
+        for i, image in enumerate(images):
             _, descs = orb.detectAndCompute(image, None)
             for desc in descs:
                 descriptors.append(ORB.from_cv_descriptor(desc))
+            print(i, end="\r", flush=True)
+
         descriptors = np.array(descriptors)
         self.root_node = Node(descriptors)
         words = initialize_tree(self.root_node, n_clusters, depth)
@@ -81,18 +82,7 @@ class Vocabulary:
             bow.append(tf_idf)
         return BoW(bow)
 
-    def image_to_bow(self, image) -> BoW:
-        orb = cv2.ORB_create(
-            nfeatures=40000,
-            scaleFactor=1.2,
-            nlevels=8,
-            edgeThreshold=31,
-            firstLevel=0,
-            WTA_K=2,
-            scoreType=cv2.ORB_HARRIS_SCORE,
-            patchSize=31,
-            fastThreshold=20,
-        )
+    def image_to_bow(self, image, orb) -> BoW:
         _, descs = orb.detectAndCompute(image, None)
         descs = [ORB.from_cv_descriptor(desc) for desc in descs]
         return self.descs_to_bow(descs)

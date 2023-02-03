@@ -6,12 +6,11 @@ import cv2
 import numpy as np
 
 from config.env_config import DataConfig
-from relocalization.dbow import dbow
 from utils.habitat_utils import draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
 
 
-class OrbDbowLocalization:
+class OrbMatchingLocalization:
     """Class for localization methods with orb bag of the binary words method."""
 
     def __init__(
@@ -55,8 +54,7 @@ class OrbDbowLocalization:
 
         # Initiate ORB detector
         self.orb = cv2.ORB_create(
-            # nfeatures=40,
-            nfeatures=100,
+            nfeatures=200,
             scaleFactor=1.2,
             nlevels=8,
             edgeThreshold=31,
@@ -66,45 +64,48 @@ class OrbDbowLocalization:
             patchSize=31,
             fastThreshold=20,
         )
-        # self.orb = cv2.ORB_create()
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
-        if self.is_sparse_map:
-            map_obs_file_list = map_obs_file_list[: self.num_map_graph_nodes]
-
-        orb_db_images = []
-        for map_obs_file in map_obs_file_list:
-            orb_db_images.append(cv2.imread(map_obs_file))
 
         start = time.time()
 
-        # Create Vocabulary
-        print("Creating vocabulary...")
-        n_clusters = 10
-        depth = 2
-        vocabulary = dbow.Vocabulary(orb_db_images, n_clusters, depth, self.orb)
+        self.desc_db = []
+        if self.is_sparse_map:
+            map_obs_file_list = map_obs_file_list[: self.num_map_graph_nodes]
 
-        # Create a database
-        print("Creating database...")
-        i = 0
-        self.db = dbow.Database(vocabulary)
-        for i, image in enumerate(orb_db_images):
-            print(i, end="\r", flush=True)
-            _, descs = self.orb.detectAndCompute(image, None)
-            descs = [dbow.ORB.from_cv_descriptor(desc) for desc in descs]
-            self.db.add(descs)
-        print(i)
+        for map_obs_file in map_obs_file_list:
+            db_image = cv2.imread(map_obs_file)
+            _, db_des = self.orb.detectAndCompute(db_image, None)
+            self.desc_db.append(db_des)
 
         end = time.time()
-        print("Done DB generation. Elapsed time: ", end - start)
+        print("DB generation elapsed time: ", end - start)
 
-    def localize_with_observation(self, current_img):
+        start = time.time()
+
+        self.desc_query = []
+        for sample_obs_file in self.sample_list:
+            sample_image = cv2.imread(sample_obs_file)
+            _, sample_des = self.orb.detectAndCompute(sample_image, None)
+            self.desc_query.append(sample_des)
+
+        end = time.time()
+        print("Query generation elapsed time: ", end - start)
+
+    def localize_with_observation(self, i):
         """Get localization result of current map according to input observation embedding."""
         # Query the database
-        _, descs = self.orb.detectAndCompute(current_img, None)
-        descs = [dbow.ORB.from_cv_descriptor(desc) for desc in descs]
-        scores = self.db.query(descs)
-        map_node_with_max_value = np.argmax(scores)
+        print(i, end="\r", flush=True)
+
+        scores = []
+
+        for db_des in self.desc_db:
+            matches = self.bf.match(self.desc_query[i], db_des)
+            matches = sorted(matches, key=lambda x: x.distance)
+            matches = matches[:30]
+
+            scores.append(sum([match.distance for match in matches]))
+
+        map_node_with_max_value = np.argmin(scores)
 
         return map_node_with_max_value
 
@@ -131,9 +132,8 @@ class OrbDbowLocalization:
         d2_list = []
         i = 0
 
-        for i, sample_path in enumerate(self.sample_list):
-            sample_img = cv2.imread(sample_path)
-            map_node_with_max_value = self.localize_with_observation(sample_img)
+        for i in range(len(self.sample_list)):
+            map_node_with_max_value = self.localize_with_observation(i)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
@@ -146,10 +146,7 @@ class OrbDbowLocalization:
             d2_list.append(d2)
 
         k = i + 1
-
         print("Temporay Accuracy: ", sum(accuracy_list) / k)
-        print("Temporay Distance 1: ", (sum(d1_list) / k) * 0.1)
-        print("Temporay Distance 2: ", (sum(d2_list) / k) * 0.1)
 
         return accuracy_list, d1_list, d2_list, i + 1
 

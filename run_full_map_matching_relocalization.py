@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
-from relocalization.orb_dbow_localization import OrbDbowLocalization
+from relocalization.orb_matching_localization import OrbMatchingLocalization
 from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Initialize localization instance
-            localization = OrbDbowLocalization(
+            localization = OrbMatchingLocalization(
                 map_obs_dir=map_obs_dir,
                 sample_dir=sample_dir,
                 binary_topdown_map=binary_topdown_map,

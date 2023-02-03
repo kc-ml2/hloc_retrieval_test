@@ -69,7 +69,7 @@ class Localization:
 
         # Initiate ORB detector
         self.orb = cv2.ORB_create(
-            nfeatures=40000,
+            nfeatures=200,
             scaleFactor=1.2,
             nlevels=8,
             edgeThreshold=31,
@@ -133,19 +133,20 @@ class Localization:
                 predicted_matches = sorted(predicted_matches, key=lambda x: x.distance)
                 predicted_matches = predicted_matches[:30]
 
-                match_df_list = []
+                # match_df_list = []
+                # for match in predicted_matches:
+                #     sample_pt = sample_kp[match.queryIdx].pt
+                #     predicted_pt = predicted_kp[match.trainIdx].pt
 
-                for match in predicted_matches:
-                    sample_pt = sample_kp[match.queryIdx].pt
-                    predicted_pt = predicted_kp[match.trainIdx].pt
+                #     dx = (predicted_pt[0] + 1024) - sample_pt[0]
+                #     dy = predicted_pt[1] - sample_pt[1]
+                #     df = dy / dx
 
-                    dx = (predicted_pt[0] + 1024) - sample_pt[0]
-                    dy = predicted_pt[1] - sample_pt[1]
-                    df = dy / dx
+                #     match_df_list.append(df)
 
-                    match_df_list.append(df)
+                # orb_distance_list.append(np.std(match_df_list))
 
-                orb_distance_list.append(np.std(match_df_list))
+                orb_distance_list.append(sum([match.distance for match in predicted_matches]))
 
             min_distance_index = np.argmin(orb_distance_list)
             map_node_with_max_value = high_similarity_set[min_distance_index]
@@ -179,6 +180,8 @@ class Localization:
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
             result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+
+            # result = self.localize_with_observation(sample_embedding)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
@@ -254,6 +257,9 @@ class Localization:
 
                 if key == ord("n"):
                     break
+
+        k = i + 1
+        print("Temporay Accuracy: ", sum(accuracy_list) / k)
 
         return accuracy_list, d1_list, d2_list, i + 1
 
