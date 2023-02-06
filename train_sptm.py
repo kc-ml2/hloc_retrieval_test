@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import time
 
 import keras
@@ -9,9 +10,15 @@ import tensorflow as tf
 from config.algorithm_config import NetworkConstant, TrainingConstant
 from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
-from utils.network_utils import list_image_name_label_wo_index, preprocess_paired_image_file
+from utils.network_utils import (
+    list_image_name_label_wo_index,
+    preprocess_paired_image_file,
+    preprocess_single_view_paired_image_file,
+)
 
 if __name__ == "__main__":
+    random.seed(1)
+
     timestr = time.strftime("%Y%m%d-%H%M%S")
 
     train_file_directory = PathConfig.TRAIN_IMAGE_PATH
@@ -39,11 +46,18 @@ if __name__ == "__main__":
 
         train_dataset = train_dataset.shuffle(len(train_image_list), reshuffle_each_iteration=True)
 
+        # train_dataset = train_dataset.map(
+        #     lambda x, y: preprocess_paired_image_file(x, y, train_file_directory, img_extension)
+        # )
+        # valid_dataset = valid_dataset.map(
+        #     lambda x, y: preprocess_paired_image_file(x, y, valid_file_directory, img_extension)
+        # )
+
         train_dataset = train_dataset.map(
-            lambda x, y: preprocess_paired_image_file(x, y, train_file_directory, img_extension)
+            lambda x, y: preprocess_single_view_paired_image_file(x, y, train_file_directory, img_extension)
         )
         valid_dataset = valid_dataset.map(
-            lambda x, y: preprocess_paired_image_file(x, y, valid_file_directory, img_extension)
+            lambda x, y: preprocess_single_view_paired_image_file(x, y, valid_file_directory, img_extension)
         )
 
         train_dataset = train_dataset.batch(TrainingConstant.BATCH_SIZE)

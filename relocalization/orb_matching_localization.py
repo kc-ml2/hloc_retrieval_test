@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import time
 
 import cv2
@@ -85,7 +86,9 @@ class OrbMatchingLocalization:
         self.desc_query = []
         for sample_obs_file in self.sample_list:
             sample_image = cv2.imread(sample_obs_file)
-            _, sample_des = self.orb.detectAndCompute(sample_image, None)
+            slice_start = random.randint(0, 767)
+            sliced_sample_image = sample_image[:, slice_start : slice_start + 256, :]
+            _, sample_des = self.orb.detectAndCompute(sliced_sample_image, None)
             self.desc_query.append(sample_des)
 
         end = time.time()

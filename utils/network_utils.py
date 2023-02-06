@@ -1,5 +1,6 @@
 import math
 import os
+import random
 
 import cv2
 import keras
@@ -40,6 +41,36 @@ def preprocess_paired_image_file(image_name, label, file_directory, extension):
     target_image = tf.image.convert_image_dtype(target_image, tf.float32)
 
     input_image = tf.concat((anchor_image, target_image), 2)
+
+    return input_image, label
+
+
+def preprocess_single_view_paired_image_file(image_name, label, file_directory, extension):
+    """Preprocess & concatenate two images."""
+    anchor_file = file_directory + os.sep + image_name + f"_0{extension}"
+    target_file = file_directory + os.sep + image_name + f"_1{extension}"
+
+    anchor_image_string = tf.io.read_file(anchor_file)
+    target_image_string = tf.io.read_file(target_file)
+
+    if extension == ".bmp":
+        anchor_image = tf.image.decode_bmp(anchor_image_string, channels=3)
+        target_image = tf.image.decode_bmp(target_image_string, channels=3)
+    if extension == ".jpg":
+        anchor_image = tf.image.decode_jpeg(anchor_image_string, channels=3)
+        target_image = tf.image.decode_jpeg(target_image_string, channels=3)
+
+    slice_start = random.randint(0, 767)
+    sliced_target_image = target_image[:, slice_start : slice_start + 256, :]
+
+    front = tf.constant(0, shape=(256, slice_start, 3), dtype=tf.uint8)
+    end = tf.constant(0, shape=(256, 1024 - slice_start - 256, 3), dtype=tf.uint8)
+    modified_target_image = tf.concat((front, sliced_target_image, end), 1)
+
+    anchor_image = tf.image.convert_image_dtype(anchor_image, tf.float32)
+    modified_target_image = tf.image.convert_image_dtype(modified_target_image, tf.float32)
+
+    input_image = tf.concat((anchor_image, modified_target_image), 2)
 
     return input_image, label
 
