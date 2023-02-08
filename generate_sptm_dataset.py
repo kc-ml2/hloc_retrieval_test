@@ -7,7 +7,7 @@ import cv2
 import networkx as nx
 
 from config.algorithm_config import TrainingConstant
-from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
+from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
 from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
 from utils.skeletonize_utils import (
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     label = {}
     total_scene_num = 0
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, CamNormalConfig, ActionConfig, PathConfig, height_data)
 
         print("total scene: ", total_scene_num)
 
@@ -116,8 +116,15 @@ if __name__ == "__main__":
 
                 node_list = [start, end]
 
+                random_rotation = 0
                 for j, node in enumerate(node_list):
-                    pos, random_rotation = sim.set_state_from_grid(graph.nodes[node]["o"], level)
+                    if sim.cam_config == CamNormalConfig and j == 1:
+                        random_rotation = random_rotation + random.randint(-30, 30)
+                        pos, random_rotation = sim.set_state_from_grid(
+                            graph.nodes[node]["o"], level, rotation=random_rotation
+                        )
+                    else:
+                        pos, random_rotation = sim.set_state_from_grid(graph.nodes[node]["o"], level)
                     observations = sim.get_cam_observations()
                     color_img = observations["all_view"]
 

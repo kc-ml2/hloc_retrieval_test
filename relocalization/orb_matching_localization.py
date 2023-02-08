@@ -55,7 +55,7 @@ class OrbMatchingLocalization:
 
         # Initiate ORB detector
         self.orb = cv2.ORB_create(
-            nfeatures=200,
+            nfeatures=100,
             scaleFactor=1.2,
             nlevels=8,
             edgeThreshold=31,
@@ -73,12 +73,17 @@ class OrbMatchingLocalization:
         if self.is_sparse_map:
             map_obs_file_list = map_obs_file_list[: self.num_map_graph_nodes]
 
+        num_nonetype = 0
         for map_obs_file in map_obs_file_list:
             db_image = cv2.imread(map_obs_file)
             _, db_des = self.orb.detectAndCompute(db_image, None)
+            if db_des is None:
+                db_des = np.zeros([1, 32], dtype=np.uint8)
+                num_nonetype = num_nonetype + 1
             self.desc_db.append(db_des)
 
         end = time.time()
+        print("Number of NoneType: ", num_nonetype)
         print("DB generation elapsed time: ", end - start)
 
         start = time.time()
@@ -86,9 +91,7 @@ class OrbMatchingLocalization:
         self.desc_query = []
         for sample_obs_file in self.sample_list:
             sample_image = cv2.imread(sample_obs_file)
-            slice_start = random.randint(0, 767)
-            sliced_sample_image = sample_image[:, slice_start : slice_start + 256, :]
-            _, sample_des = self.orb.detectAndCompute(sliced_sample_image, None)
+            _, sample_des = self.orb.detectAndCompute(sample_image, None)
             self.desc_query.append(sample_des)
 
         end = time.time()
@@ -108,6 +111,7 @@ class OrbMatchingLocalization:
 
             scores.append(sum([match.distance for match in matches]))
 
+        # map_node_with_max_value = np.argmin(scores) // 4
         map_node_with_max_value = np.argmin(scores)
 
         return map_node_with_max_value

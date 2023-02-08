@@ -94,7 +94,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         self.closest_level = average_list.index(min(average_list))
         self.recolored_topdown_map = self.recolored_topdown_map_list[self.closest_level]
 
-    def set_state_from_grid(self, grid_pos, level, random_rotation=True, rotation=None):
+    def set_state_from_grid(self, grid_pos, level, rotation=None):
         """Set agent state from position from grid."""
         agent_state = habitat_sim.AgentState()
         pos = maps.from_grid(
@@ -105,18 +105,19 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             self.pathfinder,
         )
 
-        if random_rotation & bool(rotation):
-            raise ValueError("Input Error. Put only one value between random_rotation and rotation.")
-        if random_rotation:
-            random_rotation = random.randint(0, 359)
-            r = Rotation.from_euler("y", random_rotation, degrees=True)
-            agent_state.rotation = r.as_quat()
+        if bool(rotation):
+            current_rotation = rotation
+        else:
+            current_rotation = random.randint(0, 359)
+
+        r = Rotation.from_euler("y", current_rotation, degrees=True)
+        agent_state.rotation = r.as_quat()
 
         agent_state.position = np.array([pos[1], self.height_list[level], pos[0]])
         self.agent.set_state(agent_state)
         self.update_closest_map(agent_state.position)
 
-        return pos, random_rotation
+        return pos, current_rotation
 
     def get_cam_observations(self):
         """Inherit the 'get_sensor_observations' method of the parent class."""

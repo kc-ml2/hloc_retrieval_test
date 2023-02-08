@@ -4,3 +4,4 @@ __pycache__*
 .pytest_cache/
 output
 model_weights*
+single_view_output

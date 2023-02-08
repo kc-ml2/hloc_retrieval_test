@@ -8,12 +8,14 @@ from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
 from relocalization.localization import Localization
+from relocalization.single_view_localization import SingleViewLocalization
 from utils.habitat_utils import open_env_related_files
 from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
+    # parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
+    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.weights.best.hdf5")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
@@ -62,7 +64,8 @@ if __name__ == "__main__":
             sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
 
             # Set output npy file name
-            localization = Localization(top_network, bottom_network, map_obs_dir, sample_dir=sample_dir)
+            # localization = Localization(top_network, bottom_network, map_obs_dir, sample_dir=sample_dir)
+            localization = SingleViewLocalization(top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True)
             map_output = localization.map_embedding_file
             sample_output = localization.sample_embedding_file
 
