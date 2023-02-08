@@ -57,7 +57,7 @@ if __name__ == "__main__":
         ResnetBuilder.restrict_gpu_memory()
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-            model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
+            model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)

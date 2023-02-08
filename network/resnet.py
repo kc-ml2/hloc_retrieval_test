@@ -242,16 +242,32 @@ class ResnetBuilder:
         return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2], is_classification)
 
     @staticmethod
-    def build_top_network(edge_model):
+    def build_siamese_top_network(edge_model):
         number_of_top_layers = 3 + TOP_HIDDEN * 3
         input = Input(shape=(2 * NUM_EMBEDDING,))
-        output = edge_model.layers[-number_of_top_layers](input)  # _top_network(input)
+        output = edge_model.layers[-number_of_top_layers](input)
         for index in range(-number_of_top_layers + 1, 0):
             output = edge_model.layers[index](output)
         return Model(inputs=input, outputs=output)
 
     @staticmethod
     def build_bottom_network(edge_model, input_shape):
+        height, width, channels = input_shape
+        input = Input(shape=(height, width, channels))
+        branch = edge_model.layers[3]
+        output = branch(input)
+        return Model(inputs=input, outputs=output)
+
+    @staticmethod
+    def build_anchor_network(edge_model, input_shape):
+        height, width, channels = input_shape
+        input = Input(shape=(height, width, channels))
+        branch = edge_model.layers[2]
+        output = branch(input)
+        return Model(inputs=input, outputs=output)
+
+    @staticmethod
+    def build_target_network(edge_model, input_shape):
         height, width, channels = input_shape
         input = Input(shape=(height, width, channels))
         branch = edge_model.layers[3]
@@ -273,17 +289,58 @@ class ResnetBuilder:
         return Model(inputs=input, outputs=output)
 
     @staticmethod
-    def load_model(loaded_model):
+    def build_double_branch_resnet_18(anchor_input_shape, target_input_shape):
+        anchor_input = Input(shape=anchor_input_shape)
+        target_input = Input(shape=target_input_shape)
+
+        anchor_branch = ResnetBuilder.build_resnet_18(anchor_input_shape, NUM_EMBEDDING, False)
+        target_branch = ResnetBuilder.build_resnet_18(target_input_shape, NUM_EMBEDDING, False)
+
+        anchor_result = anchor_branch(anchor_input)
+        target_result = target_branch(target_input)
+
+        raw_result = Concatenate(axis=1)([anchor_result, target_result])
+        output = _top_network(raw_result)
+
+        return Model(inputs=(anchor_input, target_input), outputs=output)
+
+    @staticmethod
+    def load_siamese_model(loaded_model):
         siamese = ResnetBuilder.build_siamese_resnet_18
         model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
         model.load_weights(loaded_model, by_name=True)
-        top_network = ResnetBuilder.build_top_network(model)
+        top_network = ResnetBuilder.build_siamese_top_network(model)
         bottom_network = ResnetBuilder.build_bottom_network(
             model,
             (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
         )
 
         return model, top_network, bottom_network
+
+    @staticmethod
+    def load_double_branch_model(loaded_model):
+        double_branch = ResnetBuilder.build_double_branch_resnet_18
+        model = double_branch(
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH_SINGLE, NetworkConstant.NET_CHANNELS),
+        )
+        model.load_weights(loaded_model, by_name=True)
+
+        top_network = ResnetBuilder.build_siamese_top_network(model)
+        anchor_network = ResnetBuilder.build_anchor_network(
+            model,
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+        )
+        target_network = ResnetBuilder.build_target_network(
+            model,
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH_SINGLE, NetworkConstant.NET_CHANNELS),
+        )
+
+        top_network.summary()
+        anchor_network.summary()
+        target_network.summary()
+
+        return model, top_network, anchor_network, target_network
 
     @staticmethod
     def restrict_gpu_memory():

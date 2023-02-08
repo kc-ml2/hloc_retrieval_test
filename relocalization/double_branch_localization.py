@@ -11,13 +11,14 @@ from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, 
 from utils.skeletonize_utils import topdown_map_to_graph
 
 
-class Localization:
+class DoubleBranchLocalization:
     """Class for localization methods according to the given map."""
 
     def __init__(
         self,
         top_network,
-        bottom_network,
+        anchor_network,
+        target_network,
         map_obs_dir,
         sample_dir=None,
         binary_topdown_map=None,
@@ -34,20 +35,27 @@ class Localization:
 
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             self.top_network = top_network
-            self.bottom_network = bottom_network
+            self.anchor_network = anchor_network
+            self.target_network = target_network
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
-        self.map_embedding_file = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")
+        self.map_embedding_file = os.path.join(observation_path, f"double_branch_embedding_{map_cache_index}.npy")
 
         if self.sample_dir:
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            self.sample_embedding_file = os.path.join(observation_path, f"siamese_embedding_{sample_cache_index}.npy")
+            self.sample_embedding_file = os.path.join(
+                observation_path, f"double_branch_embedding_{sample_cache_index}.npy"
+            )
             self.sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
 
             with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
                 self.sample_pos_record = json.load(f)
+
+            self.sample_rotation_record_file = os.path.join(
+                observation_path, f"double_branch_embedding_rotation_record_{sample_cache_index}.npy"
+            )
 
         if instance_only is False:
             # Initialize map graph from binary topdown map
@@ -94,6 +102,9 @@ class Localization:
             with open(self.sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
                 self.sample_embedding_mat = np.load(f)
 
+            with open(self.sample_rotation_record_file, "rb") as f:  # pylint: disable=unspecified-encoding
+                self.sample_rotation_record = np.load(f)
+
         self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[: self.num_map_graph_nodes]
 
     def calculate_embedding_from_observation(self, observation):
@@ -101,13 +112,13 @@ class Localization:
         observation = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
         with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
             regulized_img = tf.image.convert_image_dtype(observation, tf.float32)
-            obs_embedding = self.bottom_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
+            obs_embedding = self.target_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
 
         obs_embedding = np.squeeze(obs_embedding)
 
         return obs_embedding
 
-    def localize_with_observation(self, observation_embedding, current_img=None):
+    def localize_with_observation(self, observation_embedding, current_img=None, idx=None):
         """Get localization result of current map according to input observation embedding."""
 
         self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
@@ -181,8 +192,9 @@ class Localization:
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
-            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            # result = self.localize_with_observation(sample_embedding)
+
+            # result = self.localize_with_observation(sample_embedding, current_img=sample_img, idx=i)
+            result = self.localize_with_observation(sample_embedding)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 

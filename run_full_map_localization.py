@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from network.resnet import ResnetBuilder
+from relocalization.double_branch_localization import DoubleBranchLocalization
 from relocalization.localization import Localization
 from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import open_env_related_files
@@ -16,7 +17,8 @@ if __name__ == "__main__":
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--map-obs-path", default="./output")
-    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
+    # parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
+    parser.add_argument("--load-model", default="./model_weights/model.20230207-140124.weights.best.hdf5")
     parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
@@ -42,7 +44,8 @@ if __name__ == "__main__":
 
     # Load pre-trained model & top network
     with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-        model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
+        # model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
+        model, top_network, anchor_network, target_network = ResnetBuilder.load_double_branch_model(loaded_model)
 
     # Main loop
     total_accuracy = []
@@ -67,9 +70,20 @@ if __name__ == "__main__":
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             # Initialize localization instance
-            localization = Localization(
+            # localization = Localization(
+            #     top_network,
+            #     bottom_network,
+            #     map_obs_dir,
+            #     sample_dir=sample_dir,
+            #     binary_topdown_map=binary_topdown_map,
+            #     sparse_map=is_sparse,
+            #     visualize=is_visualize,
+            # )
+
+            localization = DoubleBranchLocalization(
                 top_network,
-                bottom_network,
+                anchor_network,
+                target_network,
                 map_obs_dir,
                 sample_dir=sample_dir,
                 binary_topdown_map=binary_topdown_map,

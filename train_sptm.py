@@ -14,6 +14,7 @@ from utils.network_utils import (
     list_image_name_label_wo_index,
     preprocess_paired_image_file,
     preprocess_single_view_paired_image_file,
+    preprocess_single_view_split_image_file,
 )
 
 if __name__ == "__main__":
@@ -53,22 +54,38 @@ if __name__ == "__main__":
         #     lambda x, y: preprocess_paired_image_file(x, y, valid_file_directory, img_extension)
         # )
 
+        # train_dataset = train_dataset.map(
+        #     lambda x, y: preprocess_single_view_paired_image_file(x, y, train_file_directory, img_extension)
+        # )
+        # valid_dataset = valid_dataset.map(
+        #     lambda x, y: preprocess_single_view_paired_image_file(x, y, valid_file_directory, img_extension)
+        # )
+
         train_dataset = train_dataset.map(
-            lambda x, y: preprocess_single_view_paired_image_file(x, y, train_file_directory, img_extension)
+            lambda x, y: preprocess_single_view_split_image_file(x, y, train_file_directory, img_extension)
         )
         valid_dataset = valid_dataset.map(
-            lambda x, y: preprocess_single_view_paired_image_file(x, y, valid_file_directory, img_extension)
+            lambda x, y: preprocess_single_view_split_image_file(x, y, valid_file_directory, img_extension)
         )
 
         train_dataset = train_dataset.batch(TrainingConstant.BATCH_SIZE)
         valid_dataset = valid_dataset.batch(TrainingConstant.BATCH_SIZE)
 
-        siamese = ResnetBuilder.build_siamese_resnet_18
-        model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+        # siamese = ResnetBuilder.build_siamese_resnet_18
+        # model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+
+        double_branch = ResnetBuilder.build_double_branch_resnet_18
+        model = double_branch(
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH_SINGLE, NetworkConstant.NET_CHANNELS),
+        )
+
         adam = keras.optimizers.Adam(
             learning_rate=TrainingConstant.LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.000001
         )
-        checkpointer = ModelCheckpoint(filepath=f"model.{timestr}.weights.best.hdf5", verbose=1, save_best_only=True)
+        checkpointer = ModelCheckpoint(
+            filepath=f"model_weights/model.{timestr}.weights.best.hdf5", verbose=1, save_best_only=True
+        )
         model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
         model.summary()
         model.fit(x=train_dataset, epochs=10000, validation_data=valid_dataset, callbacks=[checkpointer])

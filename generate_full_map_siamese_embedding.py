@@ -29,7 +29,7 @@ if __name__ == "__main__":
     output_size_list = []
 
     with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
-        model, top_network, bottom_network = ResnetBuilder.load_model(loaded_model)
+        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
@@ -47,7 +47,6 @@ if __name__ == "__main__":
             raise ValueError("Height data is not found.")
 
         for level in range(num_level):
-            list_to_iterate_by_level = []
             print("scene: ", scene_number, "    level: ", level)
 
             # Set file path
