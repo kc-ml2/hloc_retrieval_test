@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import time
 
 import cv2
@@ -21,12 +20,14 @@ class OrbMatchingLocalization:
         binary_topdown_map=None,
         visualize=False,
         sparse_map=False,
+        num_frames_per_node=1,
     ):
         """Initialize localization instance with specific model & map data."""
         self.map_obs_dir = map_obs_dir
         self.sample_dir = sample_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
+        self.num_frames_per_node = num_frames_per_node
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
@@ -55,7 +56,7 @@ class OrbMatchingLocalization:
 
         # Initiate ORB detector
         self.orb = cv2.ORB_create(
-            nfeatures=100,
+            nfeatures=200,
             scaleFactor=1.2,
             nlevels=8,
             edgeThreshold=31,
@@ -68,33 +69,42 @@ class OrbMatchingLocalization:
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
         start = time.time()
-
         self.desc_db = []
-        if self.is_sparse_map:
-            map_obs_file_list = map_obs_file_list[: self.num_map_graph_nodes]
-
         num_nonetype = 0
-        for map_obs_file in map_obs_file_list:
-            db_image = cv2.imread(map_obs_file)
+
+        if self.is_sparse_map:
+            map_obs_file_list = map_obs_file_list[: num_frames_per_node * self.num_map_graph_nodes]
+
+        for i in range(0, len(map_obs_file_list), num_frames_per_node):
+            frame_list = []
+            for k in range(num_frames_per_node):
+                frame_list.append(cv2.imread(map_obs_file_list[i + k]))
+            db_image = np.concatenate(frame_list, axis=1)
             _, db_des = self.orb.detectAndCompute(db_image, None)
             if db_des is None:
                 db_des = np.zeros([1, 32], dtype=np.uint8)
                 num_nonetype = num_nonetype + 1
+
             self.desc_db.append(db_des)
 
         end = time.time()
-        print("Number of NoneType: ", num_nonetype)
+        print("Number of NoneType in DB: ", num_nonetype)
         print("DB generation elapsed time: ", end - start)
 
         start = time.time()
-
+        num_nonetype = 0
         self.desc_query = []
+
         for sample_obs_file in self.sample_list:
             sample_image = cv2.imread(sample_obs_file)
             _, sample_des = self.orb.detectAndCompute(sample_image, None)
+            if sample_des is None:
+                sample_des = np.zeros([1, 32], dtype=np.uint8)
+                num_nonetype = num_nonetype + 1
             self.desc_query.append(sample_des)
 
         end = time.time()
+        print("Number of NoneType in Query: ", num_nonetype)
         print("Query generation elapsed time: ", end - start)
 
     def localize_with_observation(self, i):
@@ -111,8 +121,7 @@ class OrbMatchingLocalization:
 
             scores.append(sum([match.distance for match in matches]))
 
-        # map_node_with_max_value = np.argmin(scores) // 4
-        map_node_with_max_value = np.argmin(scores)
+        map_node_with_max_value = np.argmin(scores) // self.num_frames_per_node
 
         return map_node_with_max_value
 

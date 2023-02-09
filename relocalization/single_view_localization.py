@@ -55,12 +55,9 @@ class SingleViewLocalization:
 
             # Initialize emny matrix and parameters for handling embeddings
             self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
-            num_nodes = len(self.graph.nodes())
+            self.num_map_graph_nodes = len(self.graph.nodes())
             self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
-            self.input_embedding_mat = np.zeros((self.num_map_embedding, 2 * self.dimension_map_embedding))
-
-            if (self.num_map_embedding != num_nodes) and (self.num_map_embedding != num_nodes * 4):
-                raise ValueError("Number of nodes from images is different from map graph.")
+            self.input_embedding_mat = np.zeros((4 * self.num_map_graph_nodes, 2 * self.dimension_map_embedding))
 
         # Load cached npy file if the flag is true
         if load_cache and (instance_only is False):
@@ -97,7 +94,7 @@ class SingleViewLocalization:
             with open(self.sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
                 self.sample_embedding_mat = np.load(f)
 
-        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[: self.num_map_embedding]
+        self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[: 4 * self.num_map_graph_nodes]
 
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
@@ -123,14 +120,21 @@ class SingleViewLocalization:
 
         num_high_similarity_set = int((1.0 - TestConstant.SIMILARITY_PROBABILITY_THRESHOLD) * len(similarity))
         # high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-num_high_similarity_set:]
-        high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-20:]
+        # high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-20:]
+        # high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-10:]
+        high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-5:]
+        # high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-3:]
         high_similarity_set = [high_node // 4 for high_node in high_similarity_set_unfolded]
 
         if current_img is not None:
             orb_distance_list = []
             for high_id in high_similarity_set:
-                predicted_path = os.path.join(self.map_obs_dir, f"{high_id:06d}.jpg")
-                predicted_img = cv2.imread(predicted_path)
+                frame_list = []
+                for frame_idx in range(4):
+                    frame_path = os.path.join(self.map_obs_dir, f"{high_id:06d}_{frame_idx}.jpg")
+                    frame_list.append(cv2.imread(frame_path))
+
+                predicted_img = np.concatenate(frame_list, axis=1)
 
                 sample_kp, sample_des = self.orb.detectAndCompute(current_img, None)
                 predicted_kp, predicted_des = self.orb.detectAndCompute(predicted_img, None)
@@ -185,8 +189,8 @@ class SingleViewLocalization:
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
-            # result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            result = self.localize_with_observation(sample_embedding)
+            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+            # result = self.localize_with_observation(sample_embedding)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 

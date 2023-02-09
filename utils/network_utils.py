@@ -115,11 +115,7 @@ def preprocess_single_view_image_file(obs_file, rotation):
     image_string = tf.io.read_file(obs_file)
     image = tf.image.decode_jpeg(image_string, channels=3)
 
-    # sliced_target_image = image[:, rotation : rotation + 256, :]
-    # modified_target_image = tf.concat((sliced_target_image, sliced_target_image, sliced_target_image, sliced_target_image), 1)
-
     modified_target_image = image[:, rotation : rotation + 256, :]
-
     input_image = tf.image.convert_image_dtype(modified_target_image, tf.float32)
 
     return input_image
