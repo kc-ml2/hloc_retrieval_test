@@ -27,7 +27,6 @@ class OrbMatchingLocalization:
         self.sample_dir = sample_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
-        self.num_frames_per_node = num_frames_per_node
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
@@ -121,7 +120,7 @@ class OrbMatchingLocalization:
 
             scores.append(sum([match.distance for match in matches]))
 
-        map_node_with_max_value = np.argmin(scores) // self.num_frames_per_node
+        map_node_with_max_value = np.argmin(scores)
 
         return map_node_with_max_value
 
