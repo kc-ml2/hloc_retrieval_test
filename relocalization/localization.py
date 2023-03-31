@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import NetworkConstant, TestConstant
+from config.algorithm_config import NetworkConstant
 from config.env_config import DataConfig, PathConfig
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
@@ -118,7 +118,7 @@ class Localization:
         similarity = predictions[:, 1]
         map_node_with_max_value = np.argmax(similarity)
 
-        num_high_similarity_set = int((1.0 - TestConstant.SIMILARITY_PROBABILITY_THRESHOLD) * len(similarity))
+        # num_high_similarity_set = int((1.0 - TestConstant.SIMILARITY_PROBABILITY_THRESHOLD) * len(similarity))
         # high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-num_high_similarity_set:]
         high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-20:]
 
@@ -128,25 +128,12 @@ class Localization:
                 predicted_path = os.path.join(self.map_obs_dir, f"{high_id:06d}.jpg")
                 predicted_img = cv2.imread(predicted_path)
 
-                sample_kp, sample_des = self.orb.detectAndCompute(current_img, None)
-                predicted_kp, predicted_des = self.orb.detectAndCompute(predicted_img, None)
+                _, sample_des = self.orb.detectAndCompute(current_img, None)
+                _, predicted_des = self.orb.detectAndCompute(predicted_img, None)
 
                 predicted_matches = self.bf.match(sample_des, predicted_des)
                 predicted_matches = sorted(predicted_matches, key=lambda x: x.distance)
                 predicted_matches = predicted_matches[:30]
-
-                # match_df_list = []
-                # for match in predicted_matches:
-                #     sample_pt = sample_kp[match.queryIdx].pt
-                #     predicted_pt = predicted_kp[match.trainIdx].pt
-
-                #     dx = (predicted_pt[0] + 1024) - sample_pt[0]
-                #     dy = predicted_pt[1] - sample_pt[1]
-                #     df = dy / dx
-
-                #     match_df_list.append(df)
-
-                # orb_distance_list.append(np.std(match_df_list))
 
                 orb_distance_list.append(sum([match.distance for match in predicted_matches]))
 

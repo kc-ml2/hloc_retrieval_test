@@ -3,6 +3,7 @@ import os
 import time
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 
 from config.env_config import DataConfig
@@ -30,6 +31,10 @@ class OrbMatchingLocalization:
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
+
+        map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
+        self.obs_path = os.path.basename(observation_path)
+        self.map_id = map_cache_index[-1]
 
         # Make list to iterate
         sorted_map_obs_id = sorted(os.listdir(map_obs_dir))
@@ -121,8 +126,10 @@ class OrbMatchingLocalization:
             scores.append(sum([match.distance for match in matches]))
 
         map_node_with_max_value = np.argmin(scores)
+        high_similarity_set = sorted(range(len(scores)), key=lambda i: scores[i])[:30]
+        normalized_scores = (scores - np.min(scores)) / (np.max(scores) - np.min(scores))
 
-        return map_node_with_max_value
+        return map_node_with_max_value, high_similarity_set, normalized_scores
 
     def visualize_on_map(self, map_image, result):
         """Visualize localization result."""
@@ -147,18 +154,37 @@ class OrbMatchingLocalization:
         d2_list = []
         i = 0
 
+        high_dist_list = []
+        high_simil_list = []
+
         for i in range(len(self.sample_list)):
-            map_node_with_max_value = self.localize_with_observation(i)
+            result = self.localize_with_observation(i)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
-            accuracy = self.evaluate_accuracy(map_node_with_max_value, grid_pos)
-            d1 = self.evaluate_pos_distance(map_node_with_max_value, grid_pos)
-            d2, _ = self.evaluate_node_distance(map_node_with_max_value, grid_pos)
+            accuracy = self.evaluate_accuracy(result[0], grid_pos)
+            d1 = self.evaluate_pos_distance(result[0], grid_pos)
+            d2, _ = self.evaluate_node_distance(result[0], grid_pos)
 
             accuracy_list.append(accuracy)
             d1_list.append(d1)
             d2_list.append(d2)
+
+            for high_node in result[1]:
+                high_dist, _ = self.evaluate_node_distance(high_node, grid_pos)
+                high_dist_list.append(high_dist)
+                high_simil_list.append(result[2][high_node])
+
+        high_dist_list = [dist / 10 for dist in high_dist_list]
+
+        plt.clf()
+        # # plt.ylim((0, 150))
+        # plt.xlim((0, 1.0))
+        # plt.scatter(high_simil_list, high_dist_list, marker=".", s=1)
+        # plt.xlabel("normalized L2 distance between local features from two images")
+        # plt.ylabel("actual distance between two positions [m]")
+        # # plt.show()
+        # plt.savefig(f"./fig_output/orb/{self.obs_path}_{self.map_id}.jpg", dpi=300)
 
         k = i + 1
         print("Temporay Accuracy: ", sum(accuracy_list) / k)

@@ -2,10 +2,11 @@ import json
 import os
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import NetworkConstant, TestConstant
+from config.algorithm_config import NetworkConstant
 from config.env_config import DataConfig, PathConfig
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
@@ -40,6 +41,9 @@ class SingleViewLocalization:
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
         self.map_embedding_file = os.path.join(observation_path, f"siamese_embedding_{map_cache_index}.npy")
+
+        self.obs_path = os.path.basename(observation_path)
+        self.map_id = map_cache_index[-1]
 
         if self.sample_dir:
             sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
@@ -118,12 +122,7 @@ class SingleViewLocalization:
         similarity = predictions[:, 1]
         map_node_with_max_value = np.argmax(similarity) // 4
 
-        num_high_similarity_set = int((1.0 - TestConstant.SIMILARITY_PROBABILITY_THRESHOLD) * len(similarity))
-        # high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-num_high_similarity_set:]
-        # high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-20:]
-        # high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-10:]
-        high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-5:]
-        # high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-3:]
+        high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-30:]
         high_similarity_set = [high_node // 4 for high_node in high_similarity_set_unfolded]
 
         if current_img is not None:
@@ -136,25 +135,12 @@ class SingleViewLocalization:
 
                 predicted_img = np.concatenate(frame_list, axis=1)
 
-                sample_kp, sample_des = self.orb.detectAndCompute(current_img, None)
-                predicted_kp, predicted_des = self.orb.detectAndCompute(predicted_img, None)
+                _, sample_des = self.orb.detectAndCompute(current_img, None)
+                _, predicted_des = self.orb.detectAndCompute(predicted_img, None)
 
                 predicted_matches = self.bf.match(sample_des, predicted_des)
                 predicted_matches = sorted(predicted_matches, key=lambda x: x.distance)
                 predicted_matches = predicted_matches[:30]
-
-                # match_df_list = []
-                # for match in predicted_matches:
-                #     sample_pt = sample_kp[match.queryIdx].pt
-                #     predicted_pt = predicted_kp[match.trainIdx].pt
-
-                #     dx = (predicted_pt[0] + 1024) - sample_pt[0]
-                #     dy = predicted_pt[1] - sample_pt[1]
-                #     df = dy / dx
-
-                #     match_df_list.append(df)
-
-                # orb_distance_list.append(np.std(match_df_list))
 
                 orb_distance_list.append(sum([match.distance for match in predicted_matches]))
 
@@ -185,12 +171,14 @@ class SingleViewLocalization:
         d1_list = []
         d2_list = []
         i = 0
+        high_dist_list = []
+        high_simil_list = []
 
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
-            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            # result = self.localize_with_observation(sample_embedding)
+            # result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+            result = self.localize_with_observation(sample_embedding)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
@@ -201,6 +189,18 @@ class SingleViewLocalization:
             accuracy_list.append(accuracy)
             d1_list.append(d1)
             d2_list.append(d2)
+
+            for high_node in result[1]:
+                high_dist, _ = self.evaluate_node_distance(high_node, grid_pos)
+                high_dist_list.append(high_dist)
+
+                node_idx = high_node * 4
+
+                single_node_distance_list = []
+                for d in range(4):
+                    feature_distance = 1.0 - result[2][node_idx + d]
+                    single_node_distance_list.append(feature_distance)
+                high_simil_list.append(min(single_node_distance_list))
 
             if self.is_visualize:
                 print("Sample No.: ", i)
@@ -216,43 +216,23 @@ class SingleViewLocalization:
 
                 if accuracy is False:
                     sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-                    predicted_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
-                    true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
+                    predicted_path_list = [
+                        os.path.join(self.map_obs_dir, f"{result[0]:06d}_{idx}.jpg") for idx in range(4)
+                    ]
+                    true_path_list = [os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg") for idx in range(4)]
 
                     sample_img = cv2.imread(sample_path)
-                    predicted_img = cv2.imread(predicted_path)
-                    true_img = cv2.imread(true_path)
-                    blank_img = np.zeros([10, predicted_img.shape[1] * 2, 3], dtype=np.uint8)
+                    predicted_img_list = [cv2.imread(predicted_path) for predicted_path in predicted_path_list]
+                    predicted_img = np.concatenate(predicted_img_list, axis=1)
+                    true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
+                    true_img = np.concatenate(true_img_list, axis=1)
+                    blank_img = np.zeros([10, predicted_img.shape[1], 3], dtype=np.uint8)
 
-                    sample_kp, sample_des = self.orb.detectAndCompute(sample_img, None)
-                    predicted_kp, predicted_des = self.orb.detectAndCompute(predicted_img, None)
-                    true_kp, true_des = self.orb.detectAndCompute(true_img, None)
+                    padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)
+                    x_offset = predicted_img.shape[1] // 2 - sample_img.shape[1] // 2
+                    padded_img[:, x_offset : x_offset + sample_img.shape[1], :] = sample_img
 
-                    true_matches = self.bf.match(sample_des, true_des)
-                    true_matches = sorted(true_matches, key=lambda x: x.distance)
-                    predicted_matches = self.bf.match(sample_des, predicted_des)
-                    predicted_matches = sorted(predicted_matches, key=lambda x: x.distance)
-
-                    predicted_match_img = cv2.drawMatches(
-                        sample_img.copy(),
-                        sample_kp,
-                        predicted_img,
-                        predicted_kp,
-                        predicted_matches[:30],
-                        None,
-                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-                    )
-                    true_match_img = cv2.drawMatches(
-                        sample_img.copy(),
-                        sample_kp,
-                        true_img,
-                        true_kp,
-                        true_matches[:30],
-                        None,
-                        flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-                    )
-
-                    match_img = np.concatenate([predicted_match_img, blank_img, true_match_img], axis=0)
+                    match_img = np.concatenate([padded_img, blank_img, predicted_img, blank_img, true_img], axis=0)
 
                     cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
                     cv2.resizeWindow("localization", 1700, 700)
@@ -266,6 +246,18 @@ class SingleViewLocalization:
 
                 if key == ord("n"):
                     break
+
+        # plot for distance distribution visualization
+        high_dist_list = [dist / 10 for dist in high_dist_list]
+
+        plt.clf()
+        # # plt.ylim((0, 150))
+        # plt.xlim((0, 1.0))
+        # plt.scatter(high_simil_list, high_dist_list, marker=".", s=1)
+        # plt.xlabel("distance between two images using Siamese network")
+        # plt.ylabel("actual distance between two positions [m]")
+        # # plt.show()
+        # plt.savefig(f"./fig_output/siamese/{self.obs_path}_{self.map_id}.jpg", dpi=300)
 
         k = i + 1
         print("Temporay Accuracy: ", sum(accuracy_list) / k)
