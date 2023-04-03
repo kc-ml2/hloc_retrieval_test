@@ -257,7 +257,7 @@ class SingleViewLocalization:
         # plt.xlabel("distance between two images using Siamese network")
         # plt.ylabel("actual distance between two positions [m]")
         # # plt.show()
-        # plt.savefig(f"./fig_output/siamese/{self.obs_path}_{self.map_id}.jpg", dpi=300)
+        # plt.savefig(f"./output_fig/siamese/{self.obs_path}_{self.map_id}.jpg", dpi=300)
 
         k = i + 1
         print("Temporay Accuracy: ", sum(accuracy_list) / k)

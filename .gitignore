@@ -2,8 +2,5 @@
 __pycache__*
 .vscode/
 .pytest_cache/
-output
 model_weights*
-single_view_output
-fig_output*
-real_view_output*
+output*
