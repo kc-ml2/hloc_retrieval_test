@@ -56,6 +56,7 @@ def make_cfg(settings):
         color_sensor_spec.resolution = [settings["height"], settings["width"]]
         color_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
         color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        color_sensor_spec.hfov = 69.0
         sensor_specs.append(color_sensor_spec)
 
     if settings["color_360_sensor"] is True:

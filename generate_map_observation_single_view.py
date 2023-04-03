@@ -17,7 +17,8 @@ if __name__ == "__main__":
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--output-path", default="./single_view_output")
+    # parser.add_argument("--output-path", default="./single_view_output")
+    parser.add_argument("--output-path", default="./real_view_output")
     parser.add_argument("--not-generate-test-sample", action="store_true")
     parser.add_argument("--map-debug", action="store_true")
     args, _ = parser.parse_known_args()
@@ -93,7 +94,7 @@ if __name__ == "__main__":
                 sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
 
                 observations = sim.get_cam_observations()
-                color_img = observations["all_view"][:, :256, :]
+                color_img = observations["front_view"]
 
                 cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
 

@@ -33,7 +33,8 @@ class NetworkConstant:
     # Input size
     NET_WIDTH = 256
     NET_WIDTH_SINGLE = 256
-    NET_HEIGHT = 256
+    # NET_HEIGHT = 256
+    NET_HEIGHT = 192
     NET_CHANNELS = 3
     # Architecture
     NUM_EMBEDDING = 256

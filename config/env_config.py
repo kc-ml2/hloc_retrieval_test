@@ -1,24 +1,18 @@
 class PathConfig:
     # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    # TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset/images"
-    # TRAIN_LABEL_PATH = "./data/label_train.json"
-    # VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset/val_images"
-    # VALID_LABEL_PATH = "./data/label_val.json"
-    # TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset/test_images"
-    # TEST_LABEL_PATH = "./data/label_test.json"
-    # TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_four_view/images"
-    # TRAIN_LABEL_PATH = "./data/label_train_four_view.json"
-    # VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_four_view/val_images"
-    # VALID_LABEL_PATH = "./data/label_val_four_view.json"
-    # TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_four_view/test_images"
-    # TEST_LABEL_PATH = "./data/label_test_four_view.json"
-    TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/images"
-    TRAIN_LABEL_PATH = "./data/label_train_single_view.json"
-    VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/val_images"
-    VALID_LABEL_PATH = "./data/label_val_single_view.json"
-    TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/test_images"
-    TEST_LABEL_PATH = "./data/label_test_single_view.json"
+    # TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/images"
+    # TRAIN_LABEL_PATH = "./data/label_train_single_view.json"
+    # VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/val_images"
+    # VALID_LABEL_PATH = "./data/label_val_single_view.json"
+    # TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/test_images"
+    # TEST_LABEL_PATH = "./data/label_test_single_view.json"
+    TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/images"
+    TRAIN_LABEL_PATH = "./data/label_train_real_view.json"
+    VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/val_images"
+    VALID_LABEL_PATH = "./data/label_val_real_view.json"
+    TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/test_images"
+    TEST_LABEL_PATH = "./data/label_test_real_view.json"
     EDGE_MODEL_WEIGHTS = ""
     SHORTCUTS_CACHE_FILE = ""
     GPU_ID = 1
@@ -30,9 +24,12 @@ class CamNormalConfig:
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
     FOUR_VIEW = False
+    # WIDTH = 256
+    # HEIGHT = 256
+    # SENSOR_HEIGHT = 0.5
     WIDTH = 256
-    HEIGHT = 256
-    SENSOR_HEIGHT = 0.5
+    HEIGHT = 192
+    SENSOR_HEIGHT = 0.34
 
 
 class Cam360Config:
@@ -52,9 +49,12 @@ class CamFourViewConfig:
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
     FOUR_VIEW = True
+    # WIDTH = 256
+    # HEIGHT = 256
+    # SENSOR_HEIGHT = 0.5
     WIDTH = 256
-    HEIGHT = 256
-    SENSOR_HEIGHT = 0.5
+    HEIGHT = 192
+    SENSOR_HEIGHT = 0.34
 
 
 class CamGivenReferenceConfig:

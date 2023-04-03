@@ -165,10 +165,10 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             # Merge every view for "all_view"
             cam_observations["all_view"] = np.concatenate(
                 [
+                    cam_observations["left_view"],
                     cam_observations["front_view"],
                     cam_observations["right_view"],
                     cam_observations["back_view"],
-                    cam_observations["left_view"],
                 ],
                 axis=1,
             )

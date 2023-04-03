@@ -177,8 +177,8 @@ class SingleViewLocalization:
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
-            # result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            result = self.localize_with_observation(sample_embedding)
+            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+            # result = self.localize_with_observation(sample_embedding)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
