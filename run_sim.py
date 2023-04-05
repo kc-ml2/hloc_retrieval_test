@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
     parser.add_argument("--localization", action="store_true")
-    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.32batch.4view.weights.best.hdf5")
+    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.4view.weights.hdf5")
     parser.add_argument("--map-obs-path", default="./output")
     args, _ = parser.parse_known_args()
     scene_list_file = args.scene_list_file

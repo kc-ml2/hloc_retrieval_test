@@ -13,7 +13,7 @@ from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.weights.best.hdf5")
+    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.singleview.90FOV.weights.hdf5")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")

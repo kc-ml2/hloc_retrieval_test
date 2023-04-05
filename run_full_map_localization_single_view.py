@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--map-obs-path", default="./output_single_view")
-    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.weights.best.hdf5")
+    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.singleview.90FOV.weights.hdf5")
     parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()

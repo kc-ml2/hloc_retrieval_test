@@ -59,7 +59,7 @@ if __name__ == "__main__":
             learning_rate=TrainingConstant.LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.000001
         )
         checkpointer = ModelCheckpoint(
-            filepath=f"model_weights/model.{timestr}.weights.best.hdf5", verbose=1, save_best_only=True
+            filepath=f"model_weights/model.{timestr}.weights.hdf5", verbose=1, save_best_only=True
         )
         model.compile(loss="categorical_crossentropy", optimizer=adam, metrics=["accuracy"])
         model.summary()
