@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 from config.algorithm_config import TestConstant
-from config.env_config import ActionConfig, CamFourViewConfig, DataConfig, PathConfig
+from config.env_config import ActionConfig, CamThreeViewConfig, DataConfig, PathConfig
 from relocalization.sim import HabitatSimWithMap
 from utils.habitat_utils import draw_point_from_node, open_env_related_files
 from utils.skeletonize_utils import topdown_map_to_graph
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, CamThreeViewConfig, ActionConfig, PathConfig, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)

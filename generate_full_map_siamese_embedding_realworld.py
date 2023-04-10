@@ -12,7 +12,7 @@ from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model", default="./model_weights/model.20230331-142500.singleview.69FOV.weights.hdf5")
+    parser.add_argument("--load-model", default="./model_weights/model.20230410-153553.threeview.69FOV.weights.hdf5")
     parser.add_argument("--map-obs-path", default="./output_realworld")
     args, _ = parser.parse_known_args()
     loaded_model = args.load_model
