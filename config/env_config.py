@@ -7,12 +7,12 @@ class PathConfig:
     # VALID_LABEL_PATH = "./data/label_val_single_view.json"
     # TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_single_view/test_images"
     # TEST_LABEL_PATH = "./data/label_test_single_view.json"
-    TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/images"
-    TRAIN_LABEL_PATH = "./data/label_train_real_view.json"
-    VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/val_images"
-    VALID_LABEL_PATH = "./data/label_val_real_view.json"
-    TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/test_images"
-    TEST_LABEL_PATH = "./data/label_test_real_view.json"
+    TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_three_view/images"
+    TRAIN_LABEL_PATH = "./data/label_train_three_view.json"
+    VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_three_view/val_images"
+    VALID_LABEL_PATH = "./data/label_val_three_view.json"
+    TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_three_view/test_images"
+    TEST_LABEL_PATH = "./data/label_test_three_view.json"
     EDGE_MODEL_WEIGHTS = ""
     SHORTCUTS_CACHE_FILE = ""
     GPU_ID = 1
@@ -24,6 +24,7 @@ class CamNormalConfig:
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
     FOUR_VIEW = False
+    THREE_VIEW = False
     # WIDTH = 256
     # HEIGHT = 256
     # SENSOR_HEIGHT = 0.5
@@ -38,6 +39,7 @@ class Cam360Config:
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
     FOUR_VIEW = False
+    THREE_VIEW = False
     WIDTH = 512
     HEIGHT = 256
     SENSOR_HEIGHT = 0.5
@@ -49,6 +51,22 @@ class CamFourViewConfig:
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
     FOUR_VIEW = True
+    THREE_VIEW = False
+    # WIDTH = 256
+    # HEIGHT = 256
+    # SENSOR_HEIGHT = 0.5
+    WIDTH = 256
+    HEIGHT = 192
+    SENSOR_HEIGHT = 0.34
+
+
+class CamThreeViewConfig:
+    RGB_SENSOR = True
+    RGB_360_SENSOR = False
+    DEPTH_SENSOR = True
+    SEMANTIC_SENSOR = False
+    FOUR_VIEW = False
+    THREE_VIEW = True
     # WIDTH = 256
     # HEIGHT = 256
     # SENSOR_HEIGHT = 0.5

@@ -7,7 +7,7 @@ import tensorflow as tf
 from config.algorithm_config import TestConstant
 from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
-from relocalization.single_view_localization import SingleViewLocalization
+from relocalization.localization_realworld import LocalizationRealWorld
 from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
@@ -37,8 +37,8 @@ if __name__ == "__main__":
     sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
 
     # Set output npy file name
-    localization = SingleViewLocalization(
-        top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True
+    localization = LocalizationRealWorld(
+        top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True, num_views=1
     )
     map_output = localization.map_embedding_file
     sample_output = localization.sample_embedding_file

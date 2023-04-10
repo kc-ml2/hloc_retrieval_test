@@ -75,6 +75,7 @@ if __name__ == "__main__":
                 binary_topdown_map=binary_topdown_map,
                 sparse_map=is_sparse,
                 visualize=is_visualize,
+                num_views=1,
             )
 
             accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample(

@@ -6,8 +6,8 @@ import tensorflow as tf
 
 from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from network.resnet import ResnetBuilder
+from relocalization.localization import Localization
 from relocalization.sim import HabitatSimWithMap
-from relocalization.single_view_localization import SingleViewLocalization
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
@@ -66,7 +66,7 @@ if __name__ == "__main__":
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
-            localization = SingleViewLocalization(
+            localization = Localization(
                 top_network,
                 bottom_network,
                 map_obs_dir,
@@ -74,6 +74,7 @@ if __name__ == "__main__":
                 binary_topdown_map=binary_topdown_map,
                 sparse_map=is_sparse,
                 visualize=is_visualize,
+                num_views=4,
             )
 
             accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample(
