@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
+from relocalization.orb_matching_localization_realworld import OrbMatchingLocalizationRealWorld
 from relocalization.single_view_localization_realworld import SingleViewLocalizationRealWorld
 
 if __name__ == "__main__":
@@ -42,6 +43,14 @@ if __name__ == "__main__":
         sparse_map=is_sparse,
         visualize=is_visualize,
     )
+
+    # localization = OrbMatchingLocalizationRealWorld(
+    #     map_obs_dir=map_obs_dir,
+    #     sample_dir=sample_dir,
+    #     sparse_map=is_sparse,
+    #     visualize=is_visualize,
+    #     num_frames_per_node=3,
+    # )
 
     accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample()
 

@@ -57,7 +57,7 @@ class SingleViewLocalizationRealWorld:
             # Initialize emny matrix and parameters for handling embeddings
             self.num_views = 3
             self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
-            self.num_map_graph_nodes = self.num_map_embedding / self.num_views
+            self.num_map_graph_nodes = int(self.num_map_embedding / self.num_views)
             self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
             self.input_embedding_mat = np.zeros(
                 (self.num_views * self.num_map_graph_nodes, 2 * self.dimension_map_embedding)
@@ -159,12 +159,13 @@ class SingleViewLocalizationRealWorld:
         i = 0
 
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
+            print("Sample index: ", i)
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
             result = self.localize_with_observation(sample_embedding, current_img=sample_img)
             # result = self.localize_with_observation(sample_embedding)
 
-            grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
+            grid_pos = np.array(self.sample_pos_record[f"{i:06d}_grid"])
 
             accuracy = self.evaluate_accuracy(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
@@ -230,7 +231,7 @@ class SingleViewLocalizationRealWorld:
     def evaluate_pos_distance(self, map_node_with_max_value, grid_pos):
         """How far is the predicted node from current position?"""
         predicted_grid_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
-        distance = np.linalg.norm(predicted_grid_pos - grid_pos)
+        distance = np.linalg.norm(np.array(predicted_grid_pos) - grid_pos)
 
         return distance
 
@@ -239,7 +240,7 @@ class SingleViewLocalizationRealWorld:
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
         ground_truth_nearest_node_pos = self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"]
         predicted_nearest_node_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
-        distance = np.linalg.norm(ground_truth_nearest_node_pos - predicted_nearest_node_pos)
+        distance = np.linalg.norm(np.array(ground_truth_nearest_node_pos) - np.array(predicted_nearest_node_pos))
 
         return distance, ground_truth_nearest_node
 
@@ -250,7 +251,7 @@ class SingleViewLocalizationRealWorld:
         ground_truth_pos = self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"]
         estimated_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
 
-        step = np.linalg.norm(ground_truth_pos - estimated_pos)
+        step = np.linalg.norm(np.array(ground_truth_pos) - np.array(estimated_pos))
 
         result = step <= 10
 
