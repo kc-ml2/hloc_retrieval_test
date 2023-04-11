@@ -190,8 +190,8 @@ class Localization:
         for i, sample_embedding in enumerate(self.sample_embedding_mat):
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
-            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            # result = self.localize_with_observation(sample_embedding)
+            # result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+            result = self.localize_with_observation(sample_embedding)
 
             grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
 
@@ -223,10 +223,6 @@ class Localization:
                 print("Predicted node similarity: ", result[2][result[0]])
                 print("GT node similarity: ", result[2][gt_node])
 
-                map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
-                map_image = self.visualize_on_map(map_image, result)
-                draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
-
                 if accuracy is False:
                     if self.num_views == 1:
                         predicted_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
@@ -242,8 +238,8 @@ class Localization:
                             os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg") for idx in range(self.num_views)
                         ]
                         predicted_img_list = [cv2.imread(predicted_path) for predicted_path in predicted_path_list]
-                        true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
                         predicted_img = np.concatenate(predicted_img_list, axis=1)
+                        true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
                         true_img = np.concatenate(true_img_list, axis=1)
 
                     sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
@@ -261,6 +257,11 @@ class Localization:
                     cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
                     cv2.resizeWindow("localization", 1700, 700)
                     cv2.imshow("localization", match_img)
+
+                # Visualize position on map
+                map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
+                map_image = self.visualize_on_map(map_image, result)
+                draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
                 cv2.namedWindow("map", cv2.WINDOW_NORMAL)
                 cv2.resizeWindow("map", 512, 512)

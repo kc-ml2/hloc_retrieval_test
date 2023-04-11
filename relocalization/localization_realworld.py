@@ -171,8 +171,8 @@ class LocalizationRealWorld:
             print("Sample index: ", i)
             sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
             sample_img = cv2.imread(sample_path)
-            result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            # result = self.localize_with_observation(sample_embedding)
+            # result = self.localize_with_observation(sample_embedding, current_img=sample_img)
+            result = self.localize_with_observation(sample_embedding)
 
             grid_pos = np.array(self.sample_pos_record[f"{i:06d}_grid"])
 
@@ -193,26 +193,35 @@ class LocalizationRealWorld:
                 print("GT node similarity: ", result[2][gt_node])
 
                 if accuracy is False:
-                    sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-                    predicted_path_list = [
-                        os.path.join(self.map_obs_dir, f"{result[0]:06d}_{idx}.jpg") for idx in range(self.num_views)
-                    ]
-                    true_path_list = [
-                        os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg") for idx in range(self.num_views)
-                    ]
+                    if self.num_views == 1:
+                        predicted_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
+                        true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
+                        predicted_img = cv2.imread(predicted_path)
+                        true_img = cv2.imread(true_path)
+                    else:
+                        predicted_path_list = [
+                            os.path.join(self.map_obs_dir, f"{result[0]:06d}_{idx}.jpg")
+                            for idx in range(self.num_views)
+                        ]
+                        true_path_list = [
+                            os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg") for idx in range(self.num_views)
+                        ]
+                        predicted_img_list = [cv2.imread(predicted_path) for predicted_path in predicted_path_list]
+                        predicted_img = np.concatenate(predicted_img_list, axis=1)
+                        true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
+                        true_img = np.concatenate(true_img_list, axis=1)
 
+                    sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
                     sample_img = cv2.imread(sample_path)
-                    predicted_img_list = [cv2.imread(predicted_path) for predicted_path in predicted_path_list]
-                    predicted_img = np.concatenate(predicted_img_list, axis=1)
-                    true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
-                    true_img = np.concatenate(true_img_list, axis=1)
                     blank_img = np.zeros([10, predicted_img.shape[1], 3], dtype=np.uint8)
 
-                    padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)
-                    x_offset = predicted_img.shape[1] // 2 - sample_img.shape[1] // 2
-                    padded_img[:, x_offset : x_offset + sample_img.shape[1], :] = sample_img
-
-                    match_img = np.concatenate([padded_img, blank_img, predicted_img, blank_img, true_img], axis=0)
+                    if self.num_views == 1:
+                        match_img = np.concatenate([sample_img, blank_img, predicted_img, blank_img, true_img], axis=0)
+                    else:
+                        padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)
+                        x_offset = predicted_img.shape[1] // 2 - sample_img.shape[1] // 2
+                        padded_img[:, x_offset : x_offset + sample_img.shape[1], :] = sample_img
+                        match_img = np.concatenate([padded_img, blank_img, predicted_img, blank_img, true_img], axis=0)
 
                     cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
                     cv2.resizeWindow("localization", 1700, 700)
