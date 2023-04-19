@@ -16,10 +16,11 @@ add_executable(run_room_segmentation main.cpp)
 target_link_libraries(run_room_segmentation PUBLIC
 	ipa_room_segmentation
 	${OpenCV_LIBS}
-	${Boost_LIBS}
+	${Boost_LIBRARIES}
 )
 
 target_include_directories(run_room_segmentation PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${OpenCV_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
 )
