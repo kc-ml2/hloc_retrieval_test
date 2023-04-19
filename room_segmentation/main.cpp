@@ -75,7 +75,7 @@ static bool DEBUG_DISPLAYS=false;
 
 int main(int argc, char** argv)
 {
-	std::string image_path = cv::samples::findFile("./../../data/recolored_topdown/1LXtFkjw3qL_0.bmp");
+	std::string image_path = cv::samples::findFile("./../../data/recolored_topdown/1LXtFkjw3qL_2.bmp");
     cv::Mat original_img = cv::imread(image_path, cv::IMREAD_COLOR);
 
 	cv::uint8_t white_val = 255;
@@ -90,9 +90,15 @@ int main(int argc, char** argv)
 		}
 	}
 
-	// original_img.convertTo(original_img, CV_8UC1);
-	cv::Mat img;
-	cv::cvtColor(original_img, img, cv::COLOR_BGR2GRAY);
+	cv::cvtColor(original_img, original_img, cv::COLOR_BGR2GRAY);
+
+	std::vector<std::vector<cv::Point>> contours;
+	cv::findContours(original_img, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+	for (auto contour = begin(contours); contour != end(contours); ++contour) {
+		if (cv::contourArea(*contour) < int(1000))
+			cv::fillPoly(original_img, *contour, cv::uint8_t(0));
+	}
 
 	const float map_resolution = 0.1;
 	const cv::Point2d map_origin(const float map_origin_position_x=0.0, const float map_origin_position_y=0.0);
@@ -100,7 +106,7 @@ int main(int argc, char** argv)
     double room_lower_limit_voronoi_ = 0.1;	//1.53;
 	double room_upper_limit_voronoi_ = 1000000.;	//120.0;
 	int voronoi_neighborhood_index_ = 280;
-	int max_iterations_ = 16;
+	int max_iterations_ = 12;
 	double min_critical_point_distance_factor_ = 0.5; //1.6;
 	double max_area_for_merging_ = 12.5;
 	bool display_segmented_map_ = true;
@@ -109,7 +115,7 @@ int main(int argc, char** argv)
 	//segment the given map
 	cv::Mat segmented_map;
 	VoronoiSegmentation voronoi_segmentation; //voronoi segmentation method
-	voronoi_segmentation.segmentMap(img, segmented_map, map_resolution, room_lower_limit_voronoi_, room_upper_limit_voronoi_,
+	voronoi_segmentation.segmentMap(original_img, segmented_map, map_resolution, room_lower_limit_voronoi_, room_upper_limit_voronoi_,
 		voronoi_neighborhood_index_, max_iterations_, min_critical_point_distance_factor_, max_area_for_merging_, (display_segmented_map_&&DEBUG_DISPLAYS));
 
 	// get the min/max-values and the room-centers
