@@ -48,9 +48,9 @@ class OrbMatchingLocalizationRealWorld:
                 self.sample_pos_record = json.load(f)
 
         # Initialize emny matrix and parameters for handling embeddings
-        self.num_views = num_frames_per_node
+        self.num_frames_per_node = num_frames_per_node
         self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
-        self.num_map_graph_nodes = int(self.num_map_embedding / self.num_views)
+        self.num_map_graph_nodes = int(self.num_map_embedding / self.num_frames_per_node)
 
         # Initialize graph map from binary topdown map image
         self.map_pos_mat = np.zeros([self.num_map_graph_nodes, 2])

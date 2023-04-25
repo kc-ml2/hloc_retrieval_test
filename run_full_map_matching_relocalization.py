@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--map-obs-path", default="./output")
+    parser.add_argument("--map-obs-path", default="./output_single_view")
     parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 binary_topdown_map=binary_topdown_map,
                 sparse_map=is_sparse,
                 visualize=is_visualize,
-                num_frames_per_node=1,
+                num_frames_per_node=4,
             )
 
             accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample()

@@ -15,8 +15,8 @@ if __name__ == "__main__":
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--map-obs-path", default="./output")
-    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.4view.weights.hdf5")
+    parser.add_argument("--map-obs-path", default="./output_single_view")
+    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.singleview.90FOV.weights.hdf5")
     parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
@@ -66,7 +66,6 @@ if __name__ == "__main__":
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
-            # Initialize localization instance
             localization = Localization(
                 top_network,
                 bottom_network,
@@ -75,7 +74,7 @@ if __name__ == "__main__":
                 binary_topdown_map=binary_topdown_map,
                 sparse_map=is_sparse,
                 visualize=is_visualize,
-                num_views=1,
+                num_frames_per_node=4,
             )
 
             accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample(

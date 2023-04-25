@@ -26,7 +26,7 @@ class Localization:
         instance_only=False,
         visualize=False,
         sparse_map=False,
-        num_views=1,
+        num_frames_per_node=1,
     ):
         """Initialize localization instance with specific model & map data."""
         self.map_obs_dir = map_obs_dir
@@ -59,12 +59,12 @@ class Localization:
             self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
 
             # Initialize emny matrix and parameters for handling embeddings
-            self.num_views = num_views
+            self.num_frames_per_node = num_frames_per_node
             self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
             self.num_map_graph_nodes = len(self.graph.nodes())
             self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
             self.input_embedding_mat = np.zeros(
-                (self.num_views * self.num_map_graph_nodes, 2 * self.dimension_map_embedding)
+                (self.num_frames_per_node * self.num_map_graph_nodes, 2 * self.dimension_map_embedding)
             )
 
         # Load cached npy file if the flag is true
@@ -103,7 +103,7 @@ class Localization:
                 self.sample_embedding_mat = np.load(f)
 
         self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[
-            : self.num_views * self.num_map_graph_nodes
+            : self.num_frames_per_node * self.num_map_graph_nodes
         ]
 
     def calculate_embedding_from_observation(self, observation):
@@ -126,23 +126,23 @@ class Localization:
             predictions = self.top_network.predict_on_batch(self.input_embedding_mat)
 
         similarity = predictions[:, 1]
-        map_node_with_max_value = np.argmax(similarity) // self.num_views
+        map_node_with_max_value = np.argmax(similarity) // self.num_frames_per_node
 
-        if self.num_views == 1:
+        if self.num_frames_per_node == 1:
             high_similarity_set = sorted(range(len(similarity)), key=lambda k: similarity[k])[-30:]
         else:
             high_similarity_set_unfolded = sorted(range(len(similarity)), key=lambda k: similarity[k])[-30:]
-            high_similarity_set = [high_node // self.num_views for high_node in high_similarity_set_unfolded]
+            high_similarity_set = [high_node // self.num_frames_per_node for high_node in high_similarity_set_unfolded]
 
         if current_img is not None:
             orb_distance_list = []
             for high_id in high_similarity_set:
-                if self.num_views == 1:
+                if self.num_frames_per_node == 1:
                     predicted_path = os.path.join(self.map_obs_dir, f"{high_id:06d}.jpg")
                     predicted_img = cv2.imread(predicted_path)
                 else:
                     frame_list = []
-                    for frame_idx in range(self.num_views):
+                    for frame_idx in range(self.num_frames_per_node):
                         frame_path = os.path.join(self.map_obs_dir, f"{high_id:06d}_{frame_idx}.jpg")
                         frame_list.append(cv2.imread(frame_path))
 
@@ -207,10 +207,10 @@ class Localization:
                 high_dist, _ = self.evaluate_node_distance(high_node, grid_pos)
                 high_dist_list.append(high_dist)
 
-                node_idx = high_node * self.num_views
+                node_idx = high_node * self.num_frames_per_node
 
                 single_node_distance_list = []
-                for d in range(self.num_views):
+                for d in range(self.num_frames_per_node):
                     feature_distance = 1.0 - result[2][node_idx + d]
                     single_node_distance_list.append(feature_distance)
                 high_simil_list.append(min(single_node_distance_list))
@@ -224,7 +224,7 @@ class Localization:
                 print("GT node similarity: ", result[2][gt_node])
 
                 if accuracy is False:
-                    if self.num_views == 1:
+                    if self.num_frames_per_node == 1:
                         predicted_path = os.path.join(self.map_obs_dir, f"{result[0]:06d}.jpg")
                         true_path = os.path.join(self.map_obs_dir, f"{gt_node:06d}.jpg")
                         predicted_img = cv2.imread(predicted_path)
@@ -232,10 +232,11 @@ class Localization:
                     else:
                         predicted_path_list = [
                             os.path.join(self.map_obs_dir, f"{result[0]:06d}_{idx}.jpg")
-                            for idx in range(self.num_views)
+                            for idx in range(self.num_frames_per_node)
                         ]
                         true_path_list = [
-                            os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg") for idx in range(self.num_views)
+                            os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg")
+                            for idx in range(self.num_frames_per_node)
                         ]
                         predicted_img_list = [cv2.imread(predicted_path) for predicted_path in predicted_path_list]
                         predicted_img = np.concatenate(predicted_img_list, axis=1)
@@ -246,7 +247,7 @@ class Localization:
                     sample_img = cv2.imread(sample_path)
                     blank_img = np.zeros([10, predicted_img.shape[1], 3], dtype=np.uint8)
 
-                    if self.num_views == 1:
+                    if self.num_frames_per_node == 1:
                         match_img = np.concatenate([sample_img, blank_img, predicted_img, blank_img, true_img], axis=0)
                     else:
                         padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)

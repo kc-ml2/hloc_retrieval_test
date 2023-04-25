@@ -42,7 +42,7 @@ if __name__ == "__main__":
         sample_dir=sample_dir,
         sparse_map=is_sparse,
         visualize=is_visualize,
-        num_views=1,
+        num_frames_per_node=1,
     )
 
     # localization = OrbMatchingLocalizationRealWorld(

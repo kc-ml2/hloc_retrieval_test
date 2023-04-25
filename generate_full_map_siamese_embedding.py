@@ -63,7 +63,12 @@ if __name__ == "__main__":
 
             # Set output npy file name
             localization = Localization(
-                top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True, num_views=1
+                top_network,
+                bottom_network,
+                map_obs_dir,
+                sample_dir=sample_dir,
+                instance_only=True,
+                num_frames_per_node=1,
             )
             map_output = localization.map_embedding_file
             sample_output = localization.sample_embedding_file
