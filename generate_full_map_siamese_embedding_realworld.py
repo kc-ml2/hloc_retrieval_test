@@ -4,24 +4,25 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import TestConstant
-from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
 from relocalization.localization_realworld import LocalizationRealWorld
+from utils.config_import import load_config_module
 from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model", default="./model_weights/model.20230410-153553.threeview.69FOV.weights.hdf5")
-    parser.add_argument("--map-obs-path", default="./output_realworld")
+    parser.add_argument("--config", default="config/realworld_69FOV.py")
     args, _ = parser.parse_known_args()
-    loaded_model = args.load_model
-    map_obs_path = args.map_obs_path
+    module_name = args.config
+
+    config = load_config_module(module_name)
+    map_obs_path = config.PathConfig.LOCALIZATION_TEST_PATH
+    loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     total_list_to_iterate = []
     output_size_list = []
 
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     # Set file path
@@ -49,10 +50,10 @@ if __name__ == "__main__":
     total_list_to_iterate = total_list_to_iterate + sample_list
     output_size_list.append((sample_output, len(sorted_test_sample_file)))
 
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         record_dataset = tf.data.Dataset.from_tensor_slices(total_list_to_iterate)
         record_dataset = record_dataset.map(lambda x: preprocess_single_image_file(x))
-        record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
+        record_dataset = record_dataset.batch(config.TestConstant.BATCH_SIZE)
 
         predictions = bottom_network.predict(record_dataset)
 

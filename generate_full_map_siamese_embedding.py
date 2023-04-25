@@ -4,31 +4,32 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import TestConstant
-from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
 from relocalization.localization import Localization
+from utils.config_import import load_config_module
 from utils.habitat_utils import open_env_related_files
 from utils.network_utils import preprocess_single_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.singleview.90FOV.weights.hdf5")
+    parser.add_argument("--config", default="config/singleview_90FOV.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--map-obs-path", default="./output")
     args, _ = parser.parse_known_args()
-    loaded_model = args.load_model
+    module_name = args.config
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
     height_json_path = args.map_height_json
-    map_obs_path = args.map_obs_path
+
+    config = load_config_module(module_name)
+    map_obs_path = config.PathConfig.LOCALIZATION_TEST_PATH
+    loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     total_list_to_iterate = []
     output_size_list = []
 
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     # Open files
@@ -79,10 +80,10 @@ if __name__ == "__main__":
             total_list_to_iterate = total_list_to_iterate + sample_list
             output_size_list.append((sample_output, len(sorted_test_sample_file)))
 
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         record_dataset = tf.data.Dataset.from_tensor_slices(total_list_to_iterate)
         record_dataset = record_dataset.map(lambda x: preprocess_single_image_file(x))
-        record_dataset = record_dataset.batch(TestConstant.BATCH_SIZE)
+        record_dataset = record_dataset.batch(config.TestConstant.BATCH_SIZE)
 
         predictions = bottom_network.predict(record_dataset)
 

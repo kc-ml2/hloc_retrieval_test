@@ -12,11 +12,8 @@ from keras.regularizers import l2
 import six
 import tensorflow as tf
 
-from config.algorithm_config import NetworkConstant
-from config.env_config import PathConfig
-
-NUM_EMBEDDING = NetworkConstant.NUM_EMBEDDING
-TOP_HIDDEN = NetworkConstant.TOP_HIDDEN
+NUM_EMBEDDING = config.NetworkConstant.NUM_EMBEDDING
+TOP_HIDDEN = config.NetworkConstant.TOP_HIDDEN
 
 ROW_AXIS = 1
 COL_AXIS = 2
@@ -307,40 +304,21 @@ class ResnetBuilder:
     @staticmethod
     def load_siamese_model(loaded_model):
         siamese = ResnetBuilder.build_siamese_resnet_18
-        model = siamese((NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, 2 * NetworkConstant.NET_CHANNELS))
+        model = siamese(
+            (
+                config.NetworkConstant.NET_HEIGHT,
+                config.NetworkConstant.NET_WIDTH,
+                2 * config.NetworkConstant.NET_CHANNELS,
+            )
+        )
         model.load_weights(loaded_model, by_name=True)
         top_network = ResnetBuilder.build_siamese_top_network(model)
         bottom_network = ResnetBuilder.build_bottom_network(
             model,
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
+            (config.NetworkConstant.NET_HEIGHT, config.NetworkConstant.NET_WIDTH, config.NetworkConstant.NET_CHANNELS),
         )
 
         return model, top_network, bottom_network
-
-    @staticmethod
-    def load_double_branch_model(loaded_model):
-        double_branch = ResnetBuilder.build_double_branch_resnet_18
-        model = double_branch(
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH_SINGLE, NetworkConstant.NET_CHANNELS),
-        )
-        model.load_weights(loaded_model, by_name=True)
-
-        top_network = ResnetBuilder.build_siamese_top_network(model)
-        anchor_network = ResnetBuilder.build_anchor_network(
-            model,
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH, NetworkConstant.NET_CHANNELS),
-        )
-        target_network = ResnetBuilder.build_target_network(
-            model,
-            (NetworkConstant.NET_HEIGHT, NetworkConstant.NET_WIDTH_SINGLE, NetworkConstant.NET_CHANNELS),
-        )
-
-        top_network.summary()
-        anchor_network.summary()
-        target_network.summary()
-
-        return model, top_network, anchor_network, target_network
 
     @staticmethod
     def restrict_gpu_memory():
@@ -348,7 +326,8 @@ class ResnetBuilder:
         if gpus:
             try:
                 tf.config.experimental.set_virtual_device_configuration(
-                    gpus[PathConfig.GPU_ID], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]
+                    gpus[config.PathConfig.GPU_ID],
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)],
                 )
             except RuntimeError as e:
                 print(e)

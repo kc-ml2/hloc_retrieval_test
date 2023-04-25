@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import NetworkConstant
-from config.env_config import DataConfig, PathConfig
 from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
 
@@ -34,7 +32,7 @@ class Localization:
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
             self.top_network = top_network
             self.bottom_network = bottom_network
 
@@ -56,13 +54,15 @@ class Localization:
 
         if instance_only is False:
             # Initialize map graph from binary topdown map
-            self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
+            self.graph = topdown_map_to_graph(
+                binary_topdown_map, config.DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map
+            )
 
             # Initialize emny matrix and parameters for handling embeddings
             self.num_frames_per_node = num_frames_per_node
             self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
             self.num_map_graph_nodes = len(self.graph.nodes())
-            self.dimension_map_embedding = NetworkConstant.NUM_EMBEDDING
+            self.dimension_map_embedding = config.NetworkConstant.NUM_EMBEDDING
             self.input_embedding_mat = np.zeros(
                 (self.num_frames_per_node * self.num_map_graph_nodes, 2 * self.dimension_map_embedding)
             )
@@ -109,7 +109,7 @@ class Localization:
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
         observation = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
             regulized_img = tf.image.convert_image_dtype(observation, tf.float32)
             obs_embedding = self.bottom_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
 
@@ -122,7 +122,7 @@ class Localization:
 
         self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
 
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
             predictions = self.top_network.predict_on_batch(self.input_embedding_mat)
 
         similarity = predictions[:, 1]

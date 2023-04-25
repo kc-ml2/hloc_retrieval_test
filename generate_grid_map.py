@@ -4,17 +4,21 @@ import os
 
 import cv2
 
-from config.env_config import ActionConfig, CamNormalConfig, DataConfig, PathConfig
 from relocalization.sim import HabitatSimWithMap
+from utils.config_import import load_config_module
 from utils.habitat_utils import get_entire_maps_by_levels
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/singleview_90FOV.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_total.txt")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     args, _ = parser.parse_known_args()
+    module_name = args.config
     scene_list_file = args.scene_list_file
     height_json_path = args.map_height_json
+
+    config = load_config_module(module_name)
 
     os.makedirs("./data/topdown/", exist_ok=True)
     os.makedirs("./data/recolored_topdown/", exist_ok=True)
@@ -29,11 +33,11 @@ if __name__ == "__main__":
         print(scene_number)
         print(generated_scene_num)
 
-        sim = HabitatSimWithMap(scene_number, CamNormalConfig, ActionConfig, PathConfig)
+        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig)
 
         # Sample random maps & get the largest maps by levels
         recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(
-            sim, DataConfig.METERS_PER_PIXEL
+            sim, config.DataConfig.METERS_PER_PIXEL
         )
 
         # Store the largest maps

@@ -27,8 +27,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         super().__init__(cfg)
 
         # Set Flag
-        self.is_four_view = cam_config.FOUR_VIEW
-        self.is_three_view = cam_config.THREE_VIEW
+        self.num_camera = cam_config.NUM_CAMERA
         self.four_view_angle = quaternion.from_rotation_vector([0, np.pi / 2, 0])
         self.blank_line = np.zeros([cam_config.HEIGHT, 50, 3]).astype(np.uint8)
 
@@ -124,7 +123,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         """Inherit the 'get_sensor_observations' method of the parent class."""
         cam_observations = {"all_view": None}
 
-        if self.is_four_view or self.is_three_view:
+        if self.num_camera == 4 or self.num_camera == 3:
             cam_observations.update({"front_view": None, "right_view": None, "back_view": None, "left_view": None})
 
             # Store original view for agent state restoration
@@ -163,7 +162,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             observations = self.get_sensor_observations()
             cam_observations["right_view"] = cv2.cvtColor(observations["color_sensor"], cv2.COLOR_BGR2RGB)
 
-            if self.is_four_view:
+            if self.num_camera == 4:
                 # Merge every view for "all_view"
                 cam_observations["all_view"] = np.concatenate(
                     [
@@ -175,7 +174,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
                     axis=1,
                 )
 
-            if self.is_three_view:
+            if self.num_camera == 3:
                 # Merge every view for "all_view"
                 cam_observations["all_view"] = np.concatenate(
                     [

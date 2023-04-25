@@ -4,25 +4,26 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from config.env_config import PathConfig
 from network.resnet import ResnetBuilder
 from relocalization.localization_realworld import LocalizationRealWorld
-from relocalization.orb_matching_localization_realworld import OrbMatchingLocalizationRealWorld
+from utils.config_import import load_config_module
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--map-obs-path", default="./output_realworld")
-    parser.add_argument("--load-model", default="./model_weights/model.20230410-153553.threeview.69FOV.weights.hdf5")
+    parser.add_argument("--config", default="config/realworld_69FOV.py")
     parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
-    map_obs_path = args.map_obs_path
-    loaded_model = args.load_model
+    module_name = args.config
     is_sparse = args.sparse
     is_visualize = args.visualize
 
+    config = load_config_module(module_name)
+    map_obs_path = config.PathConfig.LOCALIZATION_TEST_PATH
+    loaded_model = config.PathConfig.MODEL_WEIGHTS
+
     # Load pre-trained model & top network
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     # Main loop

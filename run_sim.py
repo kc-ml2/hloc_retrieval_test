@@ -7,8 +7,8 @@ import cv2
 from habitat.utils.visualizations import maps
 import numpy as np
 
-from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from relocalization.sim import HabitatSimWithMap
+from utils.config_import import load_config_module
 from utils.habitat_utils import (
     display_map,
     display_opencv_cam,
@@ -21,6 +21,7 @@ from utils.habitat_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/singleview_90FOV.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
@@ -31,6 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.4view.weights.hdf5")
     parser.add_argument("--map-obs-path", default="./output")
     args, _ = parser.parse_known_args()
+    module_name = args.config
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
     height_json_path = args.map_height_json
@@ -38,12 +40,14 @@ if __name__ == "__main__":
     is_save_all = args.save_all
     is_save_except_rotation = args.save_except_rotation
     is_localization = args.localization
-    loaded_model = args.load_model
-    map_obs_path = args.map_obs_path
 
     check_arg = is_save_all + is_save_except_rotation
     if check_arg >= 2:
         raise ValueError("Argument Error. Put only one flag.")
+
+    config = load_config_module(module_name)
+    map_obs_path = config.PathConfig.LOCALIZATION_TEST_PATH
+    loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
@@ -56,11 +60,11 @@ if __name__ == "__main__":
 
         ResnetBuilder.restrict_gpu_memory()
 
-        with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
             model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)

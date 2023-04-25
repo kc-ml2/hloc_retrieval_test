@@ -7,17 +7,19 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from config.algorithm_config import TestConstant
-from config.env_config import PathConfig
+from utils.config_import import load_config_module
 from utils.network_utils import list_image_name_label_wo_index, preprocess_paired_image_file
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--load-model", required=True)
+    parser.add_argument("--config", default="config/singleview_90FOV.py")
     parser.add_argument("--generate-img", action="store_true")
     args, _ = parser.parse_known_args()
-    loaded_model = args.load_model
+    module_name = args.config
     generate_img = args.generate_img
+
+    config = load_config_module(module_name)
+    loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     correct_directory = "./output/sptm_result/correct/"
     wrong_directory = "./output/sptm_result/wrong/"
@@ -26,8 +28,8 @@ if __name__ == "__main__":
         os.makedirs(correct_directory, exist_ok=True)
         os.makedirs(wrong_directory, exist_ok=True)
 
-    file_directory = PathConfig.TEST_IMAGE_PATH
-    label_directory = PathConfig.TEST_LABEL_PATH
+    file_directory = config.PathConfig.TEST_IMAGE_PATH
+    label_directory = config.PathConfig.TEST_LABEL_PATH
     sorted_image_file = sorted(os.listdir(file_directory))
     with open(label_directory, "r") as label_json:  # pylint: disable=unspecified-encoding
         label_data = json.load(label_json)
@@ -40,10 +42,10 @@ if __name__ == "__main__":
         label_value = label_data[image_name + "_similarity"]
         y_list_for_compare.append(label_value)
 
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         dataset = tf.data.Dataset.from_tensor_slices((image_name_list, y_list))
         dataset = dataset.map(lambda x, y: preprocess_paired_image_file(x, y, file_directory, img_extension))
-        dataset = dataset.batch(TestConstant.BATCH_SIZE)
+        dataset = dataset.batch(config.TestConstant.BATCH_SIZE)
 
         # Test
         model = keras.models.load_model(loaded_model)

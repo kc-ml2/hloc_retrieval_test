@@ -6,40 +6,42 @@ import random
 import cv2
 import numpy as np
 
-from config.algorithm_config import TestConstant
-from config.env_config import ActionConfig, CamThreeViewConfig, DataConfig, PathConfig
 from relocalization.sim import HabitatSimWithMap
+from utils.config_import import load_config_module
 from utils.habitat_utils import draw_point_from_node, open_env_related_files
 from utils.skeletonize_utils import topdown_map_to_graph
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/concat_fourview_90FOV.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--output-path", default="./output")
     parser.add_argument("--not-generate-test-sample", action="store_true")
     parser.add_argument("--map-debug", action="store_true")
     args, _ = parser.parse_known_args()
+    module_name = args.config
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
-    output_path = args.output_path
     height_json_path = args.map_height_json
     not_generate_test_sample = args.not_generate_test_sample
     map_debug = args.map_debug
+
+    config = load_config_module(module_name)
+    output_path = config.PathConfig.LOCALIZATION_TEST_PATH
 
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamThreeViewConfig, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
 
             # Build binary top-down map & skeleton graph
             topdown_map = sim.topdown_map_list[level]
-            graph = topdown_map_to_graph(topdown_map, DataConfig.REMOVE_ISOLATED)
+            graph = topdown_map_to_graph(topdown_map, config.DataConfig.REMOVE_ISOLATED)
 
             if len(list(graph.nodes)) == 0:
                 continue
@@ -67,7 +69,14 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.jpg", color_img)
+                if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
+                    for i in range(config.CamConfig.NUM_CAMERA):
+                        cv2.imwrite(
+                            map_obs_result_path + os.sep + f"{node_id:06d}_{i}.jpg",
+                            color_img[:, i * config.CamConfig.WIDTH : (i + 1) * config.CamConfig.WIDTH, :],
+                        )
+                else:
+                    cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.jpg", color_img)
 
             if not_generate_test_sample:
                 continue
@@ -84,12 +93,16 @@ if __name__ == "__main__":
             # Sample only from explorable area, not outside the wall, not at the wall
             explorable_area_index = list(zip(*np.where(topdown_map == 1)))
 
-            for k in range(TestConstant.NUM_SAMPLING_PER_LEVEL):
+            for k in range(config.TestConstant.NUM_SAMPLING_PER_LEVEL):
                 grid_pos = random.sample(explorable_area_index, 1)[0]
                 sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
 
                 observations = sim.get_cam_observations()
-                color_img = observations["all_view"]
+
+                if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
+                    color_img = observations["front_view"]
+                else:
+                    color_img = observations["all_view"]
 
                 cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
 

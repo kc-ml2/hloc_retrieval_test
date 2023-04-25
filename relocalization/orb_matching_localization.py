@@ -6,7 +6,6 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from config.env_config import DataConfig
 from utils.habitat_utils import draw_point_from_node, highlight_point_from_node
 from utils.skeletonize_utils import topdown_map_to_graph
 
@@ -50,7 +49,7 @@ class OrbMatchingLocalization:
                 self.sample_pos_record = json.load(f)
 
         # Initialize map graph from binary topdown map
-        self.graph = topdown_map_to_graph(binary_topdown_map, DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
+        self.graph = topdown_map_to_graph(binary_topdown_map, config.DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
         self.num_map_graph_nodes = len(self.graph.nodes())
 
         # Initialize graph map from binary topdown map image

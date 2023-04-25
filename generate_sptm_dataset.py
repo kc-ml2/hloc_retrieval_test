@@ -6,9 +6,8 @@ import random
 import cv2
 import networkx as nx
 
-from config.algorithm_config import TrainingConstant
-from config.env_config import ActionConfig, CamNormalConfig, CamThreeViewConfig, DataConfig, PathConfig
 from relocalization.sim import HabitatSimWithMap
+from utils.config_import import load_config_module
 from utils.habitat_utils import open_env_related_files
 from utils.skeletonize_utils import (
     convert_to_binarymap,
@@ -19,29 +18,33 @@ from utils.skeletonize_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/singleview_90FOV.py")
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--train", action="store_true")
     parser.add_argument("--valid", action="store_true")
     parser.add_argument("--test", action="store_true")
     args, _ = parser.parse_known_args()
+    module_name = args.config
     height_json_path = args.map_height_json
     is_train = args.train
     is_valid = args.valid
     is_test = args.test
 
+    config = load_config_module(module_name)
+
     # Set dataset output path according to flag
     if is_train:
         scene_list_file = "./data/scene_list_train.txt"
-        output_image_path = PathConfig.TRAIN_IMAGE_PATH
-        label_json_file = PathConfig.TRAIN_LABEL_PATH
+        output_image_path = config.TRAIN_IMAGE_PATH
+        label_json_file = config.TRAIN_LABEL_PATH
     if is_valid:
         scene_list_file = "./data/scene_list_val_unseen.txt"
-        output_image_path = PathConfig.VALID_IMAGE_PATH
-        label_json_file = PathConfig.VALID_LABEL_PATH
+        output_image_path = config.VALID_IMAGE_PATH
+        label_json_file = config.VALID_LABEL_PATH
     if is_test:
         scene_list_file = "./data/scene_list_test.txt"
-        output_image_path = PathConfig.TEST_IMAGE_PATH
-        label_json_file = PathConfig.TEST_LABEL_PATH
+        output_image_path = config.TEST_IMAGE_PATH
+        label_json_file = config.TEST_LABEL_PATH
 
     # Check if there is only one flag via train, valid, and test
     check_arg = is_train + is_test + is_valid
@@ -56,14 +59,14 @@ if __name__ == "__main__":
     label = {}
     total_scene_num = 0
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamThreeViewConfig, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
 
         print("total scene: ", total_scene_num)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
             topdown_map = sim.topdown_map_list[level]
-            if DataConfig.REMOVE_ISOLATED:
+            if config.DataConfig.REMOVE_ISOLATED:
                 topdown_map = remove_isolated_area(topdown_map)
             binary_map = convert_to_binarymap(topdown_map)
             _, graph = convert_to_dense_topology(binary_map)
@@ -72,7 +75,7 @@ if __name__ == "__main__":
                 continue
 
             # Make ratio of positive & negative samples to be 5:5 with "random() < 0.5"
-            for k in range(TrainingConstant.NUM_SAMPLING_PER_LEVEL):
+            for k in range(config.TrainingConstant.NUM_SAMPLING_PER_LEVEL):
                 # Positive samples
                 if random.random() < 0.5:
                     y = 1
@@ -83,7 +86,7 @@ if __name__ == "__main__":
                         except IndexError:
                             break
                         # Get step between 1 ~ max positive distance
-                        step = random.randint(1, TrainingConstant.POSITIVE_SAMPLE_DISTANCE)
+                        step = random.randint(1, config.TrainingConstant.POSITIVE_SAMPLE_DISTANCE)
                         previous_node = None
                         current_node = start
 
@@ -100,7 +103,10 @@ if __name__ == "__main__":
                     y = 0
                     step = 0
                     max_iteration = 0
-                    min_step = TrainingConstant.POSITIVE_SAMPLE_DISTANCE * TrainingConstant.NEGATIVE_SAMPLE_MULTIPLIER
+                    min_step = (
+                        config.TrainingConstant.POSITIVE_SAMPLE_DISTANCE
+                        * config.TrainingConstant.NEGATIVE_SAMPLE_MULTIPLIER
+                    )
                     while step < min_step:
                         try:
                             start = random.choice(list(graph.nodes))
@@ -116,9 +122,19 @@ if __name__ == "__main__":
 
                 node_list = [start, end]
 
+                if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
+                    view_attr = "front_view"
+                else:
+                    view_attr = "all_view"
+
                 random_rotation = 0
                 for j, node in enumerate(node_list):
-                    if sim.cam_config == CamNormalConfig and j == 1:
+                    if view_attr == "front_view" and j == 1:
+                        random_rotation = random_rotation + random.randint(-30, 30)
+                        pos, random_rotation = sim.set_state_from_grid(
+                            graph.nodes[node]["o"], level, rotation=random_rotation
+                        )
+                    if sim.cam_config.NUM_CAMERA == 1 and not sim.cam_config.RGB_360_SENSOR and j == 1:
                         random_rotation = random_rotation + random.randint(-30, 30)
                         pos, random_rotation = sim.set_state_from_grid(
                             graph.nodes[node]["o"], level, rotation=random_rotation
@@ -126,7 +142,7 @@ if __name__ == "__main__":
                     else:
                         pos, random_rotation = sim.set_state_from_grid(graph.nodes[node]["o"], level)
                     observations = sim.get_cam_observations()
-                    color_img = observations["all_view"]
+                    color_img = observations[view_attr]
 
                     cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{level:06d}_{k:06d}_{j}.jpg", color_img)
                     label_pos = {

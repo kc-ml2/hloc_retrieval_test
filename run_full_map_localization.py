@@ -4,29 +4,31 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from config.env_config import ActionConfig, CamFourViewConfig, PathConfig
 from network.resnet import ResnetBuilder
 from relocalization.localization import Localization
 from relocalization.sim import HabitatSimWithMap
+from utils.config_import import load_config_module
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/singleview_90FOV.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--map-obs-path", default="./output_single_view")
-    parser.add_argument("--load-model", default="./model_weights/model.20230208-194210.singleview.90FOV.weights.hdf5")
     parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
+    module_name = args.config
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
     height_json_path = args.map_height_json
-    map_obs_path = args.map_obs_path
-    loaded_model = args.load_model
     is_sparse = args.sparse
     is_visualize = args.visualize
+
+    config = load_config_module(module_name)
+    map_obs_path = config.PathConfig.LOCALIZATION_TEST_PATH
+    loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
@@ -41,7 +43,7 @@ if __name__ == "__main__":
                 test_num_level = test_num_level + 1
 
     # Load pre-trained model & top network
-    with tf.device(f"/device:GPU:{PathConfig.GPU_ID}"):
+    with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
 
     # Main loop
@@ -51,7 +53,7 @@ if __name__ == "__main__":
     total_samples = 0
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, CamFourViewConfig, ActionConfig, PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
         observation_path = os.path.join(map_obs_path, f"observation_{scene_number}")
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
