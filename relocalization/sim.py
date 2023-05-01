@@ -14,22 +14,22 @@ from utils.habitat_utils import make_cfg, make_sim_setting_dict
 class HabitatSimWithMap(habitat_sim.Simulator):
     """Inheritance instance of habitat_sim.Simulator. This class inlcudes config init, map loading, agent init."""
 
-    def __init__(self, scene_number, cam_config, action_config, path_config, height_data=None):
+    def __init__(self, scene_number, config, height_data=None):
         self.scene_number = scene_number
         self.height_data = height_data
-        self.cam_config = cam_config
+        self.cam_config = config.CamConfig
 
         # Make config
-        scene = path_config.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
-        sim_settings = make_sim_setting_dict(scene, cam_config, action_config)
+        scene = config.PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
+        sim_settings = make_sim_setting_dict(scene, config.CamConfig, config.ActionConfig)
         cfg = make_cfg(sim_settings)
 
         super().__init__(cfg)
 
         # Set Flag
-        self.num_camera = cam_config.NUM_CAMERA
+        self.num_camera = config.CamConfig.NUM_CAMERA
         self.four_view_angle = quaternion.from_rotation_vector([0, np.pi / 2, 0])
-        self.blank_line = np.zeros([cam_config.HEIGHT, 50, 3]).astype(np.uint8)
+        self.blank_line = np.zeros([config.CamConfig.HEIGHT, 50, 3]).astype(np.uint8)
 
         # Set seed
         random.seed(sim_settings["seed"])
@@ -123,7 +123,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         """Inherit the 'get_sensor_observations' method of the parent class."""
         cam_observations = {"all_view": None}
 
-        if self.num_camera == 4 or self.num_camera == 3:
+        if self.num_camera in (3, 4):
             cam_observations.update({"front_view": None, "right_view": None, "back_view": None, "left_view": None})
 
             # Store original view for agent state restoration

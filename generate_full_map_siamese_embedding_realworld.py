@@ -23,7 +23,7 @@ if __name__ == "__main__":
     output_size_list = []
 
     with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
-        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
+        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model, config.NetworkConstant)
 
     # Set file path
     map_cache_index = "map_node_observation_level_0"
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # Set output npy file name
     localization = LocalizationRealWorld(
-        top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True, num_frames_per_node=1
+        config, top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True
     )
     map_output = localization.map_embedding_file
     sample_output = localization.sample_embedding_file

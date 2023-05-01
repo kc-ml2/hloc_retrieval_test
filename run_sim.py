@@ -58,13 +58,13 @@ if __name__ == "__main__":
         from network.resnet import ResnetBuilder  # pylint: disable=ungrouped-imports
         from relocalization.localization import Localization  # pylint: disable=ungrouped-imports
 
-        ResnetBuilder.restrict_gpu_memory()
+        ResnetBuilder.restrict_gpu_memory(config)
 
         with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
-            model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
+            model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model, config.NetworkConstant)
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
@@ -88,6 +88,7 @@ if __name__ == "__main__":
                 )
                 # Initialize localization instance
                 localization = Localization(
+                    config,
                     top_network,
                     bottom_network,
                     current_map_dir,
@@ -123,6 +124,7 @@ if __name__ == "__main__":
                         map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{current_level}"
                     )
                     localization = Localization(
+                        config,
                         top_network,
                         bottom_network,
                         current_map_dir,

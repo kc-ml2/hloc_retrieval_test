@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # Load pre-trained model & top network
     with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
-        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
+        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model, config.NetworkConstant)
 
     # Main loop
     total_accuracy = []
@@ -37,21 +37,21 @@ if __name__ == "__main__":
     sample_dir = os.path.join(map_obs_path, "test_sample_0")
 
     localization = LocalizationRealWorld(
+        config,
         top_network,
         bottom_network,
         map_obs_dir,
         sample_dir=sample_dir,
         sparse_map=is_sparse,
         visualize=is_visualize,
-        num_frames_per_node=1,
     )
 
     # localization = OrbMatchingLocalizationRealWorld(
+    #     config,
     #     map_obs_dir=map_obs_dir,
     #     sample_dir=sample_dir,
     #     sparse_map=is_sparse,
     #     visualize=is_visualize,
-    #     num_frames_per_node=1,
     # )
 
     accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample()

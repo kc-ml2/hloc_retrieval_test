@@ -34,7 +34,7 @@ if __name__ == "__main__":
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)

@@ -33,7 +33,7 @@ if __name__ == "__main__":
         print(scene_number)
         print(generated_scene_num)
 
-        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig)
+        sim = HabitatSimWithMap(scene_number, config)
 
         # Sample random maps & get the largest maps by levels
         recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(

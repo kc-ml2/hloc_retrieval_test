@@ -15,18 +15,23 @@ class OrbMatchingLocalization:
 
     def __init__(
         self,
+        config,
         map_obs_dir,
         sample_dir=None,
         binary_topdown_map=None,
         visualize=False,
         sparse_map=False,
-        num_frames_per_node=1,
     ):
         """Initialize localization instance with specific model & map data."""
         self.map_obs_dir = map_obs_dir
         self.sample_dir = sample_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
+
+        if config.CamConfig.IMAGE_CONCAT is True:
+            self.num_frames_per_node = 1
+        else:
+            self.num_frames_per_node = config.CamConfig.NUM_CAMERA
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
@@ -76,11 +81,11 @@ class OrbMatchingLocalization:
         num_nonetype = 0
 
         if self.is_sparse_map:
-            map_obs_file_list = map_obs_file_list[: num_frames_per_node * self.num_map_graph_nodes]
+            map_obs_file_list = map_obs_file_list[: self.num_frames_per_node * self.num_map_graph_nodes]
 
-        for i in range(0, len(map_obs_file_list), num_frames_per_node):
+        for i in range(0, len(map_obs_file_list), self.num_frames_per_node):
             frame_list = []
-            for k in range(num_frames_per_node):
+            for k in range(self.num_frames_per_node):
                 frame_list.append(cv2.imread(map_obs_file_list[i + k]))
             db_image = np.concatenate(frame_list, axis=1)
             _, db_des = self.orb.detectAndCompute(db_image, None)

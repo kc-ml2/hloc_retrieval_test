@@ -22,6 +22,7 @@ class CamConfig:
     WIDTH = 512
     HEIGHT = 256
     SENSOR_HEIGHT = 0.5
+    # Don't fix assert code below
     if RGB_360_SENSOR:
         assert RGB_SENSOR is False
         assert NUM_CAMERA == 1
@@ -58,8 +59,11 @@ class TestConstant:
 
 class NetworkConstant:
     # Input size
-    NET_WIDTH = 512
-    NET_HEIGHT = 256
+    if CamConfig.IMAGE_CONCAT is False:
+        NET_WIDTH = CamConfig.WIDTH
+    else:
+        NET_WIDTH = CamConfig.WIDTH * CamConfig.NUM_CAMERA
+    NET_HEIGHT = CamConfig.HEIGHT
     NET_CHANNELS = 3
     # Architecture
     NUM_EMBEDDING = 256

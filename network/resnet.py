@@ -12,9 +12,6 @@ from keras.regularizers import l2
 import six
 import tensorflow as tf
 
-NUM_EMBEDDING = config.NetworkConstant.NUM_EMBEDDING
-TOP_HIDDEN = config.NetworkConstant.TOP_HIDDEN
-
 ROW_AXIS = 1
 COL_AXIS = 2
 CHANNEL_AXIS = 3
@@ -180,15 +177,6 @@ def _get_block(identifier):
     return identifier
 
 
-def _top_network(input):
-    raw_result = _bn_relu(input)
-    for _ in range(TOP_HIDDEN):
-        raw_result = Dense(units=NUM_EMBEDDING, kernel_initializer="he_normal")(raw_result)
-        raw_result = _bn_relu(raw_result)
-    output = Dense(units=2, activation="softmax", kernel_initializer="he_normal")(raw_result)
-    return output
-
-
 class ResnetBuilder:
     @staticmethod
     def build(input_shape, num_outputs, block_fn, repetitions, is_classification):
@@ -239,9 +227,9 @@ class ResnetBuilder:
         return ResnetBuilder.build(input_shape, num_outputs, basic_block, [2, 2, 2, 2], is_classification)
 
     @staticmethod
-    def build_siamese_top_network(edge_model):
-        number_of_top_layers = 3 + TOP_HIDDEN * 3
-        input = Input(shape=(2 * NUM_EMBEDDING,))
+    def build_siamese_top_network(edge_model, top_hidden, num_embedding):
+        number_of_top_layers = 3 + top_hidden * 3
+        input = Input(shape=(2 * num_embedding,))
         output = edge_model.layers[-number_of_top_layers](input)
         for index in range(-number_of_top_layers + 1, 0):
             output = edge_model.layers[index](output)
@@ -256,72 +244,53 @@ class ResnetBuilder:
         return Model(inputs=input, outputs=output)
 
     @staticmethod
-    def build_anchor_network(edge_model, input_shape):
-        height, width, channels = input_shape
-        input = Input(shape=(height, width, channels))
-        branch = edge_model.layers[2]
-        output = branch(input)
-        return Model(inputs=input, outputs=output)
+    def _top_network(input, top_hidden, num_embedding):
+        raw_result = _bn_relu(input)
+        for _ in range(top_hidden):
+            raw_result = Dense(units=num_embedding, kernel_initializer="he_normal")(raw_result)
+            raw_result = _bn_relu(raw_result)
+        output = Dense(units=2, activation="softmax", kernel_initializer="he_normal")(raw_result)
+        return output
 
     @staticmethod
-    def build_target_network(edge_model, input_shape):
-        height, width, channels = input_shape
-        input = Input(shape=(height, width, channels))
-        branch = edge_model.layers[3]
-        output = branch(input)
-        return Model(inputs=input, outputs=output)
-
-    @staticmethod
-    def build_siamese_resnet_18(input_shape):
+    def build_siamese_resnet_18(input_shape, top_hidden, num_embedding):
         height, width, channels = input_shape
         input = Input(shape=(height, width, channels))
         branch_channels = 3  # channels / 2
         branch_input_shape = (height, width, branch_channels)
-        branch = ResnetBuilder.build_resnet_18(branch_input_shape, NUM_EMBEDDING, False)
+        branch = ResnetBuilder.build_resnet_18(branch_input_shape, num_embedding, False)
         first_branch = branch(Lambda(lambda x: x[:, :, :, :3])(input))
         second_branch = branch(Lambda(lambda x: x[:, :, :, 3:])(input))
         raw_result = Concatenate(axis=1)([first_branch, second_branch])
-        output = _top_network(raw_result)
+        output = ResnetBuilder._top_network(raw_result, top_hidden, num_embedding)
 
         return Model(inputs=input, outputs=output)
 
     @staticmethod
-    def build_double_branch_resnet_18(anchor_input_shape, target_input_shape):
-        anchor_input = Input(shape=anchor_input_shape)
-        target_input = Input(shape=target_input_shape)
-
-        anchor_branch = ResnetBuilder.build_resnet_18(anchor_input_shape, NUM_EMBEDDING, False)
-        target_branch = ResnetBuilder.build_resnet_18(target_input_shape, NUM_EMBEDDING, False)
-
-        anchor_result = anchor_branch(anchor_input)
-        target_result = target_branch(target_input)
-
-        raw_result = Concatenate(axis=1)([anchor_result, target_result])
-        output = _top_network(raw_result)
-
-        return Model(inputs=(anchor_input, target_input), outputs=output)
-
-    @staticmethod
-    def load_siamese_model(loaded_model):
+    def load_siamese_model(loaded_model, network_config):
         siamese = ResnetBuilder.build_siamese_resnet_18
         model = siamese(
             (
-                config.NetworkConstant.NET_HEIGHT,
-                config.NetworkConstant.NET_WIDTH,
-                2 * config.NetworkConstant.NET_CHANNELS,
-            )
+                network_config.NET_HEIGHT,
+                network_config.NET_WIDTH,
+                2 * network_config.NET_CHANNELS,
+            ),
+            network_config.TOP_HIDDEN,
+            network_config.NUM_EMBEDDING,
         )
         model.load_weights(loaded_model, by_name=True)
-        top_network = ResnetBuilder.build_siamese_top_network(model)
+        top_network = ResnetBuilder.build_siamese_top_network(
+            model, network_config.TOP_HIDDEN, network_config.NUM_EMBEDDING
+        )
         bottom_network = ResnetBuilder.build_bottom_network(
             model,
-            (config.NetworkConstant.NET_HEIGHT, config.NetworkConstant.NET_WIDTH, config.NetworkConstant.NET_CHANNELS),
+            (network_config.NET_HEIGHT, network_config.NET_WIDTH, network_config.NET_CHANNELS),
         )
 
         return model, top_network, bottom_network
 
     @staticmethod
-    def restrict_gpu_memory():
+    def restrict_gpu_memory(config):
         gpus = tf.config.experimental.list_physical_devices("GPU")
         if gpus:
             try:

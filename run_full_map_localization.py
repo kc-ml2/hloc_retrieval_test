@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     # Load pre-trained model & top network
     with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
-        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
+        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model, config.NetworkConstant)
 
     # Main loop
     total_accuracy = []
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     total_samples = 0
 
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config, height_data)
         observation_path = os.path.join(map_obs_path, f"observation_{scene_number}")
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
@@ -69,6 +69,7 @@ if __name__ == "__main__":
             sample_dir = os.path.join(observation_path, f"test_sample_{level}")
 
             localization = Localization(
+                config,
                 top_network,
                 bottom_network,
                 map_obs_dir,
@@ -76,7 +77,6 @@ if __name__ == "__main__":
                 binary_topdown_map=binary_topdown_map,
                 sparse_map=is_sparse,
                 visualize=is_visualize,
-                num_frames_per_node=4,
             )
 
             accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample(

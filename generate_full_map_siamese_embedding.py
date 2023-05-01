@@ -30,7 +30,7 @@ if __name__ == "__main__":
     output_size_list = []
 
     with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
-        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model)
+        model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model, config.NetworkConstant)
 
     # Open files
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
@@ -64,12 +64,12 @@ if __name__ == "__main__":
 
             # Set output npy file name
             localization = Localization(
+                config,
                 top_network,
                 bottom_network,
                 map_obs_dir,
                 sample_dir=sample_dir,
                 instance_only=True,
-                num_frames_per_node=1,
             )
             map_output = localization.map_embedding_file
             sample_output = localization.sample_embedding_file

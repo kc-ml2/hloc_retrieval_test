@@ -65,7 +65,9 @@ if __name__ == "__main__":
                 config.NetworkConstant.NET_HEIGHT,
                 config.NetworkConstant.NET_WIDTH,
                 2 * config.NetworkConstant.NET_CHANNELS,
-            )
+            ),
+            config.NetworkConstant.TOP_HIDDEN,
+            config.NetworkConstant.NUM_EMBEDDING,
         )
 
         adam = keras.optimizers.Adam(

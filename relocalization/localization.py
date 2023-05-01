@@ -15,6 +15,7 @@ class Localization:
 
     def __init__(
         self,
+        config,
         top_network,
         bottom_network,
         map_obs_dir,
@@ -24,13 +25,18 @@ class Localization:
         instance_only=False,
         visualize=False,
         sparse_map=False,
-        num_frames_per_node=1,
     ):
         """Initialize localization instance with specific model & map data."""
+        self.config = config
         self.map_obs_dir = map_obs_dir
         self.sample_dir = sample_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
+
+        if config.CamConfig.IMAGE_CONCAT is True:
+            self.num_frames_per_node = 1
+        else:
+            self.num_frames_per_node = config.CamConfig.NUM_CAMERA
 
         with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
             self.top_network = top_network
@@ -59,7 +65,6 @@ class Localization:
             )
 
             # Initialize emny matrix and parameters for handling embeddings
-            self.num_frames_per_node = num_frames_per_node
             self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
             self.num_map_graph_nodes = len(self.graph.nodes())
             self.dimension_map_embedding = config.NetworkConstant.NUM_EMBEDDING
@@ -109,7 +114,7 @@ class Localization:
     def calculate_embedding_from_observation(self, observation):
         """Calculate siamese embedding from observation image with botton network."""
         observation = cv2.cvtColor(observation, cv2.COLOR_BGR2RGB)
-        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
+        with tf.device(f"/device:GPU:{self.config.PathConfig.GPU_ID}"):
             regulized_img = tf.image.convert_image_dtype(observation, tf.float32)
             obs_embedding = self.bottom_network.predict_on_batch(np.expand_dims(regulized_img, axis=0))
 
@@ -122,7 +127,7 @@ class Localization:
 
         self.input_embedding_mat[:, self.dimension_map_embedding :] = observation_embedding
 
-        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
+        with tf.device(f"/device:GPU:{self.config.PathConfig.GPU_ID}"):
             predictions = self.top_network.predict_on_batch(self.input_embedding_mat)
 
         similarity = predictions[:, 1]

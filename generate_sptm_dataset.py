@@ -59,7 +59,7 @@ if __name__ == "__main__":
     label = {}
     total_scene_num = 0
     for scene_number in scene_list:
-        sim = HabitatSimWithMap(scene_number, config.CamConfig, config.ActionConfig, config.PathConfig, height_data)
+        sim = HabitatSimWithMap(scene_number, config, height_data)
 
         print("total scene: ", total_scene_num)
 
