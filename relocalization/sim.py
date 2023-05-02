@@ -17,7 +17,14 @@ class HabitatSimWithMap(habitat_sim.Simulator):
     def __init__(self, scene_number, config, height_data=None):
         self.scene_number = scene_number
         self.height_data = height_data
-        self.cam_config = config.CamConfig
+
+        # Check if camera config is valid
+        if config.CamConfig.RGB_360_SENSOR:
+            assert config.CamConfig.RGB_SENSOR is False
+            assert config.CamConfig.NUM_CAMERA == 1
+        if config.CamConfig.IMAGE_CONCAT:
+            assert config.CamConfig.NUM_CAMERA > 1
+            assert config.CamConfig.RGB_360_SENSOR is False
 
         # Make config
         scene = config.PathConfig.SCENE_DIRECTORY + os.sep + scene_number + os.sep + scene_number + ".glb"
@@ -26,10 +33,17 @@ class HabitatSimWithMap(habitat_sim.Simulator):
 
         super().__init__(cfg)
 
-        # Set Flag
+        # Set constants and flags
         self.num_camera = config.CamConfig.NUM_CAMERA
         self.four_view_angle = quaternion.from_rotation_vector([0, np.pi / 2, 0])
         self.blank_line = np.zeros([config.CamConfig.HEIGHT, 50, 3]).astype(np.uint8)
+
+        if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
+            self.single_view_inference_only = True
+            self.inference_view_attr = "front_view"
+        else:
+            self.single_view_inference_only = False
+            self.inference_view_attr = "all_view"
 
         # Set seed
         random.seed(sim_settings["seed"])
@@ -94,7 +108,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         self.closest_level = average_list.index(min(average_list))
         self.recolored_topdown_map = self.recolored_topdown_map_list[self.closest_level]
 
-    def set_state_from_grid(self, grid_pos, level, rotation=None):
+    def set_state_from_grid(self, grid_pos, level, manual_rotation=None):
         """Set agent state from position from grid."""
         agent_state = habitat_sim.AgentState()
         pos = maps.from_grid(
@@ -105,8 +119,8 @@ class HabitatSimWithMap(habitat_sim.Simulator):
             self.pathfinder,
         )
 
-        if bool(rotation):
-            current_rotation = rotation
+        if bool(manual_rotation):
+            current_rotation = manual_rotation
         else:
             current_rotation = random.randint(0, 359)
 

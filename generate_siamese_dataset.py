@@ -122,27 +122,21 @@ if __name__ == "__main__":
 
                 node_list = [start, end]
 
-                if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
-                    view_attr = "front_view"
-                else:
-                    view_attr = "all_view"
-
                 random_rotation = 0
                 for j, node in enumerate(node_list):
-                    if view_attr == "front_view" and j == 1:
-                        random_rotation = random_rotation + random.randint(-30, 30)
-                        pos, random_rotation = sim.set_state_from_grid(
-                            graph.nodes[node]["o"], level, rotation=random_rotation
-                        )
-                    if sim.cam_config.NUM_CAMERA == 1 and not sim.cam_config.RGB_360_SENSOR and j == 1:
-                        random_rotation = random_rotation + random.randint(-30, 30)
-                        pos, random_rotation = sim.set_state_from_grid(
-                            graph.nodes[node]["o"], level, rotation=random_rotation
-                        )
+                    if j == 1:
+                        if config.CamConfig.IMAGE_CONCAT or config.CamConfig.RGB_360_SENSOR:
+                            pos, random_rotation = sim.set_state_from_grid(graph.nodes[node]["o"], level)
+                        else:
+                            random_rotation = random_rotation + random.randint(-30, 30)
+                            pos, random_rotation = sim.set_state_from_grid(
+                                graph.nodes[node]["o"], level, manual_rotation=random_rotation
+                            )
                     else:
                         pos, random_rotation = sim.set_state_from_grid(graph.nodes[node]["o"], level)
+
                     observations = sim.get_cam_observations()
-                    color_img = observations[view_attr]
+                    color_img = observations[sim.inference_view_attr]
 
                     cv2.imwrite(output_image_path + os.sep + f"{scene_number}_{level:06d}_{k:06d}_{j}.jpg", color_img)
                     label_pos = {

@@ -8,7 +8,7 @@ class PathConfig:
     VALID_LABEL_PATH = "/data1/chlee/label_val_real_view.json"
     TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view/test_images"
     TEST_LABEL_PATH = "/data1/chlee/label_test_real_view.json"
-    MODEL_WEIGHTS = "model.20230331-142500.singleview.69FOV.weights.hdf5"
+    MODEL_WEIGHTS = "./model_weights/model.20230331-142500.singleview.69FOV.weights.hdf5"
     GPU_ID = 1
 
 
@@ -22,13 +22,6 @@ class CamConfig:
     WIDTH = 256
     HEIGHT = 192
     SENSOR_HEIGHT = 0.34
-    # Don't fix assert code below
-    if RGB_360_SENSOR:
-        assert RGB_SENSOR is False
-        assert NUM_CAMERA == 1
-    if IMAGE_CONCAT:
-        assert NUM_CAMERA > 1
-        assert RGB_360_SENSOR is False
 
 
 class ActionConfig:

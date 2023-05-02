@@ -69,7 +69,7 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
+                if sim.single_view_inference_only:
                     for i in range(config.CamConfig.NUM_CAMERA):
                         cv2.imwrite(
                             map_obs_result_path + os.sep + f"{node_id:06d}_{i}.jpg",
@@ -98,11 +98,7 @@ if __name__ == "__main__":
                 sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
 
                 observations = sim.get_cam_observations()
-
-                if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
-                    color_img = observations["front_view"]
-                else:
-                    color_img = observations["all_view"]
+                color_img = observations[sim.inference_view_attr]
 
                 cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
 

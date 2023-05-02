@@ -1,5 +1,5 @@
 class PathConfig:
-    LOCALIZATION_TEST_PATH = ""
+    LOCALIZATION_TEST_PATH = "./output/output_quirectangular/"
     # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset/images"
@@ -8,7 +8,7 @@ class PathConfig:
     VALID_LABEL_PATH = "/data1/chlee/label_val.json"
     TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset/test_images"
     TEST_LABEL_PATH = "/data1/chlee/label_test.json"
-    MODEL_WEIGHTS = "model0929.32batch.equirectangularview.93acc.weights.hdf5"
+    MODEL_WEIGHTS = "./model_weights/model0929.32batch.equirectangularview.93acc.weights.hdf5"
     GPU_ID = 1
 
 
@@ -22,13 +22,6 @@ class CamConfig:
     WIDTH = 512
     HEIGHT = 256
     SENSOR_HEIGHT = 0.5
-    # Don't fix assert code below
-    if RGB_360_SENSOR:
-        assert RGB_SENSOR is False
-        assert NUM_CAMERA == 1
-    if IMAGE_CONCAT:
-        assert NUM_CAMERA > 1
-        assert RGB_360_SENSOR is False
 
 
 class ActionConfig:
