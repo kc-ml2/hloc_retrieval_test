@@ -15,7 +15,7 @@ class LocalizationRealWorld:
         top_network,
         bottom_network,
         map_obs_dir,
-        sample_dir=None,
+        query_dir=None,
         load_cache=True,
         instance_only=False,
         visualize=False,
@@ -24,7 +24,7 @@ class LocalizationRealWorld:
         """Initialize localization instance with specific model & map data."""
         self.config = config
         self.map_obs_dir = map_obs_dir
-        self.sample_dir = sample_dir
+        self.query_dir = query_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
@@ -50,13 +50,13 @@ class LocalizationRealWorld:
         with open(self.map_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
             self.map_pos_record = json.load(f)
 
-        if self.sample_dir:
-            sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            self.sample_embedding_file = os.path.join(observation_path, f"siamese_embedding_{sample_cache_index}.npy")
-            self.sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
+        if self.query_dir:
+            query_cache_index = os.path.basename(os.path.normpath(query_dir))
+            self.query_embedding_file = os.path.join(observation_path, f"siamese_embedding_{query_cache_index}.npy")
+            self.query_pos_record_file = os.path.join(observation_path, f"pos_record_{query_cache_index}.json")
 
-            with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
-                self.sample_pos_record = json.load(f)
+            with open(self.query_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
+                self.query_pos_record = json.load(f)
 
         if instance_only is False:
             # Initialize emny matrix and parameters for handling embeddings
@@ -92,15 +92,15 @@ class LocalizationRealWorld:
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
     def _load_cache(self):
-        """Load cached npy embedding file from map & sample observations."""
+        """Load cached npy embedding file from map & query observations."""
         with open(self.map_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
             map_embedding_mat = np.load(f)
             if np.shape(map_embedding_mat)[0] != self.num_map_embedding:
                 raise ValueError("Dimension of the cache file is different with map record.")
 
-        if self.sample_dir:
-            with open(self.sample_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
-                self.sample_embedding_mat = np.load(f)
+        if self.query_dir:
+            with open(self.query_embedding_file, "rb") as f:  # pylint: disable=unspecified-encoding
+                self.query_embedding_mat = np.load(f)
 
         self.input_embedding_mat[:, : self.dimension_map_embedding] = map_embedding_mat[
             : self.num_frames_per_node * self.num_map_graph_nodes
@@ -148,10 +148,10 @@ class LocalizationRealWorld:
 
                     predicted_img = np.concatenate(frame_list, axis=1)
 
-                _, sample_des = self.orb.detectAndCompute(current_img, None)
+                _, query_des = self.orb.detectAndCompute(current_img, None)
                 _, predicted_des = self.orb.detectAndCompute(predicted_img, None)
 
-                predicted_matches = self.bf.match(sample_des, predicted_des)
+                predicted_matches = self.bf.match(query_des, predicted_des)
                 predicted_matches = sorted(predicted_matches, key=lambda x: x.distance)
                 predicted_matches = predicted_matches[:30]
 
@@ -162,21 +162,21 @@ class LocalizationRealWorld:
 
         return map_node_with_max_value, high_similarity_set, similarity
 
-    def iterate_localization_with_sample(self):
-        """Execute localization & visualize with test sample iteratively."""
+    def iterate_localization_with_query(self):
+        """Execute localization & visualize with test query iteratively."""
         accuracy_list = []
         d1_list = []
         d2_list = []
         i = 0
 
-        for i, sample_embedding in enumerate(self.sample_embedding_mat):
-            print("Sample index: ", i)
-            sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-            sample_img = cv2.imread(sample_path)
-            # result = self.localize_with_observation(sample_embedding, current_img=sample_img)
-            result = self.localize_with_observation(sample_embedding)
+        for i, query_embedding in enumerate(self.query_embedding_mat):
+            print("query index: ", i)
+            query_path = os.path.join(self.query_dir, f"{i:06d}.jpg")
+            query_img = cv2.imread(query_path)
+            # result = self.localize_with_observation(query_embedding, current_img=query_img)
+            result = self.localize_with_observation(query_embedding)
 
-            grid_pos = np.array(self.sample_pos_record[f"{i:06d}_grid"])
+            grid_pos = np.array(self.query_pos_record[f"{i:06d}_grid"])
 
             accuracy = self.evaluate_accuracy(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
@@ -187,7 +187,7 @@ class LocalizationRealWorld:
             d2_list.append(d2)
 
             if self.is_visualize:
-                print("Sample No.: ", i)
+                print("query No.: ", i)
                 print("Accuracy", accuracy)
                 print("Pose D: ", d1)
                 print("Node D: ", d2)
@@ -214,16 +214,16 @@ class LocalizationRealWorld:
                         true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
                         true_img = np.concatenate(true_img_list, axis=1)
 
-                    sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-                    sample_img = cv2.imread(sample_path)
+                    query_path = os.path.join(self.query_dir, f"{i:06d}.jpg")
+                    query_img = cv2.imread(query_path)
                     blank_img = np.zeros([10, predicted_img.shape[1], 3], dtype=np.uint8)
 
                     if self.num_frames_per_node == 1:
-                        match_img = np.concatenate([sample_img, blank_img, predicted_img, blank_img, true_img], axis=0)
+                        match_img = np.concatenate([query_img, blank_img, predicted_img, blank_img, true_img], axis=0)
                     else:
                         padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)
-                        x_offset = predicted_img.shape[1] // 2 - sample_img.shape[1] // 2
-                        padded_img[:, x_offset : x_offset + sample_img.shape[1], :] = sample_img
+                        x_offset = predicted_img.shape[1] // 2 - query_img.shape[1] // 2
+                        padded_img[:, x_offset : x_offset + query_img.shape[1], :] = query_img
                         match_img = np.concatenate([padded_img, blank_img, predicted_img, blank_img, true_img], axis=0)
 
                     cv2.namedWindow("localization", cv2.WINDOW_NORMAL)

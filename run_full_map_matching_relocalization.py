@@ -43,7 +43,7 @@ if __name__ == "__main__":
     total_accuracy = []
     total_d1 = []
     total_d2 = []
-    total_samples = 0
+    total_queries = 0
 
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, config, height_data)
@@ -59,30 +59,30 @@ if __name__ == "__main__":
 
             # Set file path
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
-            sample_dir = os.path.join(observation_path, f"test_sample_{level}")
+            query_dir = os.path.join(observation_path, f"test_query_{level}")
 
             # Initialize localization instance
             localization = OrbMatchingLocalization(
                 config,
                 map_obs_dir=map_obs_dir,
-                sample_dir=sample_dir,
+                query_dir=query_dir,
                 binary_topdown_map=binary_topdown_map,
                 sparse_map=is_sparse,
                 visualize=is_visualize,
             )
 
-            accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample()
+            accuracy_list, d1_list, d2_list, num_queries = localization.iterate_localization_with_query()
 
             total_accuracy = total_accuracy + accuracy_list
             total_d1 = total_d1 + d1_list
             total_d2 = total_d2 + d2_list
-            total_samples = total_samples + num_samples
+            total_queries = total_queries + num_queries
 
         sim.close()
 
-    print("Accuracy: ", sum(total_accuracy) / total_samples)
+    print("Accuracy: ", sum(total_accuracy) / total_queries)
     print("Accuracy std: ", np.std(total_accuracy))
-    print("Distance 1: ", (sum(total_d1) / total_samples) * 0.1)
+    print("Distance 1: ", (sum(total_d1) / total_queries) * 0.1)
     print("Distance 1 std: ", np.std(total_d1) * 0.1)
-    print("Distance 2: ", (sum(total_d2) / total_samples) * 0.1)
+    print("Distance 2: ", (sum(total_d2) / total_queries) * 0.1)
     print("Distance 2 std: ", np.std(total_d2) * 0.1)

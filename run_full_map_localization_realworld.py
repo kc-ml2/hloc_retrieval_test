@@ -30,18 +30,18 @@ if __name__ == "__main__":
     total_accuracy = []
     total_d1 = []
     total_d2 = []
-    total_samples = 0
+    total_queries = 0
 
     # Set file path
     map_obs_dir = os.path.join(map_obs_path, "map_node_observation_level_0")
-    sample_dir = os.path.join(map_obs_path, "test_sample_0")
+    query_dir = os.path.join(map_obs_path, "test_query_0")
 
     localization = LocalizationRealWorld(
         config,
         top_network,
         bottom_network,
         map_obs_dir,
-        sample_dir=sample_dir,
+        query_dir=query_dir,
         sparse_map=is_sparse,
         visualize=is_visualize,
     )
@@ -49,21 +49,21 @@ if __name__ == "__main__":
     # localization = OrbMatchingLocalizationRealWorld(
     #     config,
     #     map_obs_dir=map_obs_dir,
-    #     sample_dir=sample_dir,
+    #     query_dir=query_dir,
     #     sparse_map=is_sparse,
     #     visualize=is_visualize,
     # )
 
-    accuracy_list, d1_list, d2_list, num_samples = localization.iterate_localization_with_sample()
+    accuracy_list, d1_list, d2_list, num_queries = localization.iterate_localization_with_query()
 
     total_accuracy = total_accuracy + accuracy_list
     total_d1 = total_d1 + d1_list
     total_d2 = total_d2 + d2_list
-    total_samples = total_samples + num_samples
+    total_queries = total_queries + num_queries
 
-    print("Accuracy: ", sum(total_accuracy) / total_samples)
+    print("Accuracy: ", sum(total_accuracy) / total_queries)
     print("Accuracy std: ", np.std(total_accuracy))
-    print("Distance 1: ", (sum(total_d1) / total_samples) * 0.1)
+    print("Distance 1: ", (sum(total_d1) / total_queries) * 0.1)
     print("Distance 1 std: ", np.std(total_d1) * 0.1)
-    print("Distance 2: ", (sum(total_d2) / total_samples) * 0.1)
+    print("Distance 2: ", (sum(total_d2) / total_queries) * 0.1)
     print("Distance 2 std: ", np.std(total_d2) * 0.1)

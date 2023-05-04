@@ -17,14 +17,14 @@ class OrbMatchingLocalization:
         self,
         config,
         map_obs_dir,
-        sample_dir=None,
+        query_dir=None,
         binary_topdown_map=None,
         visualize=False,
         sparse_map=False,
     ):
         """Initialize localization instance with specific model & map data."""
         self.map_obs_dir = map_obs_dir
-        self.sample_dir = sample_dir
+        self.query_dir = query_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
@@ -44,14 +44,14 @@ class OrbMatchingLocalization:
         sorted_map_obs_id = sorted(os.listdir(map_obs_dir))
         map_obs_file_list = [map_obs_dir + os.sep + file for file in sorted_map_obs_id]
 
-        if self.sample_dir:
-            sorted_test_sample_file = sorted(os.listdir(sample_dir))
-            self.sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
-            sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            self.sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
+        if self.query_dir:
+            sorted_test_query_file = sorted(os.listdir(query_dir))
+            self.query_list = [query_dir + os.sep + file for file in sorted_test_query_file]
+            query_cache_index = os.path.basename(os.path.normpath(query_dir))
+            self.query_pos_record_file = os.path.join(observation_path, f"pos_record_{query_cache_index}.json")
 
-            with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
-                self.sample_pos_record = json.load(f)
+            with open(self.query_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
+                self.query_pos_record = json.load(f)
 
         # Initialize map graph from binary topdown map
         self.graph = topdown_map_to_graph(binary_topdown_map, config.DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map)
@@ -103,13 +103,13 @@ class OrbMatchingLocalization:
         num_nonetype = 0
         self.desc_query = []
 
-        for sample_obs_file in self.sample_list:
-            sample_image = cv2.imread(sample_obs_file)
-            _, sample_des = self.orb.detectAndCompute(sample_image, None)
-            if sample_des is None:
-                sample_des = np.zeros([1, 32], dtype=np.uint8)
+        for query_obs_file in self.query_list:
+            query_image = cv2.imread(query_obs_file)
+            _, query_des = self.orb.detectAndCompute(query_image, None)
+            if query_des is None:
+                query_des = np.zeros([1, 32], dtype=np.uint8)
                 num_nonetype = num_nonetype + 1
-            self.desc_query.append(sample_des)
+            self.desc_query.append(query_des)
 
         end = time.time()
         print("Number of NoneType in Query: ", num_nonetype)
@@ -151,8 +151,8 @@ class OrbMatchingLocalization:
 
         return map_image
 
-    def iterate_localization_with_sample(self):
-        """Execute localization & visualize with test sample iteratively."""
+    def iterate_localization_with_query(self):
+        """Execute localization & visualize with test query iteratively."""
         accuracy_list = []
         d1_list = []
         d2_list = []
@@ -161,10 +161,10 @@ class OrbMatchingLocalization:
         high_dist_list = []
         high_simil_list = []
 
-        for i in range(len(self.sample_list)):
+        for i in range(len(self.query_list)):
             result = self.localize_with_observation(i)
 
-            grid_pos = self.sample_pos_record[f"{i:06d}_grid"]
+            grid_pos = self.query_pos_record[f"{i:06d}_grid"]
 
             accuracy = self.evaluate_accuracy(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)

@@ -14,7 +14,7 @@ class LocalizationRealWorldNetVLAD:
         self,
         config,
         map_obs_dir,
-        sample_dir=None,
+        query_dir=None,
         load_cache=True,
         instance_only=False,
         visualize=False,
@@ -23,7 +23,7 @@ class LocalizationRealWorldNetVLAD:
         """Initialize localization instance with specific model & map data."""
         self.config = config
         self.map_obs_dir = map_obs_dir
-        self.sample_dir = sample_dir
+        self.query_dir = query_dir
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
@@ -36,14 +36,14 @@ class LocalizationRealWorldNetVLAD:
         match_h5 = h5py.File(match_path, "r")
 
         self.score_dict = {}
-        for test_sample_id in match_h5.keys():
-            sample_id = match_h5[test_sample_id].name[-10:-4]
+        for test_query_id in match_h5.keys():
+            query_id = match_h5[test_query_id].name[-10:-4]
             current_score_dict = {}
-            for netvlad_match_pair in match_h5[test_sample_id]:
-                netvlad_matched_map_id = match_h5[test_sample_id][netvlad_match_pair].name[-10:-4]
-                x = match_h5[test_sample_id][netvlad_match_pair]["matching_scores0"][:]
+            for netvlad_match_pair in match_h5[test_query_id]:
+                netvlad_matched_map_id = match_h5[test_query_id][netvlad_match_pair].name[-10:-4]
+                x = match_h5[test_query_id][netvlad_match_pair]["matching_scores0"][:]
                 current_score_dict.update({netvlad_matched_map_id: np.sum(x)})
-            self.score_dict.update({sample_id: current_score_dict})
+            self.score_dict.update({query_id: current_score_dict})
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
@@ -58,15 +58,15 @@ class LocalizationRealWorldNetVLAD:
         sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
         self.num_map_graph_nodes = len(sorted_map_obs_file)
 
-        if self.sample_dir:
-            sample_cache_index = os.path.basename(os.path.normpath(sample_dir))
-            self.sample_pos_record_file = os.path.join(observation_path, f"pos_record_{sample_cache_index}.json")
+        if self.query_dir:
+            query_cache_index = os.path.basename(os.path.normpath(query_dir))
+            self.query_pos_record_file = os.path.join(observation_path, f"pos_record_{query_cache_index}.json")
 
-            with open(self.sample_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
-                self.sample_pos_record = json.load(f)
+            with open(self.query_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
+                self.query_pos_record = json.load(f)
 
-            sorted_sample_file = sorted(os.listdir(sample_dir))
-            self.num_sample_graph_nodes = len(sorted_sample_file)
+            sorted_query_file = sorted(os.listdir(query_dir))
+            self.num_query_graph_nodes = len(sorted_query_file)
 
         # Load cached npy file if the flag is true
         if load_cache and (instance_only is False):
@@ -79,7 +79,7 @@ class LocalizationRealWorldNetVLAD:
                 self.map_pos_mat[node_id] = self.map_pos_record[f"{node_id:06d}_grid"]
 
     def _load_cache(self):
-        """Load cached npy embedding file from map & sample observations."""
+        """Load cached npy embedding file from map & query observations."""
         pass
 
     def calculate_embedding_from_observation(self, observation):
@@ -93,28 +93,28 @@ class LocalizationRealWorldNetVLAD:
 
         return obs_embedding
 
-    def localize_with_observation(self, sample_id: str):
+    def localize_with_observation(self, query_id: str):
         """Get localization result of current map according to input observation embedding."""
-        current_score_dict = self.score_dict[sample_id]
+        current_score_dict = self.score_dict[query_id]
         max_id = max(current_score_dict, key=current_score_dict.get)
         map_node_with_max_value = int(max_id)
         high_similarity_set = [int(key) for key in current_score_dict]
 
         return map_node_with_max_value, high_similarity_set
 
-    def iterate_localization_with_sample(self):
-        """Execute localization & visualize with test sample iteratively."""
+    def iterate_localization_with_query(self):
+        """Execute localization & visualize with test query iteratively."""
         accuracy_list = []
         d1_list = []
         d2_list = []
         i = 0
 
-        for i in range(self.num_sample_graph_nodes):
-            print("Sample index: ", i)
-            sample_id = f"{i:06d}"
-            result = self.localize_with_observation(sample_id)
+        for i in range(self.num_query_graph_nodes):
+            print("query index: ", i)
+            query_id = f"{i:06d}"
+            result = self.localize_with_observation(query_id)
 
-            grid_pos = np.array(self.sample_pos_record[f"{i:06d}_grid"])
+            grid_pos = np.array(self.query_pos_record[f"{i:06d}_grid"])
 
             accuracy = self.evaluate_accuracy(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
@@ -125,7 +125,7 @@ class LocalizationRealWorldNetVLAD:
             d2_list.append(d2)
 
             if self.is_visualize:
-                print("Sample No.: ", i)
+                print("query No.: ", i)
                 print("Accuracy", accuracy)
                 print("Pose D: ", d1)
                 print("Node D: ", d2)
@@ -150,16 +150,16 @@ class LocalizationRealWorldNetVLAD:
                         true_img_list = [cv2.imread(true_path) for true_path in true_path_list]
                         true_img = np.concatenate(true_img_list, axis=1)
 
-                    sample_path = os.path.join(self.sample_dir, f"{i:06d}.jpg")
-                    sample_img = cv2.imread(sample_path)
+                    query_path = os.path.join(self.query_dir, f"{i:06d}.jpg")
+                    query_img = cv2.imread(query_path)
                     blank_img = np.zeros([10, predicted_img.shape[1], 3], dtype=np.uint8)
 
                     if self.num_frames_per_node == 1:
-                        match_img = np.concatenate([sample_img, blank_img, predicted_img, blank_img, true_img], axis=0)
+                        match_img = np.concatenate([query_img, blank_img, predicted_img, blank_img, true_img], axis=0)
                     else:
                         padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)
-                        x_offset = predicted_img.shape[1] // 2 - sample_img.shape[1] // 2
-                        padded_img[:, x_offset : x_offset + sample_img.shape[1], :] = sample_img
+                        x_offset = predicted_img.shape[1] // 2 - query_img.shape[1] // 2
+                        padded_img[:, x_offset : x_offset + query_img.shape[1], :] = query_img
                         match_img = np.concatenate([padded_img, blank_img, predicted_img, blank_img, true_img], axis=0)
 
                     cv2.namedWindow("localization", cv2.WINDOW_NORMAL)

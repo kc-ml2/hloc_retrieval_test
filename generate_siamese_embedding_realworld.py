@@ -27,28 +27,28 @@ if __name__ == "__main__":
 
     # Set file path
     map_cache_index = "map_node_observation_level_0"
-    sample_cache_index = "test_sample_0"
+    query_cache_index = "test_query_0"
     map_obs_dir = os.path.join(map_obs_path, map_cache_index)
-    sample_dir = os.path.join(map_obs_path, sample_cache_index)
+    query_dir = os.path.join(map_obs_path, query_cache_index)
 
     # Make list to iterate
     sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
-    sorted_test_sample_file = sorted(os.listdir(sample_dir))
+    sorted_test_query_file = sorted(os.listdir(query_dir))
     map_obs_list = [map_obs_dir + os.sep + file for file in sorted_map_obs_file]
-    sample_list = [sample_dir + os.sep + file for file in sorted_test_sample_file]
+    query_list = [query_dir + os.sep + file for file in sorted_test_query_file]
 
     # Set output npy file name
     localization = LocalizationRealWorld(
-        config, top_network, bottom_network, map_obs_dir, sample_dir=sample_dir, instance_only=True
+        config, top_network, bottom_network, map_obs_dir, query_dir=query_dir, instance_only=True
     )
     map_output = localization.map_embedding_file
-    sample_output = localization.sample_embedding_file
+    query_output = localization.query_embedding_file
 
     # Append to total iteration list
     total_list_to_iterate = total_list_to_iterate + map_obs_list
     output_size_list.append((map_output, len(sorted_map_obs_file)))
-    total_list_to_iterate = total_list_to_iterate + sample_list
-    output_size_list.append((sample_output, len(sorted_test_sample_file)))
+    total_list_to_iterate = total_list_to_iterate + query_list
+    output_size_list.append((query_output, len(sorted_test_query_file)))
 
     with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
         record_dataset = tf.data.Dataset.from_tensor_slices(total_list_to_iterate)

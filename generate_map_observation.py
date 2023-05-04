@@ -17,14 +17,14 @@ if __name__ == "__main__":
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--not-generate-test-sample", action="store_true")
+    parser.add_argument("--not-generate-test-query", action="store_true")
     parser.add_argument("--map-debug", action="store_true")
     args, _ = parser.parse_known_args()
     module_name = args.config
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
     height_json_path = args.map_height_json
-    not_generate_test_sample = args.not_generate_test_sample
+    not_generate_test_query = args.not_generate_test_query
     map_debug = args.map_debug
 
     config = load_config_module(module_name)
@@ -78,14 +78,14 @@ if __name__ == "__main__":
                 else:
                     cv2.imwrite(map_obs_result_path + os.sep + f"{node_id:06d}.jpg", color_img)
 
-            if not_generate_test_sample:
+            if not_generate_test_query:
                 continue
 
-            # Generate random sample observation for test
-            test_sample_path = os.path.join(observation_path, f"test_sample_{level}")
-            os.makedirs(test_sample_path, exist_ok=True)
+            # Generate random query observation for test
+            test_query_path = os.path.join(observation_path, f"test_query_{level}")
+            os.makedirs(test_query_path, exist_ok=True)
 
-            pos_record_json = os.path.join(observation_path, f"pos_record_test_sample_{level}.json")
+            pos_record_json = os.path.join(observation_path, f"pos_record_test_query_{level}.json")
             pos_record = {}
             pos_record.update({"scene_number": scene_number})
             pos_record.update({"level": level})
@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations[sim.inference_view_attr]
 
-                cv2.imwrite(test_sample_path + os.sep + f"{k:06d}.jpg", color_img)
+                cv2.imwrite(test_query_path + os.sep + f"{k:06d}.jpg", color_img)
 
                 record_sim_pos = {f"{k:06d}_sim": [[float(pos) for pos in sim_pos], random_rotation]}
                 record_grid_pos = {f"{k:06d}_grid": [int(grid_pos[0]), int(grid_pos[1])]}
