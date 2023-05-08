@@ -68,7 +68,7 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         self.agent.set_state(agent_state)
 
     def get_map_from_database(
-        self, topdown_directory="./data/topdown/", recolored_directory="./data/recolored_topdown/"
+        self, topdown_directory="/home/chlee/workspace/topology_generater/data/topdown/", recolored_directory="/home/chlee/workspace/topology_generater/data/recolored_topdown/"
     ):
         """Get map files from pre-made map."""
         num_levels = 0
