@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 from relocalization.localization_realworld_netvlad import LocalizationRealWorldNetVLAD
+from relocalization.localization_realworld_netvlad_only import LocalizationRealWorldNetVLADOnly
 from utils.config_import import load_config_module
 
 if __name__ == "__main__":
@@ -29,10 +30,14 @@ if __name__ == "__main__":
     # Set file path
     map_obs_dir = os.path.join(map_obs_path, "map_node_observation_level_0")
     query_dir = os.path.join(map_obs_path, "test_query_0")
+    # match_path = "/data1/chlee/netvlad_output/output_hd_concat/feats-superpoint-n4096-r1600_matches-NN-mutual-dist.7_pairs-netvlad.h5"
+    match_path = "/data1/chlee/netvlad_output/output_hd_concat/pairs-netvlad.txt"
 
-    localization = LocalizationRealWorldNetVLAD(
+    # localization = LocalizationRealWorldNetVLAD(
+    localization = LocalizationRealWorldNetVLADOnly(
         config,
         map_obs_dir,
+        match_path=match_path,
         query_dir=query_dir,
         sparse_map=is_sparse,
         visualize=is_visualize,

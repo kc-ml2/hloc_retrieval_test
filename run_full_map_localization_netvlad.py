@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 from relocalization.localization_netvlad import LocalizationNetVLAD
+from relocalization.localization_netvlad_only import LocalizationNetVLADOnly
 from relocalization.sim import HabitatSimWithMap
 from utils.config_import import load_config_module
 from utils.habitat_utils import open_env_related_files
@@ -61,9 +62,11 @@ if __name__ == "__main__":
             # Set file path
             map_obs_dir = os.path.join(observation_path, f"map_node_observation_level_{level}")
             query_dir = os.path.join(observation_path, f"test_query_{level}")
-            match_path = f"/home/chlee/reference/Hierarchical-Localization/output_hd_concat_sim_hd/observation_{scene_number}/{level}/feats-superpoint-n4096-r1600_matches-NN-mutual-dist.7_pairs-netvlad.h5"
+            # match_path = f"/data1/chlee/netvlad_output/output_hd_concat_sim_hd/observation_{scene_number}/{level}/feats-superpoint-n4096-r1600_matches-NN-mutual-dist.7_pairs-netvlad.h5"
+            match_path = f"/data1/chlee/netvlad_output/output_hd_concat_sim_hd/observation_{scene_number}/{level}/pairs-netvlad.txt"
 
-            localization = LocalizationNetVLAD(
+            # localization = LocalizationNetVLAD(
+            localization = LocalizationNetVLADOnly(
                 config,
                 map_obs_dir,
                 match_path=match_path,

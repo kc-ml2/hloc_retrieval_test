@@ -1,5 +1,5 @@
 class PathConfig:
-    LOCALIZATION_TEST_PATH = "./output/output/"
+    LOCALIZATION_TEST_PATH = "/data1/chlee/output/output/"
     # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_four_view/images"

@@ -1,5 +1,7 @@
 import json
 import os
+from pathlib import Path
+import re
 
 import cv2
 import h5py
@@ -7,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 
-class LocalizationRealWorldNetVLAD:
+class LocalizationRealWorldNetVLADOnly:
     """Class for localization methods according to the given map."""
 
     def __init__(
@@ -28,22 +30,15 @@ class LocalizationRealWorldNetVLAD:
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
+        self.query_prefix = os.path.basename(query_dir)
+
+        with open(match_path) as f:
+            self.retrieval_pairs = f.readlines()
+
         if config.CamConfig.IMAGE_CONCAT is True:
             self.num_frames_per_node = 1
         else:
             self.num_frames_per_node = config.CamConfig.NUM_CAMERA
-
-        match_h5 = h5py.File(match_path, "r")
-
-        self.score_dict = {}
-        for test_query_id in match_h5.keys():
-            query_id = match_h5[test_query_id].name[-10:-4]
-            current_score_dict = {}
-            for netvlad_match_pair in match_h5[test_query_id]:
-                netvlad_matched_map_id = match_h5[test_query_id][netvlad_match_pair].name[-10:-4]
-                x = match_h5[test_query_id][netvlad_match_pair]["matching_scores0"][:]
-                current_score_dict.update({netvlad_matched_map_id: np.sum(x)})
-            self.score_dict.update({query_id: current_score_dict})
 
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
@@ -96,10 +91,17 @@ class LocalizationRealWorldNetVLAD:
 
     def localize_with_observation(self, query_id: str):
         """Get localization result of current map according to input observation embedding."""
-        current_score_dict = self.score_dict[query_id]
-        max_id = max(current_score_dict, key=current_score_dict.get)
-        map_node_with_max_value = int(max_id)
-        high_similarity_set = [int(key) for key in current_score_dict]
+        high_simil_pair_list = []
+        query = f"{self.query_prefix}_hd_concat/{query_id}"
+        for pair in self.retrieval_pairs:
+            if query in pair:
+                high_simil_pair_list.append(pair)
+        
+        max_pair = high_simil_pair_list[0]
+        map_node_with_max_value = int(re.search('/(.+?).jpg', max_pair[-14:]).group(1))
+        high_similarity_set = []
+        for high_pair in high_simil_pair_list:
+            high_similarity_set.append(int(re.search('/(.+?).jpg', high_pair[-14:]).group(1)))
 
         return map_node_with_max_value, high_similarity_set
 

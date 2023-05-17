@@ -1,13 +1,19 @@
 import json
 import os
+from pathlib import Path
+import re
 
 import cv2
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
+from utils.habitat_utils import draw_point_from_grid_pos, draw_point_from_node, highlight_point_from_node
+from utils.skeletonize_utils import topdown_map_to_graph
 
-class LocalizationRealWorldNetVLAD:
+
+class LocalizationNetVLADOnly:
     """Class for localization methods according to the given map."""
 
     def __init__(
@@ -16,6 +22,7 @@ class LocalizationRealWorldNetVLAD:
         map_obs_dir,
         match_path,
         query_dir=None,
+        binary_topdown_map=None,
         load_cache=True,
         instance_only=False,
         visualize=False,
@@ -28,36 +35,22 @@ class LocalizationRealWorldNetVLAD:
         self.is_visualize = visualize
         self.is_sparse_map = sparse_map
 
+        self.query_prefix = Path(os.path.basename(os.path.dirname(query_dir))) / os.path.basename(query_dir)
+
+        with open(match_path) as f:
+            self.retrieval_pairs = f.readlines()
+
         if config.CamConfig.IMAGE_CONCAT is True:
             self.num_frames_per_node = 1
         else:
             self.num_frames_per_node = config.CamConfig.NUM_CAMERA
-
-        match_h5 = h5py.File(match_path, "r")
-
-        self.score_dict = {}
-        for test_query_id in match_h5.keys():
-            query_id = match_h5[test_query_id].name[-10:-4]
-            current_score_dict = {}
-            for netvlad_match_pair in match_h5[test_query_id]:
-                netvlad_matched_map_id = match_h5[test_query_id][netvlad_match_pair].name[-10:-4]
-                x = match_h5[test_query_id][netvlad_match_pair]["matching_scores0"][:]
-                current_score_dict.update({netvlad_matched_map_id: np.sum(x)})
-            self.score_dict.update({query_id: current_score_dict})
-
+        
         # Set file name from sim & record name
         observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
 
+        self.obs_path = os.path.basename(observation_path)
         self.map_id = map_cache_index[-1]
-
-        # Open map pose record file
-        self.map_pos_record_file = os.path.join(observation_path, f"pos_record_map_{self.map_id}.json")
-        with open(self.map_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
-            self.map_pos_record = json.load(f)
-
-        sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
-        self.num_map_graph_nodes = len(sorted_map_obs_file)
 
         if self.query_dir:
             query_cache_index = os.path.basename(os.path.normpath(query_dir))
@@ -69,6 +62,16 @@ class LocalizationRealWorldNetVLAD:
             sorted_query_file = sorted(os.listdir(query_dir))
             self.num_query_graph_nodes = len(sorted_query_file)
 
+        if instance_only is False:
+            # Initialize map graph from binary topdown map
+            self.graph = topdown_map_to_graph(
+                binary_topdown_map, config.DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map
+            )
+
+            # Initialize emny matrix and parameters for handling embeddings
+            self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
+            self.num_map_graph_nodes = len(self.graph.nodes())
+
         # Load cached npy file if the flag is true
         if load_cache and (instance_only is False):
             self._load_cache()
@@ -77,7 +80,7 @@ class LocalizationRealWorldNetVLAD:
             self.map_pos_mat = np.zeros([self.num_map_graph_nodes, 2])
 
             for node_id in range(self.num_map_graph_nodes):
-                self.map_pos_mat[node_id] = self.map_pos_record[f"{node_id:06d}_grid"]
+                self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
 
     def _load_cache(self):
         """Load cached npy embedding file from map & query observations."""
@@ -96,14 +99,35 @@ class LocalizationRealWorldNetVLAD:
 
     def localize_with_observation(self, query_id: str):
         """Get localization result of current map according to input observation embedding."""
-        current_score_dict = self.score_dict[query_id]
-        max_id = max(current_score_dict, key=current_score_dict.get)
-        map_node_with_max_value = int(max_id)
-        high_similarity_set = [int(key) for key in current_score_dict]
+        high_simil_pair_list = []
+        query = f"{self.query_prefix}/{query_id}"
+        for pair in self.retrieval_pairs:
+            if query in pair:
+                high_simil_pair_list.append(pair)
+        
+        max_pair = high_simil_pair_list[0]
+        map_node_with_max_value = int(re.search('/(.+?).jpg', max_pair[-14:]).group(1))
+        high_similarity_set = []
+        for high_pair in high_simil_pair_list:
+            high_similarity_set.append(int(re.search('/(.+?).jpg', high_pair[-14:]).group(1)))
 
         return map_node_with_max_value, high_similarity_set
 
-    def iterate_localization_with_query(self):
+    def visualize_on_map(self, map_image, result):
+        """Visualize localization result."""
+        map_node_with_max_value, high_similarity_set = result
+
+        for node in self.graph.nodes():
+            draw_point_from_node(map_image, self.graph, node)
+
+        for node in high_similarity_set:
+            highlight_point_from_node(map_image, self.graph, int(node), (0, 0, 122))
+
+        highlight_point_from_node(map_image, self.graph, map_node_with_max_value, (255, 255, 0))
+
+        return map_image
+
+    def iterate_localization_with_query(self, recolored_topdown_map):
         """Execute localization & visualize with test query iteratively."""
         accuracy_list = []
         d1_list = []
@@ -111,11 +135,10 @@ class LocalizationRealWorldNetVLAD:
         i = 0
 
         for i in range(self.num_query_graph_nodes):
-            print("query index: ", i)
             query_id = f"{i:06d}"
             result = self.localize_with_observation(query_id)
 
-            grid_pos = np.array(self.query_pos_record[f"{i:06d}_grid"])
+            grid_pos = self.query_pos_record[f"{i:06d}_grid"]
 
             accuracy = self.evaluate_accuracy(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
@@ -167,10 +190,19 @@ class LocalizationRealWorldNetVLAD:
                     cv2.resizeWindow("localization", 1700, 700)
                     cv2.imshow("localization", match_img)
 
-                key = cv2.waitKey()
+                    # Visualize position on map
+                    map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
+                    map_image = self.visualize_on_map(map_image, result)
+                    draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
-                if key == ord("n"):
-                    break
+                    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
+                    cv2.resizeWindow("map", 512, 512)
+                    cv2.imshow("map", map_image)
+
+                    key = cv2.waitKey()
+
+                    if key == ord("n"):
+                        break
 
         k = i + 1
         print("Temporay Accuracy: ", sum(accuracy_list) / k)
@@ -179,7 +211,7 @@ class LocalizationRealWorldNetVLAD:
 
     def get_ground_truth_nearest_node(self, grid_pos):
         """Get the nearest node by Euclidean distance."""
-        current_pos_mat = np.zeros([self.num_map_graph_nodes, 2])
+        current_pos_mat = np.zeros([len(self.graph.nodes()), 2])
         current_pos_mat[:] = grid_pos
         distance_set = np.linalg.norm(self.map_pos_mat - current_pos_mat, axis=1)
         nearest_node = np.argmin(distance_set)
@@ -188,17 +220,17 @@ class LocalizationRealWorldNetVLAD:
 
     def evaluate_pos_distance(self, map_node_with_max_value, grid_pos):
         """How far is the predicted node from current position?"""
-        predicted_grid_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
-        distance = np.linalg.norm(np.array(predicted_grid_pos) - grid_pos)
+        predicted_grid_pos = self.graph.nodes[map_node_with_max_value]["o"]
+        distance = np.linalg.norm(predicted_grid_pos - grid_pos)
 
         return distance
 
     def evaluate_node_distance(self, map_node_with_max_value, grid_pos):
         """How far is the predicted node from the ground-truth nearest node?"""
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
-        ground_truth_nearest_node_pos = self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"]
-        predicted_nearest_node_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
-        distance = np.linalg.norm(np.array(ground_truth_nearest_node_pos) - np.array(predicted_nearest_node_pos))
+        ground_truth_nearest_node_pos = self.graph.nodes[ground_truth_nearest_node]["o"]
+        predicted_nearest_node_pos = self.graph.nodes[map_node_with_max_value]["o"]
+        distance = np.linalg.norm(ground_truth_nearest_node_pos - predicted_nearest_node_pos)
 
         return distance, ground_truth_nearest_node
 
@@ -206,10 +238,10 @@ class LocalizationRealWorldNetVLAD:
         """Is it the nearest node?"""
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
 
-        ground_truth_pos = self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"]
-        estimated_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
+        ground_truth_pos = self.graph.nodes()[ground_truth_nearest_node]["o"]
+        estimated_pos = self.graph.nodes()[map_node_with_max_value]["o"]
 
-        step = np.linalg.norm(np.array(ground_truth_pos) - np.array(estimated_pos))
+        step = np.linalg.norm(ground_truth_pos - estimated_pos)
 
         result = step <= 10
 
