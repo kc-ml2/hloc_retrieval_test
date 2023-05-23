@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
             # Make directory to save observation
             image_dir_by_scene = os.path.join(output_path, f"observation_{scene_number}")
-            map_obs_result_path = os.path.join(image_dir_by_scene, f"map_node_observation_level_{level}")
+            map_obs_result_path = os.path.join(image_dir_by_scene, f"{config.PathConfig.MAP_DIR_PREFIX}_{level}")
             os.makedirs(map_obs_result_path, exist_ok=True)
 
             # Save observation at every node
@@ -82,10 +82,13 @@ if __name__ == "__main__":
                 continue
 
             # Generate random query observation for test
-            test_query_path = os.path.join(image_dir_by_scene, f"test_query_{level}")
+            query_dirname = f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}"
+            test_query_path = os.path.join(image_dir_by_scene, query_dirname)
             os.makedirs(test_query_path, exist_ok=True)
 
-            pos_record_json = os.path.join(image_dir_by_scene, f"pos_record_test_query_{level}.json")
+            pos_record_json = os.path.join(
+                image_dir_by_scene, f"{config.PathConfig.POS_RECORD_FILE_PREFIX}_{query_dirname}.json"
+            )
             pos_record = {}
             pos_record.update({"scene_number": scene_number})
             pos_record.update({"level": level})

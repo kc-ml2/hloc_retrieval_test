@@ -4,7 +4,9 @@ class PathConfig:
     # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     HLOC_OUTPUT = "/data1/chlee/netvlad_output/realworld_69FOV/"
-    GPU_ID = 1
+    MAP_DIR_PREFIX = "map_node_observation_level"
+    QUERY_DIR_PREFIX = "test_query"
+    POS_RECORD_FILE_PREFIX = "pos_record"
 
 
 class CamConfig:

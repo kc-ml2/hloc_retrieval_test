@@ -57,8 +57,8 @@ if __name__ == "__main__":
             print(num_iteration, "/", test_num_level)
 
             # Set file path
-            map_index = f"map_node_observation_level_{level}"
-            query_index = f"test_query_{level}"
+            map_index = f"{config.PathConfig.MAP_DIR_PREFIX}_{level}"
+            query_index = f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}"
             map_obs_dir = os.path.join(image_dir_by_scene, map_index)
             query_dir = os.path.join(image_dir_by_scene, query_index)
             outputs = os.path.join(config.PathConfig.HLOC_OUTPUT, scene_dirname, f"{level}")

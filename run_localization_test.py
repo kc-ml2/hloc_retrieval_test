@@ -76,8 +76,8 @@ if __name__ == "__main__":
                 binary_topdown_map = sim.topdown_map_list[level]
 
             # Set file path
-            map_obs_dir = os.path.join(image_dir_by_scene, f"map_node_observation_level_{level}")
-            query_dir = os.path.join(image_dir_by_scene, f"test_query_{level}")
+            map_obs_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.MAP_DIR_PREFIX}_{level}")
+            query_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}")
 
             localization_class = import_localization_class(config.PathConfig.LOCALIZATION_CLASS_PATH)
             localization = localization_class(

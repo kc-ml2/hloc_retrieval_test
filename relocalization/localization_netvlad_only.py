@@ -1,10 +1,10 @@
 import os
 import re
 
-from relocalization.localization_netvlad_superpoint import LocalizationNetVLADSuperpoint
+from relocalization.localization_base import LocalizationBase
 
 
-class LocalizationNetVLADOnly(LocalizationNetVLADSuperpoint):
+class LocalizationNetVLADOnly(LocalizationBase):
     """Class for localization methods according to the given map."""
 
     def __init__(
@@ -13,7 +13,6 @@ class LocalizationNetVLADOnly(LocalizationNetVLADSuperpoint):
         map_obs_dir,
         query_dir,
         binary_topdown_map=None,
-        instance_only=False,
         visualize=False,
         sparse_map=False,
     ):
@@ -23,12 +22,12 @@ class LocalizationNetVLADOnly(LocalizationNetVLADSuperpoint):
             map_obs_dir,
             query_dir,
             binary_topdown_map=binary_topdown_map,
-            instance_only=instance_only,
             visualize=visualize,
             sparse_map=sparse_map,
         )
 
         self.query_prefix = os.path.join(self.scene_dirname, self.query_dirname)
+        self.hloc_result = self._load_hloc_result()
 
     def _load_hloc_result(self):
         hloc_output_dir = os.path.join(self.config.PathConfig.HLOC_OUTPUT, self.scene_dirname, self.level)

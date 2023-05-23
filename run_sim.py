@@ -53,22 +53,16 @@ if __name__ == "__main__":
 
     # Load pre-trained model
     if is_localization:
-        import tensorflow as tf
-
-        from network.resnet import ResnetBuilder  # pylint: disable=ungrouped-imports
-        from relocalization.localization import Localization  # pylint: disable=ungrouped-imports
-
-        ResnetBuilder.restrict_gpu_memory(config)
-
-        with tf.device(f"/device:GPU:{config.PathConfig.GPU_ID}"):
-            model, top_network, bottom_network = ResnetBuilder.load_siamese_model(loaded_model, config.NetworkConstant)
+        pass
 
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, config, height_data)
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
-            image_dir_by_scene, pos_record_json = make_output_path(output_path, scene_number)
+            image_dir_by_scene, pos_record_json = make_output_path(
+                output_path, scene_number, config.PathConfig.POS_RECORD_FILE_PREFIX
+            )
 
             img_id = 0
             pos_record = {}
@@ -84,7 +78,7 @@ if __name__ == "__main__":
             if is_localization:
                 # Set file path
                 current_map_dir = os.path.join(
-                    image_dir, f"observation_{scene_number}", f"map_node_observation_level_{sim.closest_level}"
+                    image_dir, f"observation_{scene_number}", f"{config.PathConfig.MAP_DIR_PREFIX}_{sim.closest_level}"
                 )
                 # Initialize localization instance
                 localization = Localization(

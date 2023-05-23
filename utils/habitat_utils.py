@@ -123,12 +123,12 @@ def open_env_related_files(scene_list_file, height_json_path, scene_index=None):
     return scene_list, height_data
 
 
-def make_output_path(output_path, scene_number):
+def make_output_path(output_path, scene_number, file_prefix):
     """Make directory for output file & records."""
     timestr = time.strftime("%Y%m%d-%H%M%S")
     observation_path = os.path.join(output_path, f"observation_{scene_number}", timestr)
     os.makedirs(observation_path, exist_ok=True)
-    pos_record_json = os.path.join(output_path, f"observation_{scene_number}", f"pos_record_{timestr}.json")
+    pos_record_json = os.path.join(output_path, f"observation_{scene_number}", f"{file_prefix}_{timestr}.json")
 
     return observation_path, pos_record_json
 
