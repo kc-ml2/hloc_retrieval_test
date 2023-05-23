@@ -2,7 +2,7 @@ class PathConfig:
     LOCALIZATION_CLASS_PATH = "relocalization.localization_orb_matching.LocalizationOrbMatching"
     LOCALIZATION_TEST_PATH = "/data1/chlee/output/output_real_view_hd/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    HLOC_OUTPUT = "/data1/chlee/netvlad_output/concat_fourview_69FOV_hd/"
+    HLOC_OUTPUT = "/data1/chlee/netvlad_output/concat_fourview_69FOV_HD/"
     MAP_DIR_PREFIX = "map_node_observation_level"
     QUERY_DIR_PREFIX = "test_query"
     POS_RECORD_FILE_PREFIX = "pos_record"

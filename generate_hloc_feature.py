@@ -10,7 +10,7 @@ from utils.config_import import load_config_module
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="config/concat_fourview_69FOV_hd.py")
+    parser.add_argument("--config", default="config/concat_fourview_69FOV_HD.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")

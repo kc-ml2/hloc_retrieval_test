@@ -21,16 +21,13 @@ from utils.habitat_utils import (
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="config/singleview_90FOV.py")
+    parser.add_argument("--config", default="config/concat_fourview_69FOV_HD.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--output-path", default="./output")
     parser.add_argument("--save-all", action="store_true")
     parser.add_argument("--save-except-rotation", action="store_true")
-    parser.add_argument("--localization", action="store_true")
-    parser.add_argument("--load-model", default="./model_weights/model.20221129-125905.4view.weights.hdf5")
-    parser.add_argument("--map-obs-path", default="./output")
     args, _ = parser.parse_known_args()
     module_name = args.config
     scene_list_file = args.scene_list_file
@@ -39,7 +36,6 @@ if __name__ == "__main__":
     output_path = args.output_path
     is_save_all = args.save_all
     is_save_except_rotation = args.save_except_rotation
-    is_localization = args.localization
 
     check_arg = is_save_all + is_save_except_rotation
     if check_arg >= 2:
@@ -47,13 +43,8 @@ if __name__ == "__main__":
 
     config = load_config_module(module_name)
     image_dir = config.PathConfig.LOCALIZATION_TEST_PATH
-    loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
-
-    # Load pre-trained model
-    if is_localization:
-        pass
 
     for scene_number in scene_list:
         sim = HabitatSimWithMap(scene_number, config, height_data)
@@ -74,20 +65,6 @@ if __name__ == "__main__":
             explorable_area_index = list(zip(*np.where(binary_topdown_map == 1)))
             grid_pos = random.sample(explorable_area_index, 1)[0]
             sim.set_state_from_grid(grid_pos, level)
-
-            if is_localization:
-                # Set file path
-                current_map_dir = os.path.join(
-                    image_dir, f"observation_{scene_number}", f"{config.PathConfig.MAP_DIR_PREFIX}_{sim.closest_level}"
-                )
-                # Initialize localization instance
-                localization = Localization(
-                    config,
-                    top_network,
-                    bottom_network,
-                    current_map_dir,
-                    binary_topdown_map=binary_topdown_map,
-                )
 
             # Initialize opencv display window
             init_map_display()
@@ -113,23 +90,6 @@ if __name__ == "__main__":
 
                 # If level is changed, re-initialize localization instance
                 current_level = sim.closest_level
-                if previous_level != current_level and is_localization:
-                    current_map_dir = os.path.join(
-                        image_dir, f"observation_{scene_number}", f"map_node_observation_level_{current_level}"
-                    )
-                    localization = Localization(
-                        config,
-                        top_network,
-                        bottom_network,
-                        current_map_dir,
-                        binary_topdown_map=sim.topdown_map_list[current_level],
-                    )
-
-                # Execute localization
-                if is_localization:
-                    obs_embedding = localization.calculate_embedding_from_observation(color_img)
-                    localization_result = localization.localize_with_observation(obs_embedding)
-                    map_image = localization.visualize_on_map(map_image, localization_result)
 
                 node_point = maps.to_grid(position[2], position[0], sim.recolored_topdown_map.shape[0:2], sim)
                 display_map(map_image, key_points=[node_point])
