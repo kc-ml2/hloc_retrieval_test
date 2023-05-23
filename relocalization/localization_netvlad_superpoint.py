@@ -31,7 +31,11 @@ class LocalizationNetVLADSuperpoint(LocalizationBase):
         self.hloc_result = self._load_hloc_result()
 
     def _load_hloc_result(self):
-        hloc_output_dir = os.path.join(self.config.PathConfig.HLOC_OUTPUT, self.scene_dirname, self.level)
+        if self.test_on_sim:
+            hloc_output_dir = os.path.join(self.config.PathConfig.HLOC_OUTPUT, self.scene_dirname, self.level)
+        else:
+            hloc_output_dir = os.path.join(self.config.PathConfig.HLOC_OUTPUT, self.scene_dirname)
+
         hloc_output_file = os.path.join(
             hloc_output_dir, "feats-superpoint-n4096-r1600_matches-NN-mutual-dist.7_pairs-netvlad.h5"
         )

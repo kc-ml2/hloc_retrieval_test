@@ -3,8 +3,6 @@ import os
 
 import numpy as np
 
-from relocalization.localization_netvlad_superpoint import LocalizationNetVLADSuperpoint
-from relocalization.localization_netvlad_only import LocalizationNetVLADOnly
 from relocalization.sim import HabitatSimWithMap
 from utils.config_import import load_config_module, import_localization_class
 from utils.habitat_utils import open_env_related_files
@@ -61,7 +59,7 @@ if __name__ == "__main__":
             scene_dirname = f"observation_{scene_number}"
             image_dir_by_scene = os.path.join(image_dir, scene_dirname)
         else:
-            num_level = 0
+            num_level = 1
             scene_dirname = ""
             image_dir_by_scene = image_dir
 
@@ -78,6 +76,7 @@ if __name__ == "__main__":
             # Set file path
             map_obs_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.MAP_DIR_PREFIX}_{level}")
             query_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}")
+            # TODO: check if dir is exist
 
             localization_class = import_localization_class(config.PathConfig.LOCALIZATION_CLASS_PATH)
             localization = localization_class(
@@ -98,7 +97,8 @@ if __name__ == "__main__":
             total_d2 = total_d2 + d2_list
             total_queries = total_queries + num_queries
 
-        sim.close()
+        if test_on_sim:
+            sim.close()
 
     print("Recall: ", sum(total_recall) / total_queries)
     print("Recall std: ", np.std(total_recall))

@@ -83,7 +83,7 @@ class LocalizationBase:
             if self.test_on_sim:
                 self.map_pos_mat[node_id] = self.graph.nodes[node_id]["o"]
             else:
-                self.map_pos_mat[node_id] = self.map_pos_record[f"{node_id:06d}_grid"]
+                self.map_pos_mat[node_id] = np.array(self.map_pos_record[f"{node_id:06d}_grid"])
 
     @abstractmethod
     def localize_with_observation(self, query_id: str):
@@ -100,7 +100,7 @@ class LocalizationBase:
             query_id = f"{i:06d}"
             result = self.localize_with_observation(query_id)
 
-            grid_pos = self.query_pos_record[f"{i:06d}_grid"]
+            grid_pos = np.array(self.query_pos_record[f"{i:06d}_grid"])
 
             recall = self.evaluate_recall(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
@@ -203,7 +203,7 @@ class LocalizationBase:
         if self.test_on_sim:
             predicted_grid_pos = self.graph.nodes[map_node_with_max_value]["o"]
         else:
-            predicted_grid_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
+            predicted_grid_pos = np.array(self.map_pos_record[f"{map_node_with_max_value:06d}_grid"])
 
         distance = np.linalg.norm(predicted_grid_pos - grid_pos)
 
@@ -217,8 +217,8 @@ class LocalizationBase:
             ground_truth_nearest_node_pos = self.graph.nodes[ground_truth_nearest_node]["o"]
             predicted_nearest_node_pos = self.graph.nodes[map_node_with_max_value]["o"]
         else:
-            ground_truth_nearest_node_pos = self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"]
-            predicted_nearest_node_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
+            ground_truth_nearest_node_pos = np.array(self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"])
+            predicted_nearest_node_pos = np.array(self.map_pos_record[f"{map_node_with_max_value:06d}_grid"])
 
         distance = np.linalg.norm(ground_truth_nearest_node_pos - predicted_nearest_node_pos)
 
@@ -232,8 +232,8 @@ class LocalizationBase:
             ground_truth_pos = self.graph.nodes()[ground_truth_nearest_node]["o"]
             estimated_pos = self.graph.nodes()[map_node_with_max_value]["o"]
         else:
-            ground_truth_pos = self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"]
-            estimated_pos = self.map_pos_record[f"{map_node_with_max_value:06d}_grid"]
+            ground_truth_pos = np.array(self.map_pos_record[f"{ground_truth_nearest_node:06d}_grid"])
+            estimated_pos = np.array(self.map_pos_record[f"{map_node_with_max_value:06d}_grid"])
 
         step = np.linalg.norm(ground_truth_pos - estimated_pos)
 

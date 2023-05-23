@@ -1,8 +1,8 @@
 class PathConfig:
     LOCALIZATION_CLASS_PATH = "relocalization.localization_netvlad_superpoint.LocalizationNetVLADSuperpoint"
-    LOCALIZATION_TEST_PATH = "/data1/chlee/output/output_single_view/"
+    LOCALIZATION_TEST_PATH = "/data1/chlee/output/output_real_view_hd/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    HLOC_OUTPUT = "/data1/chlee/netvlad_output/singleview_90FOV/"
+    HLOC_OUTPUT = "/data1/chlee/netvlad_output/concat_fourview_69FOV_hd/"
     MAP_DIR_PREFIX = "map_node_observation_level"
     QUERY_DIR_PREFIX = "test_query"
     POS_RECORD_FILE_PREFIX = "pos_record"
@@ -14,10 +14,10 @@ class CamConfig:
     DEPTH_SENSOR = True
     SEMANTIC_SENSOR = False
     NUM_CAMERA = 4
-    IMAGE_CONCAT = False
-    WIDTH = 256
-    HEIGHT = 256
-    SENSOR_HEIGHT = 0.5
+    IMAGE_CONCAT = True
+    WIDTH = 640
+    HEIGHT = 480
+    SENSOR_HEIGHT = 0.34
 
 
 class ActionConfig:

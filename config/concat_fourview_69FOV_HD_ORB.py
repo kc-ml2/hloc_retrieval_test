@@ -1,7 +1,6 @@
 class PathConfig:
-    LOCALIZATION_CLASS_PATH = "relocalization.localization_netvlad_superpoint.LocalizationNetVLADSuperpoint"
+    LOCALIZATION_CLASS_PATH = "relocalization.localization_orb_matching.LocalizationOrbMatching"
     LOCALIZATION_TEST_PATH = "/data1/chlee/output/output_real_view_hd/"
-    # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     HLOC_OUTPUT = "/data1/chlee/netvlad_output/concat_fourview_69FOV_hd/"
     MAP_DIR_PREFIX = "map_node_observation_level"

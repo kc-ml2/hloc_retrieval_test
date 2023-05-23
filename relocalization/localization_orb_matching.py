@@ -1,15 +1,13 @@
-import json
 import os
 import time
 
 import cv2
 import numpy as np
 
-from utils.skeletonize_utils import topdown_map_to_graph
 from relocalization.localization_base import LocalizationBase
 
 
-class OrbMatchingLocalization(LocalizationBase):
+class LocalizationOrbMatching(LocalizationBase):
     """Class for localization methods with ORB local feature."""
 
     def __init__(

@@ -10,7 +10,7 @@ from utils.config_import import load_config_module
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", default="config/singleview_90FOV.py")
+    parser.add_argument("--config", default="config/concat_fourview_69FOV_hd.py")
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     height_json_path = args.map_height_json
 
     config = load_config_module(module_name)
-    image_dir = config.PathConfig.LOCALIZATION_TEST_PATH
+    image_dir = Path(config.PathConfig.LOCALIZATION_TEST_PATH)
     test_on_sim = config.DataConfig.DATA_FROM_SIM
 
     if test_on_sim:
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             query_index = f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}"
             map_obs_dir = os.path.join(image_dir_by_scene, map_index)
             query_dir = os.path.join(image_dir_by_scene, query_index)
-            outputs = os.path.join(config.PathConfig.HLOC_OUTPUT, scene_dirname, f"{level}")
+            outputs = Path(os.path.join(config.PathConfig.HLOC_OUTPUT, scene_dirname, f"{level}"))
 
             # Make list to iterate
             sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             query_list = [os.path.join(scene_dirname, query_index, file) for file in sorted_test_query_file]
             total_image_list = map_obs_list + query_list
 
-            retrieval_pairs = outputs / 'pairs-netvlad.txt'
+            retrieval_pairs = Path(os.path.join(outputs, 'pairs-netvlad.txt'))
 
             retrieval_conf = extract_features.confs['netvlad']
             feature_conf = extract_features.confs['superpoint_inloc']
