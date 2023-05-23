@@ -1,14 +1,9 @@
 class PathConfig:
+    LOCALIZATION_CLASS_PATH = "relocalization.localization_netvlad_superpoint.LocalizationNetVLADSuperpoint"
     LOCALIZATION_TEST_PATH = "/data1/chlee/output/output_real_view_hd/"
     # SCENE_DIRECTORY = "../dataset/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
     SCENE_DIRECTORY = "/data1/chlee/Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
-    TRAIN_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view_hd/images"
-    TRAIN_LABEL_PATH = "/data1/chlee/label_train_real_view_hd.json"
-    VALID_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view_hd/val_images"
-    VALID_LABEL_PATH = "/data1/chlee/label_val_real_view_hd.json"
-    TEST_IMAGE_PATH = "/data1/chlee/siamese_dataset_real_view_hd/test_images"
-    TEST_LABEL_PATH = "/data1/chlee/label_test_real_view_hd.json"
-    MODEL_WEIGHTS = "./model_weights/model.singleviewHD.69FOV.weights.hdf5"
+    HLOC_OUTPUT = "/data1/chlee/netvlad_output/concat_fourview_69FOV_hd/"
     GPU_ID = 1
 
 
@@ -32,32 +27,7 @@ class ActionConfig:
 
 
 class DataConfig:
+    DATA_FROM_SIM = True
     METERS_PER_PIXEL = 0.1
     REMOVE_ISOLATED = True
-
-
-class TrainingConstant:
-    LEARNING_RATE = 0.0001
-    BATCH_SIZE = 32
-    POSITIVE_SAMPLE_DISTANCE = 10
-    NEGATIVE_SAMPLE_MULTIPLIER = 5
-    NUM_SAMPLING_PER_LEVEL = 500
-
-
-class TestConstant:
-    BATCH_SIZE = 32
-    SIMILARITY_PROBABILITY_THRESHOLD = 0.95
-    NUM_SAMPLING_PER_LEVEL = 100
-
-
-class NetworkConstant:
-    # Input size
-    if CamConfig.IMAGE_CONCAT is False:
-        NET_WIDTH = CamConfig.WIDTH
-    else:
-        NET_WIDTH = CamConfig.WIDTH * CamConfig.NUM_CAMERA
-    NET_HEIGHT = CamConfig.HEIGHT
-    NET_CHANNELS = 3
-    # Architecture
-    NUM_EMBEDDING = 256
-    TOP_HIDDEN = 3
+    NUM_TEST_SAMPLE_PER_LEVEL = 100

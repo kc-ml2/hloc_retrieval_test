@@ -46,7 +46,7 @@ if __name__ == "__main__":
         raise ValueError("Argument Error. Put only one flag.")
 
     config = load_config_module(module_name)
-    map_obs_path = config.PathConfig.LOCALIZATION_TEST_PATH
+    image_dir = config.PathConfig.LOCALIZATION_TEST_PATH
     loaded_model = config.PathConfig.MODEL_WEIGHTS
 
     scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
         for level, recolored_topdown_map in enumerate(sim.recolored_topdown_map_list):
             print("scene: ", scene_number, "    level: ", level)
-            observation_path, pos_record_json = make_output_path(output_path, scene_number)
+            image_dir_by_scene, pos_record_json = make_output_path(output_path, scene_number)
 
             img_id = 0
             pos_record = {}
@@ -84,7 +84,7 @@ if __name__ == "__main__":
             if is_localization:
                 # Set file path
                 current_map_dir = os.path.join(
-                    map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{sim.closest_level}"
+                    image_dir, f"observation_{scene_number}", f"map_node_observation_level_{sim.closest_level}"
                 )
                 # Initialize localization instance
                 localization = Localization(
@@ -121,7 +121,7 @@ if __name__ == "__main__":
                 current_level = sim.closest_level
                 if previous_level != current_level and is_localization:
                     current_map_dir = os.path.join(
-                        map_obs_path, f"observation_{scene_number}", f"map_node_observation_level_{current_level}"
+                        image_dir, f"observation_{scene_number}", f"map_node_observation_level_{current_level}"
                     )
                     localization = Localization(
                         config,
@@ -157,30 +157,30 @@ if __name__ == "__main__":
                 # Save observation & position record according to the flag
                 # Save observation every step
                 if is_save_all:
-                    save_observation(color_img, observation_path, img_id, pos_record, position, node_point)
+                    save_observation(color_img, image_dir_by_scene, img_id, pos_record, position, node_point)
                     img_id = img_id + 1
                 # Save observation only when forward & backward movement
                 if is_save_except_rotation:
                     if key == ord("w") or key == ord("s"):
-                        save_observation(color_img, observation_path, img_id, pos_record, position, node_point)
+                        save_observation(color_img, image_dir_by_scene, img_id, pos_record, position, node_point)
                         img_id = img_id + 1
                 # Save observation when "o" key input
                 if key == ord("o"):
                     if is_save_all or is_save_except_rotation:
                         pass
                     else:
-                        save_observation(color_img, observation_path, img_id, pos_record, position, node_point)
+                        save_observation(color_img, image_dir_by_scene, img_id, pos_record, position, node_point)
                         img_id = img_id + 1
                         continue
 
                 sim.step(action)
 
-            file_saved = os.listdir(observation_path)
+            file_saved = os.listdir(image_dir_by_scene)
             if file_saved:
                 with open(pos_record_json, "w") as record_json:  # pylint: disable=unspecified-encoding
                     json.dump(pos_record, record_json, indent=4)
             else:
-                os.rmdir(observation_path)
+                os.rmdir(image_dir_by_scene)
 
         sim.close()
 

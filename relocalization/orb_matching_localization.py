@@ -34,10 +34,10 @@ class OrbMatchingLocalization:
             self.num_frames_per_node = config.CamConfig.NUM_CAMERA
 
         # Set file name from sim & record name
-        observation_path = os.path.dirname(os.path.normpath(map_obs_dir))
+        image_dir_by_scene = os.path.dirname(os.path.normpath(map_obs_dir))
 
         map_cache_index = os.path.basename(os.path.normpath(map_obs_dir))
-        self.obs_path = os.path.basename(observation_path)
+        self.obs_path = os.path.basename(image_dir_by_scene)
         self.map_id = map_cache_index[-1]
 
         # Make list to iterate
@@ -48,7 +48,7 @@ class OrbMatchingLocalization:
             sorted_test_query_file = sorted(os.listdir(query_dir))
             self.query_list = [query_dir + os.sep + file for file in sorted_test_query_file]
             query_cache_index = os.path.basename(os.path.normpath(query_dir))
-            self.query_pos_record_file = os.path.join(observation_path, f"pos_record_{query_cache_index}.json")
+            self.query_pos_record_file = os.path.join(image_dir_by_scene, f"pos_record_{query_cache_index}.json")
 
             with open(self.query_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
                 self.query_pos_record = json.load(f)
@@ -153,7 +153,7 @@ class OrbMatchingLocalization:
 
     def iterate_localization_with_query(self):
         """Execute localization & visualize with test query iteratively."""
-        accuracy_list = []
+        recall_list = []
         d1_list = []
         d2_list = []
         i = 0
@@ -166,11 +166,11 @@ class OrbMatchingLocalization:
 
             grid_pos = self.query_pos_record[f"{i:06d}_grid"]
 
-            accuracy = self.evaluate_accuracy(result[0], grid_pos)
+            recall = self.evaluate_recall(result[0], grid_pos)
             d1 = self.evaluate_pos_distance(result[0], grid_pos)
             d2, _ = self.evaluate_node_distance(result[0], grid_pos)
 
-            accuracy_list.append(accuracy)
+            recall_list.append(recall)
             d1_list.append(d1)
             d2_list.append(d2)
 
@@ -191,9 +191,9 @@ class OrbMatchingLocalization:
         # plt.savefig(f"./output_fig/orb/{self.obs_path}_{self.map_id}.jpg", dpi=300)
 
         k = i + 1
-        print("Temporay Accuracy: ", sum(accuracy_list) / k)
+        print("Temporay Recall: ", sum(recall_list) / k)
 
-        return accuracy_list, d1_list, d2_list, i + 1
+        return recall_list, d1_list, d2_list, i + 1
 
     def get_ground_truth_nearest_node(self, grid_pos):
         """Get the nearest node by Euclidean distance."""
@@ -220,7 +220,7 @@ class OrbMatchingLocalization:
 
         return distance, ground_truth_nearest_node
 
-    def evaluate_accuracy(self, map_node_with_max_value, grid_pos):
+    def evaluate_recall(self, map_node_with_max_value, grid_pos):
         """Is it the nearest node?"""
         ground_truth_nearest_node = self.get_ground_truth_nearest_node(grid_pos)
 

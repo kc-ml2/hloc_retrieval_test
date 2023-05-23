@@ -59,8 +59,8 @@ if __name__ == "__main__":
                 continue
 
             # Make directory to save observation
-            observation_path = os.path.join(output_path, f"observation_{scene_number}")
-            map_obs_result_path = os.path.join(observation_path, f"map_node_observation_level_{level}")
+            image_dir_by_scene = os.path.join(output_path, f"observation_{scene_number}")
+            map_obs_result_path = os.path.join(image_dir_by_scene, f"map_node_observation_level_{level}")
             os.makedirs(map_obs_result_path, exist_ok=True)
 
             # Save observation at every node
@@ -82,10 +82,10 @@ if __name__ == "__main__":
                 continue
 
             # Generate random query observation for test
-            test_query_path = os.path.join(observation_path, f"test_query_{level}")
+            test_query_path = os.path.join(image_dir_by_scene, f"test_query_{level}")
             os.makedirs(test_query_path, exist_ok=True)
 
-            pos_record_json = os.path.join(observation_path, f"pos_record_test_query_{level}.json")
+            pos_record_json = os.path.join(image_dir_by_scene, f"pos_record_test_query_{level}.json")
             pos_record = {}
             pos_record.update({"scene_number": scene_number})
             pos_record.update({"level": level})
@@ -93,7 +93,7 @@ if __name__ == "__main__":
             # Sample only from explorable area, not outside the wall, not at the wall
             explorable_area_index = list(zip(*np.where(topdown_map == 1)))
 
-            for k in range(config.TestConstant.NUM_SAMPLING_PER_LEVEL):
+            for k in range(config.DataConfig.NUM_TEST_SAMPLE_PER_LEVEL):
                 grid_pos = random.sample(explorable_area_index, 1)[0]
                 sim_pos, random_rotation = sim.set_state_from_grid(grid_pos, level)
 

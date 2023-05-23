@@ -12,5 +12,4 @@ scikit-image == 0.19.2
 sknw == 0.14
 networkx == 2.6.3
 numpy == 1.21.6
-tensorflow
 opencv-python >= 4.5

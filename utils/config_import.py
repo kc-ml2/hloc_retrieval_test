@@ -14,3 +14,14 @@ def load_config_module(file_name):
     config_module = importlib.import_module(module_name)
 
     return config_module
+
+
+def import_localization_class(class_path):
+    path = class_path.split(".")
+    class_name = path[-1]
+    module_path = ".".join(path[:-1])
+    module = importlib.import_module(module_path)
+
+    localization_class = getattr(module, class_name)
+
+    return localization_class
