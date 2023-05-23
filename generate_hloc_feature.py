@@ -1,12 +1,12 @@
 import argparse
-from pathlib import Path
 import os
+from pathlib import Path
 
 from hloc import extract_features, match_features, pairs_from_retrieval
 
-from utils.habitat_utils import open_env_related_files
 from relocalization.sim import HabitatSimWithMap
 from utils.config_import import load_config_module
+from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -71,22 +71,24 @@ if __name__ == "__main__":
             query_list = [os.path.join(scene_dirname, query_index, file) for file in sorted_test_query_file]
             total_image_list = map_obs_list + query_list
 
-            retrieval_pairs = Path(os.path.join(outputs, 'pairs-netvlad.txt'))
+            retrieval_pairs = Path(os.path.join(outputs, "pairs-netvlad.txt"))
 
-            retrieval_conf = extract_features.confs['netvlad']
-            feature_conf = extract_features.confs['superpoint_inloc']
-            matcher_conf = match_features.confs['NN-superpoint']
+            retrieval_conf = extract_features.confs["netvlad"]
+            feature_conf = extract_features.confs["superpoint_inloc"]
+            matcher_conf = match_features.confs["NN-superpoint"]
 
             retrieval_features = extract_features.main(retrieval_conf, image_dir, outputs, image_list=total_image_list)
             print("extract retrieval feature")
 
-            pairs_from_retrieval.main(retrieval_features, retrieval_pairs, num_matched=20, query_list=query_list, db_list=map_obs_list)
+            pairs_from_retrieval.main(
+                retrieval_features, retrieval_pairs, num_matched=20, query_list=query_list, db_list=map_obs_list
+            )
             print("get pair text file from retrieval feature")
 
             feature_path = extract_features.main(feature_conf, image_dir, outputs, image_list=total_image_list)
             print("extract superpoint feature")
 
-            match_path = match_features.main(matcher_conf, retrieval_pairs, feature_conf['output'], outputs)
+            match_path = match_features.main(matcher_conf, retrieval_pairs, feature_conf["output"], outputs)
             print("get match result h5 file from superpoint feature")
 
         sim.close()

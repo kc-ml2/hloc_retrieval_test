@@ -37,7 +37,7 @@ class LocalizationNetVLADOnly(LocalizationBase):
 
         hloc_output_file = os.path.join(hloc_output_dir, "pairs-netvlad.txt")
 
-        with open(hloc_output_file) as f:
+        with open(hloc_output_file) as f:  # pylint: disable=unspecified-encoding
             retrieval_pairs = f.readlines()
 
         return retrieval_pairs
@@ -51,9 +51,9 @@ class LocalizationNetVLADOnly(LocalizationBase):
                 high_simil_pair_list.append(pair)
 
         max_pair = high_simil_pair_list[0]
-        map_node_with_max_value = int(re.search('/(.+?).jpg', max_pair[-14:]).group(1))
+        map_node_with_max_value = int(re.search("/(.+?).jpg", max_pair[-14:]).group(1))
         high_similarity_set = []
         for high_pair in high_simil_pair_list:
-            high_similarity_set.append(int(re.search('/(.+?).jpg', high_pair[-14:]).group(1)))
+            high_similarity_set.append(int(re.search("/(.+?).jpg", high_pair[-14:]).group(1)))
 
         return map_node_with_max_value, high_similarity_set

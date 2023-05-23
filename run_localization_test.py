@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from relocalization.sim import HabitatSimWithMap
-from utils.config_import import load_config_module, import_localization_class
+from utils.config_import import import_localization_class, load_config_module
 from utils.habitat_utils import open_env_related_files
 
 if __name__ == "__main__":
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
             if test_on_sim:
                 # Read topdown map
-                recolored_topdown_map =  sim.recolored_topdown_map_list[level]
+                recolored_topdown_map = sim.recolored_topdown_map_list[level]
                 binary_topdown_map = sim.topdown_map_list[level]
 
             # Set file path

@@ -1,6 +1,6 @@
+from abc import abstractmethod
 import json
 import os
-from abc import abstractmethod
 
 import cv2
 import numpy as np
@@ -88,7 +88,7 @@ class LocalizationBase:
     @abstractmethod
     def localize_with_observation(self, query_id: str):
         pass
-    
+
     def iterate_localization_with_query(self, recolored_topdown_map=None):
         """Execute localization & visualize with test query iteratively."""
         recall_list = []
@@ -161,12 +161,10 @@ class LocalizationBase:
             true_img = cv2.imread(true_path)
         else:
             predicted_path_list = [
-                os.path.join(self.map_obs_dir, f"{result[0]:06d}_{idx}.jpg")
-                for idx in range(self.num_frames_per_node)
+                os.path.join(self.map_obs_dir, f"{result[0]:06d}_{idx}.jpg") for idx in range(self.num_frames_per_node)
             ]
             true_path_list = [
-                os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg")
-                for idx in range(self.num_frames_per_node)
+                os.path.join(self.map_obs_dir, f"{gt_node:06d}_{idx}.jpg") for idx in range(self.num_frames_per_node)
             ]
             predicted_img_list = [cv2.imread(predicted_path) for predicted_path in predicted_path_list]
             predicted_img = np.concatenate(predicted_img_list, axis=1)
