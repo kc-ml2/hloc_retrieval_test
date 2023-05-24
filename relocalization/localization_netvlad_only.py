@@ -14,7 +14,6 @@ class LocalizationNetVLADOnly(LocalizationBase):
         query_dir,
         binary_topdown_map=None,
         visualize=False,
-        sparse_map=False,
     ):
         """Initialize localization instance with specific model & map data."""
         super().__init__(
@@ -23,7 +22,6 @@ class LocalizationNetVLADOnly(LocalizationBase):
             query_dir,
             binary_topdown_map=binary_topdown_map,
             visualize=visualize,
-            sparse_map=sparse_map,
         )
 
         self.query_prefix = os.path.join(self.scene_dirname, self.query_dirname)

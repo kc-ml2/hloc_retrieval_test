@@ -36,13 +36,13 @@ class HabitatSimWithMap(habitat_sim.Simulator):
         # Set constants and flags
         self.num_camera = config.CamConfig.NUM_CAMERA
         self.four_view_angle = quaternion.from_rotation_vector([0, np.pi / 2, 0])
-        self.blank_line = np.zeros([config.CamConfig.HEIGHT, 50, 3]).astype(np.uint8)
 
+        # Flags for defining file structure of graph map observations
         if config.CamConfig.NUM_CAMERA > 1 and not config.CamConfig.IMAGE_CONCAT:
-            self.single_view_inference_only = True
+            self.multi_observations_in_single_node = True
             self.inference_view_attr = "front_view"
         else:
-            self.single_view_inference_only = False
+            self.multi_observations_in_single_node = False
             self.inference_view_attr = "all_view"
 
         # Set seed

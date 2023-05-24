@@ -69,7 +69,7 @@ if __name__ == "__main__":
                 observations = sim.get_cam_observations()
                 color_img = observations["all_view"]
 
-                if sim.single_view_inference_only:
+                if sim.multi_observations_in_single_node:
                     for i in range(config.CamConfig.NUM_CAMERA):
                         cv2.imwrite(
                             map_obs_result_path + os.sep + f"{node_id:06d}_{i}.jpg",

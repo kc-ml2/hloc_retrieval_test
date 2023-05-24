@@ -17,7 +17,6 @@ class LocalizationOrbMatching(LocalizationBase):
         query_dir,
         binary_topdown_map=None,
         visualize=False,
-        sparse_map=False,
     ):
         """Initialize localization instance with specific model & map data."""
         super().__init__(
@@ -26,7 +25,6 @@ class LocalizationOrbMatching(LocalizationBase):
             query_dir,
             binary_topdown_map=binary_topdown_map,
             visualize=visualize,
-            sparse_map=sparse_map,
         )
 
         self.desc_db, self.desc_query = self._generate_ORB_feature_database()
@@ -54,9 +52,6 @@ class LocalizationOrbMatching(LocalizationBase):
         start = time.time()
         desc_db = []
         num_nonetype = 0
-
-        if self.is_sparse_map:
-            map_obs_file_list = map_obs_file_list[: self.num_frames_per_node * self.num_map_graph_nodes]
 
         for i in range(0, len(map_obs_file_list), self.num_frames_per_node):
             frame_list = []

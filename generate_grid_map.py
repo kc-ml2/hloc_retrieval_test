@@ -11,17 +11,20 @@ from utils.habitat_utils import get_entire_maps_by_levels
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config/concat_fourview_69FOV_HD.py")
-    parser.add_argument("--scene-list-file", default="./data/scene_list_total.txt")
-    parser.add_argument("--map-height-json", default="./data/map_height.json")
+    parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
+    parser.add_argument("--output-path", default="./data")
     args, _ = parser.parse_known_args()
     module_name = args.config
     scene_list_file = args.scene_list_file
-    height_json_path = args.map_height_json
+    output_path = args.output_path
 
     config = load_config_module(module_name)
 
-    os.makedirs("./data/topdown/", exist_ok=True)
-    os.makedirs("./data/recolored_topdown/", exist_ok=True)
+    topdown_path = os.path.join(output_path, "topdown/")
+    recolored_path = os.path.join(output_path, "recolored_topdown/")
+    height_json_path = os.path.join(output_path, "map_height.json")
+    os.makedirs(topdown_path, exist_ok=True)
+    os.makedirs(recolored_path, exist_ok=True)
 
     generated_scene_num = 0
     height = {}
@@ -44,8 +47,10 @@ if __name__ == "__main__":
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             topdown_map = topdown_map_list[i]
 
-            cv2.imwrite(f"./data/topdown/{scene_number}_{i}.bmp", topdown_map)
-            cv2.imwrite(f"./data/recolored_topdown/{scene_number}_{i}.bmp", recolored_topdown_map)
+            topdown_file_name = f"{scene_number}_{i}.bmp"
+            recolored_file_name = f"{scene_number}_{i}.bmp"
+            cv2.imwrite(os.path.join(topdown_path, topdown_file_name), topdown_map)
+            cv2.imwrite(os.path.join(recolored_path, recolored_file_name), recolored_topdown_map)
 
             height[f"{scene_number}_{i}"] = float(height_list[i])
 

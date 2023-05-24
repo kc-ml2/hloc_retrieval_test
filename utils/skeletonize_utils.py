@@ -40,34 +40,33 @@ def convert_to_topology(binary_map):
     return skeleton, graph
 
 
-def convert_to_dense_topology(binary_map, sparse_map=False):
+def convert_to_dense_topology(binary_map):
     """Convert binary image to topology."""
     skeleton = skeletonize(binary_map).astype(np.uint8)
     skeleton[skeleton > 0] = 255
 
     graph = sknw.build_sknw(skeleton)
 
-    if sparse_map is False:
-        temp_graph = graph.copy()
-        for (s, e) in temp_graph.edges():
-            initial_dense_node_idx = len(graph.nodes())
-            ps = graph[s][e]["pts"]
+    temp_graph = graph.copy()
+    for (s, e) in temp_graph.edges():
+        initial_dense_node_idx = len(graph.nodes())
+        ps = graph[s][e]["pts"]
 
-            dense_node_idx_list = []
-            dense_node_idx_list.append(s)
+        dense_node_idx_list = []
+        dense_node_idx_list.append(s)
 
-            for i, edge_point in enumerate(ps):
-                graph.add_node(initial_dense_node_idx + i)
-                graph.nodes()[initial_dense_node_idx + i]["o"] = edge_point
-                dense_node_idx_list.append(initial_dense_node_idx + i)
+        for i, edge_point in enumerate(ps):
+            graph.add_node(initial_dense_node_idx + i)
+            graph.nodes()[initial_dense_node_idx + i]["o"] = edge_point
+            dense_node_idx_list.append(initial_dense_node_idx + i)
 
-            dense_node_idx_list.append(e)
+        dense_node_idx_list.append(e)
 
-            for i, dense_node_idx in enumerate(dense_node_idx_list):
-                if i + 1 < len(dense_node_idx_list):
-                    graph.add_edge(dense_node_idx, dense_node_idx_list[i + 1])
+        for i, dense_node_idx in enumerate(dense_node_idx_list):
+            if i + 1 < len(dense_node_idx_list):
+                graph.add_edge(dense_node_idx, dense_node_idx_list[i + 1])
 
-            graph.remove_edge(s, e)
+        graph.remove_edge(s, e)
 
     return skeleton, graph
 
@@ -217,11 +216,11 @@ def remove_isolated_area(topdown_map, removal_threshold=1000):
     return topdown_map
 
 
-def topdown_map_to_graph(topdown_map, is_remove_isolated, sparse_map=False):
+def topdown_map_to_graph(topdown_map, is_remove_isolated):
     if is_remove_isolated:
         topdown_map = remove_isolated_area(topdown_map)
     binary_map = convert_to_binarymap(topdown_map)
-    _, graph = convert_to_dense_topology(binary_map, sparse_map)
+    _, graph = convert_to_dense_topology(binary_map)
 
     return graph
 

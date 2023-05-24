@@ -13,14 +13,12 @@ if __name__ == "__main__":
     parser.add_argument("--scene-list-file", default="./data/scene_list_test.txt")
     parser.add_argument("--scene-index", type=int)
     parser.add_argument("--map-height-json", default="./data/map_height.json")
-    parser.add_argument("--sparse", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args, _ = parser.parse_known_args()
     module_name = args.config
     scene_list_file = args.scene_list_file
     scene_index = args.scene_index
     height_json_path = args.map_height_json
-    is_sparse = args.sparse
     is_visualize = args.visualize
 
     config = load_config_module(module_name)
@@ -76,7 +74,6 @@ if __name__ == "__main__":
             # Set file path
             map_obs_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.MAP_DIR_PREFIX}_{level}")
             query_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}")
-            # TODO: check if dir is exist
 
             localization_class = import_localization_class(config.PathConfig.LOCALIZATION_CLASS_PATH)
             localization = localization_class(
@@ -84,7 +81,6 @@ if __name__ == "__main__":
                 map_obs_dir,
                 query_dir,
                 binary_topdown_map=binary_topdown_map,
-                sparse_map=is_sparse,
                 visualize=is_visualize,
             )
 

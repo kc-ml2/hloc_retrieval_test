@@ -19,14 +19,12 @@ class LocalizationBase:
         query_dir,
         binary_topdown_map=None,
         visualize=False,
-        sparse_map=False,
     ):
         """Initialize localization instance with specific model & map data."""
         self.config = config
         self.map_obs_dir = map_obs_dir
         self.query_dir = query_dir
         self.is_visualize = visualize
-        self.is_sparse_map = sparse_map
 
         if config.CamConfig.IMAGE_CONCAT is True:
             self.num_frames_per_node = 1
@@ -35,8 +33,6 @@ class LocalizationBase:
 
         # Set file name from sim & record name
         image_dir_by_scene = os.path.dirname(os.path.normpath(map_obs_dir))
-        map_dirname = os.path.basename(os.path.normpath(map_obs_dir))
-        self.level = map_dirname[-1]
 
         self.test_on_sim = config.DataConfig.DATA_FROM_SIM
         if self.test_on_sim:
@@ -48,30 +44,28 @@ class LocalizationBase:
         self.query_pos_record_file = os.path.join(
             image_dir_by_scene, f"{config.PathConfig.POS_RECORD_FILE_PREFIX}_{self.query_dirname}.json"
         )
+        map_dirname = os.path.basename(os.path.normpath(map_obs_dir))
         self.map_pos_record_file = os.path.join(
             image_dir_by_scene, f"{config.PathConfig.POS_RECORD_FILE_PREFIX}_{map_dirname}.json"
         )
 
+        self.level = map_dirname[-1]
+
         self.sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
         self.sorted_query_file = sorted(os.listdir(query_dir))
         self.num_query_graph_nodes = len(self.sorted_query_file)
-        self.num_map_embedding = len(os.listdir(os.path.normpath(map_obs_dir)))
 
         with open(self.query_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
             self.query_pos_record = json.load(f)
 
-        # If test data is from sim, generate graph to get coordinate info
-        # Else, load coordinate info from record file
+        # If test data is from sim, generate graph to get coordinate info. Else, load coordinate info from record file
         if self.test_on_sim:
-            # Initialize map graph from binary topdown map
-            self.graph = topdown_map_to_graph(
-                binary_topdown_map, config.DataConfig.REMOVE_ISOLATED, sparse_map=sparse_map
-            )
+            # Get graph from binary topdown map
+            self.graph = topdown_map_to_graph(binary_topdown_map, config.DataConfig.REMOVE_ISOLATED)
             # Initialize empty matrix and parameters for handling embeddings
             self.num_map_graph_nodes = len(self.graph.nodes())
         else:
-            self.num_map_graph_nodes = len(self.sorted_map_obs_file)
-            # self.num_map_graph_nodes = int(self.num_map_embedding / self.num_frames_per_node)
+            self.num_map_graph_nodes = int(len(self.sorted_map_obs_file) / self.num_frames_per_node)
 
             with open(self.map_pos_record_file, "r") as f:  # pylint: disable=unspecified-encoding
                 self.map_pos_record = json.load(f)
