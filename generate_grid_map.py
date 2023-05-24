@@ -38,12 +38,12 @@ if __name__ == "__main__":
 
         sim = HabitatSimWithMap(scene_number, config)
 
-        # Sample random maps & get the largest maps by levels
+        # Sample topdown maps randomly & get the largest maps by levels
         recolored_topdown_map_list, topdown_map_list, height_list = get_entire_maps_by_levels(
             sim, config.DataConfig.METERS_PER_PIXEL
         )
 
-        # Store the largest maps
+        # Export the largest maps as bmp image
         for i, recolored_topdown_map in enumerate(recolored_topdown_map_list):
             topdown_map = topdown_map_list[i]
 

@@ -62,6 +62,7 @@ if __name__ == "__main__":
             map_obs_dir = os.path.join(image_dir_by_scene, map_index)
             query_dir = os.path.join(image_dir_by_scene, query_index)
             outputs = Path(os.path.join(config.PathConfig.HLOC_OUTPUT, scene_dirname, f"{level}"))
+            retrieval_pairs = Path(os.path.join(outputs, "pairs-netvlad.txt"))
 
             # Make list to iterate
             sorted_map_obs_file = sorted(os.listdir(map_obs_dir))
@@ -71,24 +72,23 @@ if __name__ == "__main__":
             query_list = [os.path.join(scene_dirname, query_index, file) for file in sorted_test_query_file]
             total_image_list = map_obs_list + query_list
 
-            retrieval_pairs = Path(os.path.join(outputs, "pairs-netvlad.txt"))
-
+            # Set hloc config
             retrieval_conf = extract_features.confs["netvlad"]
             feature_conf = extract_features.confs["superpoint_inloc"]
             matcher_conf = match_features.confs["NN-superpoint"]
 
+            # Extract global descriptor(retrieval) feature with NetVLAD
             retrieval_features = extract_features.main(retrieval_conf, image_dir, outputs, image_list=total_image_list)
-            print("extract retrieval feature")
 
+            # Generate retrival pair text file from NetVLAD feature
             pairs_from_retrieval.main(
                 retrieval_features, retrieval_pairs, num_matched=20, query_list=query_list, db_list=map_obs_list
             )
-            print("get pair text file from retrieval feature")
 
+            # Extract local descriptor feature with Superpoint
             feature_path = extract_features.main(feature_conf, image_dir, outputs, image_list=total_image_list)
-            print("extract superpoint feature")
 
+            # Generate h5 file that contains Superpoint matching result
             match_path = match_features.main(matcher_conf, retrieval_pairs, feature_conf["output"], outputs)
-            print("get match result h5 file from superpoint feature")
 
         sim.close()

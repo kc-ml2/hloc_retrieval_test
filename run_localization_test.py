@@ -25,24 +25,21 @@ if __name__ == "__main__":
     image_dir = config.PathConfig.LOCALIZATION_TEST_PATH
     test_on_sim = config.DataConfig.DATA_FROM_SIM
 
-    if test_on_sim:
-        # If you use dataset generated from simulator
+    if test_on_sim:  # If you use dataset generated from simulator
         scene_list, height_data = open_env_related_files(scene_list_file, height_json_path, scene_index)
         test_num_level = 0
+        # Find total number of levels
         for scene_number in scene_list:
-            # Find total number of levels
             for height in height_data:
                 if scene_number in height:
                     test_num_level = test_num_level + 1
-    else:
-        # If you use your own dataset collected on real world
+    else:  # If you use your own dataset collected on real world
         scene_list = ["real world"]
         test_num_level = 1
 
     num_iteration = 0
 
-    # Main loop
-    total_recall = []
+    total_accuracy = []
     total_d1 = []
     total_d2 = []
     total_queries = 0
@@ -50,9 +47,10 @@ if __name__ == "__main__":
     recolored_topdown_map = None
     binary_topdown_map = None
 
+    # Main loop
     for scene_number in scene_list:
         if test_on_sim:
-            sim = HabitatSimWithMap(scene_number, config, height_data)
+            sim = HabitatSimWithMap(scene_number, config, height_data)  # Initialize simulator for member variables
             num_level = len(sim.recolored_topdown_map_list)
             scene_dirname = f"observation_{scene_number}"
             image_dir_by_scene = os.path.join(image_dir, scene_dirname)
@@ -66,15 +64,16 @@ if __name__ == "__main__":
             num_iteration = num_iteration + 1
             print(num_iteration, "/", test_num_level)
 
+            # Read topdown map if you use dataset from simulation. No topdown map for real-world currently
             if test_on_sim:
-                # Read topdown map
                 recolored_topdown_map = sim.recolored_topdown_map_list[level]
                 binary_topdown_map = sim.topdown_map_list[level]
 
-            # Set file path
+            # Set image file path
             map_obs_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.MAP_DIR_PREFIX}_{level}")
             query_dir = os.path.join(image_dir_by_scene, f"{config.PathConfig.QUERY_DIR_PREFIX}_{level}")
 
+            # Import global localization method dynamically
             localization_class = import_localization_class(config.PathConfig.LOCALIZATION_CLASS_PATH)
             localization = localization_class(
                 config,
@@ -84,11 +83,13 @@ if __name__ == "__main__":
                 visualize=is_visualize,
             )
 
-            recall_list, d1_list, d2_list, num_queries = localization.iterate_localization_with_query(
+            # Iterate global localization process with queries at current space and level
+            accuracy_list, d1_list, d2_list, num_queries = localization.iterate_localization_with_query(
                 recolored_topdown_map
             )
 
-            total_recall = total_recall + recall_list
+            # Accumulate results
+            total_accuracy = total_accuracy + accuracy_list
             total_d1 = total_d1 + d1_list
             total_d2 = total_d2 + d2_list
             total_queries = total_queries + num_queries
@@ -96,9 +97,8 @@ if __name__ == "__main__":
         if test_on_sim:
             sim.close()
 
-    print("Recall: ", sum(total_recall) / total_queries)
-    print("Recall std: ", np.std(total_recall))
-    print("Distance 1: ", (sum(total_d1) / total_queries) * 0.1)
-    print("Distance 1 std: ", np.std(total_d1) * 0.1)
-    print("Distance 2: ", (sum(total_d2) / total_queries) * 0.1)
-    print("Distance 2 std: ", np.std(total_d2) * 0.1)
+    print("Accuracy: ", sum(total_accuracy) / total_queries)
+    print("Pos Distance: ", (sum(total_d1) / total_queries) * 0.1)
+    print("Pos Distance std: ", np.std(total_d1) * 0.1)
+    print("Node Distance: ", (sum(total_d2) / total_queries) * 0.1)
+    print("Node Distance std: ", np.std(total_d2) * 0.1)

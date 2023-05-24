@@ -72,7 +72,7 @@ def convert_to_dense_topology(binary_map):
 
 
 def get_one_random_directed_adjacent_node(graph, node, previous_node):
-    """Choice one node among adjacent nodes. Excluding previous node."""
+    """Choose one node among adjacent nodes. Excluding previous node."""
     adjacent_nodes = list(graph.adj[node])
     next_node = None
     error_code = 0
@@ -208,6 +208,7 @@ def generate_map_image(map_image, graph, node_only=False, line_edge=False):
 
 
 def remove_isolated_area(topdown_map, removal_threshold=1000):
+    """Remove isolated small area to avoid unnecessary graph node."""
     contours, _ = cv2.findContours(topdown_map, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
         if cv2.contourArea(contour) < removal_threshold:
@@ -217,46 +218,10 @@ def remove_isolated_area(topdown_map, removal_threshold=1000):
 
 
 def topdown_map_to_graph(topdown_map, is_remove_isolated):
+    """Generate graph map from topdown map."""
     if is_remove_isolated:
         topdown_map = remove_isolated_area(topdown_map)
     binary_map = convert_to_binarymap(topdown_map)
     _, graph = convert_to_dense_topology(binary_map)
-
-    return graph
-
-
-def prune_graph(graph, topdown_map, check_radius):
-    end_node_list = []
-    isolated_node_list = []
-    root_node_list = []
-
-    for node in graph.nodes:
-        if len(list(graph.neighbors(node))) == 1:
-            end_node_list.append(node)
-        if len(list(graph.neighbors(node))) == 0:
-            isolated_node_list.append(node)
-
-    for isolated_node in isolated_node_list:
-        graph.remove_node(isolated_node)
-
-    for end_node in end_node_list:
-        pnt = [int(graph.nodes[end_node]["o"][0]), int(graph.nodes[end_node]["o"][1])]
-        check_patch = topdown_map[
-            pnt[0] - check_radius : pnt[0] + check_radius, pnt[1] - check_radius : pnt[1] + check_radius
-        ]
-        if (2 in check_patch) or (0 in check_patch):
-            graph.remove_node(end_node)
-
-    for node in graph.nodes:
-        if len(list(graph.neighbors(node))) == 2:
-            root_node_list.append(node)
-
-    for root_node in root_node_list:
-        branch = list(graph.neighbors(root_node))
-        if len(branch) != 2:
-            continue
-        graph.remove_node(root_node)
-        graph.add_edge(branch[0], branch[1])
-        graph.edges[branch[0], branch[1]]["pts"] = []
 
     return graph

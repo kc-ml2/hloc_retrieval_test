@@ -8,7 +8,7 @@ from relocalization.localization_base import LocalizationBase
 
 
 class LocalizationOrbMatching(LocalizationBase):
-    """Class for localization methods with ORB local feature."""
+    """Class for global localization methods with ORB local feature."""
 
     def __init__(
         self,
@@ -18,7 +18,7 @@ class LocalizationOrbMatching(LocalizationBase):
         binary_topdown_map=None,
         visualize=False,
     ):
-        """Initialize localization instance with specific model & map data."""
+        """Initialize localization instance with specific map & query image directories."""
         super().__init__(
             config,
             map_obs_dir,
@@ -88,13 +88,12 @@ class LocalizationOrbMatching(LocalizationBase):
         return desc_db, desc_query
 
     def localize_with_observation(self, query_id: str):
-        """Get localization result of current map according to input observation embedding."""
+        """Get global localization result according to query id input."""
         # Query the database
         i = int(query_id)
         print(i, end="\r", flush=True)
 
         scores = []
-
         for db_des in self.desc_db:
             matches = self.bf.match(self.desc_query[i], db_des)
             matches = sorted(matches, key=lambda x: x.distance)

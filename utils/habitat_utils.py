@@ -264,22 +264,28 @@ def get_scene_by_eng_guide(instruction_id, train_guide_file, scene_directory):
     return scene
 
 
-def get_entire_maps_by_levels(sim, meters_per_pixel):
+def get_entire_maps_by_levels(sim, meters_per_pixel, num_random_samples=300):
     """Sample random maps & Get the largest map by levels."""
     print("Sampling maps to get proper map...")
     nav_point_list = []
     closest_level_list = []
-    for i in range(300):
-        nav_point = sim.pathfinder.get_random_navigable_point()
+    for i in range(num_random_samples):
+        nav_point = sim.pathfinder.get_random_navigable_point()  # Get one random navigable point
         distance_list = []
         average_list = []
+
+        # Iterate levels provided by Habitat dataset
         for level in sim.semantic_scene.levels:
+            # Measure distance between current point and every spaces(rooms) in current level
             for region in level.regions:
                 distance = abs(region.aabb.center[1] - (nav_point[1] + 0.5))
                 distance_list.append(distance)
+
             average = sum(distance_list) / len(distance_list)
-            average_list.append(average)
-        closest_level = average_list.index(min(average_list))
+            average_list.append(average)  # Add average distance between this sample point and every room at this level
+
+        closest_level = average_list.index(min(average_list))  # Estimate current level of the sample point
+        # Store current point and estimated level. This process repeats with 300 samples
         nav_point_list.append(nav_point)
         closest_level_list.append(closest_level)
     print("Map sampling done.")
@@ -296,18 +302,22 @@ def get_entire_maps_by_levels(sim, meters_per_pixel):
             if not sim.pathfinder.is_navigable(point):
                 print("Sampled point is not navigable")
 
+            # Get topdown map of all points that is estimated to be in this level
             if closest_level_list[i] == level_id:
                 topdown_map = maps.get_topdown_map(sim.pathfinder, height=point[1], meters_per_pixel=meters_per_pixel)
                 area_size = np.count_nonzero(topdown_map == 1)
 
             area_size_list.append(area_size)
 
+        # Get the sample point and map with maximum area
         sample_id = area_size_list.index(max(area_size_list))
         topdown_map = maps.get_topdown_map(
             sim.pathfinder, height=nav_point_list[sample_id][1], meters_per_pixel=meters_per_pixel
         )
         height_points.append(nav_point_list[sample_id][1])
         topdown_map_list.append(topdown_map)
+
+        # Recolor the map
         recolor_palette = np.array([[255, 255, 255], [128, 128, 128], [0, 0, 0]], dtype=np.uint8)
         recolored_topdown_map = recolor_palette[topdown_map]
         recolored_topdown_map_list.append(recolored_topdown_map)
@@ -454,9 +464,12 @@ def draw_line_from_edge(map_img, graph, edge_tuple, brightness):
 
 
 def save_observation(color_img, observation_path, img_id, pos_record, position, node_point):
-    print("save image")
+    """Save current observation (RGB camera image) at designated directory & Update position record."""
     cv2.imwrite(observation_path + os.sep + f"{img_id:06d}.jpg", color_img)
     sim_pos = {f"{img_id:06d}_sim": [float(pos) for pos in position]}
     grid_pos = {f"{img_id:06d}_grid": [int(pnt) for pnt in node_point]}
+    print("save image")
+
+    # Update position record
     pos_record.update(sim_pos)
     pos_record.update(grid_pos)

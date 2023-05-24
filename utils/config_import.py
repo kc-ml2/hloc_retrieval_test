@@ -2,7 +2,8 @@ import importlib
 import os
 
 
-def load_config_module(file_name):
+def load_config_module(file_name: str):
+    """Load config module dynamically."""
     file_name = os.path.normpath(file_name)
 
     if file_name[-3:] == ".py":
@@ -16,7 +17,8 @@ def load_config_module(file_name):
     return config_module
 
 
-def import_localization_class(class_path):
+def import_localization_class(class_path: str):
+    """Import global localization module dynamically."""
     path = class_path.split(".")
     class_name = path[-1]
     module_path = ".".join(path[:-1])
