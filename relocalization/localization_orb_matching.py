@@ -9,8 +9,8 @@ from relocalization.localization_base import LocalizationBase
 
 class LocalizationOrbMatching(LocalizationBase):
     """Class for global localization methods with ORB local feature.
-        This class does not use DBOW(Bag of the Words) method. It uses brute force matching of ORB features.
-        As we tested, DBOW is good for reducing computing resource, but not good for localization accuaracy.
+    This class does not use DBOW(Bag of the Words) method. It uses brute force matching of ORB features.
+    As we tested, DBOW is good for reducing computing resource, but not good for localization accuaracy.
     """
 
     def __init__(

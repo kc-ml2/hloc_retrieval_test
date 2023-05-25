@@ -13,3 +13,8 @@ sknw == 0.14
 networkx == 2.6.3
 numpy == 1.21.6
 opencv-python >= 4.5
+numpy-quaternion
+scipy
+
+# Module for dataset
+h5py

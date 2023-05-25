@@ -1,3 +1,13 @@
+"""
+Original code:
+https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb
+
+The original code is released under the MIT license.
+
+Modified by KC-ML2.
+"""
+
+
 import json
 import os
 import time

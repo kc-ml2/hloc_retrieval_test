@@ -1,3 +1,13 @@
+"""
+Original code:
+https://github.com/cvg/Hierarchical-Localization/blob/master/pipeline_Aachen.ipynb
+
+The original code is released under Apache-2.0 license.
+
+Modified by KC-ML2.
+"""
+
+
 import argparse
 import os
 from pathlib import Path
