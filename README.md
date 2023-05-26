@@ -1,7 +1,7 @@
 # Image Retrieval Testbed for Indoor Robot Global Localization
---- 
+
 This repository is for testing image retrieval methods for robot global localization.  
-It provides test on indoor environments from [Matterport3D Dataset](https://niessner.github.io/Matterport/).  
+It provides a test on indoor environments from [Matterport3D Dataset](https://niessner.github.io/Matterport/).  
 [Hierarchical Localization toolbox (hloc)](https://github.com/cvg/Hierarchical-Localization) is mainly tested for the image retrieval method.  
 
 Following features are implemented.
@@ -68,7 +68,7 @@ python2 download_mp.py --task habitat -o /your/path/to/download
 
 # Make dataset directory.
 # If you don't want to store dataset in this repo directory, fix SCENE_DIRECTORY in config file
-cd ()  # clone of this repository
+cd hloc_retrieval_test  # clone of this repository
 mkdir Matterport3D
 cd Matterport3D
 
@@ -79,8 +79,8 @@ unzip /your/path/to/download/v1/tasks/mp3d_habitat.zip -d ./
 
 ## Set Up
 ```bash
-git clone git@github.com:kc-ml2/()
-cd ()
+git clone git@github.com:kc-ml2/hloc_retrieval_test.git
+cd hloc_retrieval_test
 pip install -r requirements.txt
 
 # Test installation. This needs Matterport3D dataset below
