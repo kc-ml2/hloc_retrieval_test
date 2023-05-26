@@ -1,8 +1,8 @@
 # Image Retrieval Testbed for Indoor Robot Global Localization
 --- 
-This repository is for testing image retrieval methods for robot global localization.
-The test is focused on indoor environments from [Matterport3D Dataset](https://niessner.github.io/Matterport/).
-[Hierarchical Localization toolbox (hloc)](https://github.com/cvg/Hierarchical-Localization) is mainly tested for the image retrieval method.
+This repository is for testing image retrieval methods for robot global localization.  
+The test is focused on indoor environments from [Matterport3D Dataset](https://niessner.github.io/Matterport/).  
+[Hierarchical Localization toolbox (hloc)](https://github.com/cvg/Hierarchical-Localization) is mainly tested for the image retrieval method.  
 
 Following features are implemented.
    - Extract image retrieval database using [Habitat-Sim](https://github.com/facebookresearch/habitat-sim)
@@ -20,7 +20,7 @@ Three 3rd party libraries are required.
 - [Hierarchical Localization toolbox](https://github.com/cvg/Hierarchical-Localization)
 - [Matterport3D Dataset](https://niessner.github.io/Matterport/)
 
-##### Habitat-Sim
+#### Habitat-Sim
 [Offical installation guide for Habitat-Sim](https://github.com/facebookresearch/habitat-sim)
 We tested with `habitat-sim` version `v0.2.1` and `v0.2.2`, but higher version should work.
 
@@ -33,8 +33,8 @@ conda install habitat-sim withbullet -c conda-forge -c aihabitat
 conda config --set channel_priority flexible
 ```
 
-##### Habitat-Lab
-[Offical installation guide for Habitat-Lab](https://github.com/facebookresearch/habitat-lab)
+#### Habitat-Lab
+[Offical installation guide for Habitat-Lab](https://github.com/facebookresearch/habitat-lab)  
 We tested with `habitat-lab` version `v0.2.1` and `v0.2.2`, but higher version should work.
 
 ```bash
@@ -43,9 +43,9 @@ cd habitat-lab
 pip install -e habitat-lab
 ```
 
-##### Hierarchical Localization toolbox
-[Offical installation guide for Hierarchical Localization toolbox](https://github.com/cvg/Hierarchical-Localization)
-Only difference is that we used `develop` flag package installation to import 3rd party in `hloc`.
+#### Hierarchical Localization toolbox
+[Offical installation guide for Hierarchical Localization toolbox](https://github.com/cvg/Hierarchical-Localization)  
+Only difference is that we used `develop` flag package installation to import 3rd party in `hloc`.  
 We tested with `hloc` version `v1.3`.
 
 ```bash
@@ -57,9 +57,9 @@ git submodule update --init --recursive
 python setup.py develop  # To import 3rd party in `hloc`
 ```
 
-##### Matterport3D Dataset
-[Matterport3D dataset](https://niessner.github.io/Matterport/) is required for test in various indoor environments.
-To get this dataset, please visit [here](https://niessner.github.io/Matterport/) and submit Terms of Use agreement.
+#### Matterport3D Dataset
+[Matterport3D dataset](https://niessner.github.io/Matterport/) is required for test in various indoor environments.  
+To get this dataset, please visit [here](https://niessner.github.io/Matterport/) and submit Terms of Use agreement.  
 You will get `download_mp.py` file after you submit the form.
 
 ```bash
@@ -90,28 +90,28 @@ python run_sim.py
 
 ## Pipeline
 
-##### Step 1. Generate top-down grid map image
+### Step 1. Generate top-down grid map image
 ```bash
 # Because this step generates maps of all spaces(scenes), it takes quite a while
 # We've already uploaded the result in ./data/, so you can skip this
 python generate_grid_map.py
 ```
 
-##### Step 2. Generate database from grid map
+### Step 2. Generate database from grid map
 ```bash
 # This step generates graph map, and gathers RGB observations assigned to each node
 # It will occupy about 18GB of disk memory
 python generate_map_observation.py
 ```
 
-##### Step 3. Run "Hierarchical Localization toolbox"
+### Step 3. Run "Hierarchical Localization toolbox"
 ```bash
 # This step extracts NetVLAD, Superpoint features and matching result
 # It will occupy about 32GB of disk memory
 python generate_hloc_feature.py
 ```
 
-##### Step 4. Run test on all scenes(spaces)
+### Step 4. Run test on all scenes(spaces)
 ```bash
 # Run global localization (retrieval) with graph map (database) and samples
 # It iterates all scenes in scene_list_{setting}.txt file
@@ -123,18 +123,18 @@ python run_retrieval_test.py --visulaize
 
 ## Supported Methods
 
-##### Method 1. Hierarchical Localization (NetVLAD + Superpoint)
+### Method 1. Hierarchical Localization (NetVLAD + Superpoint)
 - This method is from [hloc toolbox](https://github.com/cvg/Hierarchical-Localization)
 - See `config/concat_fourview_69FOV_HD.py` for example
 - NetVLAD pre-trained weight is from [hloc toolbox](https://github.com/cvg/Hierarchical-Localization)
 - Superpoint pre-trained weight for is from [SuperGlue by Magic Leap](https://github.com/magicleap/SuperGluePretrainedNetwork/tree/ddcf11f42e7e0732a0c4607648f9448ea8d73590)
 
-##### Method 2. Hierarchical Localization (NetVLAD only)
+### Method 2. Hierarchical Localization (NetVLAD only)
 - This method is from [hloc toolbox](https://github.com/cvg/Hierarchical-Localization)
 - See `config/concat_fourview_69FOV_NetVLAD_only.py` for example
 - NetVLAD pre-trained weight is from [hloc toolbox](https://github.com/cvg/Hierarchical-Localization)
 
-##### Method 3. Brute-force matching (ORB)
+### Method 3. Brute-force matching (ORB)
 - Brute-force matching ORB descriptors from two images. Top 30 matches are used for getting score
 - It does not use DBOW for better accuracy
 - See `config/concat_fourview_69FOV_HD_ORB.py` for example
@@ -142,8 +142,8 @@ python run_retrieval_test.py --visulaize
 
 ## Result
 
-For more information about metric, please visit our [blog]().
-Hierarchical localization (NetVLAD + Superpoint) performs best for image retrieval in Habitat-Sim.
+For more information about metric, please visit our [blog]().  
+Hierarchical localization (NetVLAD + Superpoint) performs best for image retrieval in Habitat-Sim.  
 It is also superior in our real-world test scenario.
 
 |Environment|Method|Accuracy|Distance [m] (std)|
