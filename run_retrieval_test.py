@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from relocalization.sim import HabitatSimWithMap
+from global_localization.sim import HabitatSimWithMap
 from utils.config_import import import_localization_class, load_config_module
 from utils.habitat_utils import open_env_related_files
 

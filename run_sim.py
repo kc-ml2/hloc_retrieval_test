@@ -17,7 +17,7 @@ import cv2
 from habitat.utils.visualizations import maps
 import numpy as np
 
-from relocalization.sim import HabitatSimWithMap
+from global_localization.sim import HabitatSimWithMap
 from utils.config_import import load_config_module
 from utils.habitat_utils import (
     display_map,

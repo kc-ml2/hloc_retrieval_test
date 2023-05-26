@@ -1,7 +1,7 @@
 class PathConfig:
-    LOCALIZATION_CLASS_PATH = "relocalization.localization_netvlad_superpoint.LocalizationNetVLADSuperpoint"
+    LOCALIZATION_CLASS_PATH = "global_localization.netvlad_superpoint.LocalizationNetVLADSuperpoint"
     LOCALIZATION_TEST_PATH = "./output/output_single_view_90FOV_HD/"
-    SCENE_DIRECTORY = "./Matterport3D/mp3d_habitat/data/scene_datasets/mp3d/v1/tasks/mp3d/"
+    SCENE_DIRECTORY = "./Matterport3D/mp3d/"
     HLOC_OUTPUT = "./netvlad_output/singleview_90FOV_HD/"
     MAP_DIR_PREFIX = "map_node_observation_level"
     QUERY_DIR_PREFIX = "test_query"

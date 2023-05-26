@@ -6,7 +6,7 @@ import random
 import cv2
 import numpy as np
 
-from relocalization.sim import HabitatSimWithMap
+from global_localization.sim import HabitatSimWithMap
 from utils.config_import import load_config_module
 from utils.habitat_utils import draw_point_from_node, open_env_related_files
 from utils.skeletonize_utils import topdown_map_to_graph

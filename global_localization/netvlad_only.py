@@ -1,7 +1,7 @@
 import os
 import re
 
-from relocalization.localization_base import LocalizationBase
+from global_localization.base import LocalizationBase
 
 
 class LocalizationNetVLADOnly(LocalizationBase):

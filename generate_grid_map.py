@@ -4,7 +4,7 @@ import os
 
 import cv2
 
-from relocalization.sim import HabitatSimWithMap
+from global_localization.sim import HabitatSimWithMap
 from utils.config_import import load_config_module
 from utils.habitat_utils import get_entire_maps_by_levels
 

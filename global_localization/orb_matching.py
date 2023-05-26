@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 
-from relocalization.localization_base import LocalizationBase
+from global_localization.base import LocalizationBase
 
 
 class LocalizationOrbMatching(LocalizationBase):
