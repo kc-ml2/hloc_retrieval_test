@@ -1,7 +1,7 @@
 # Image Retrieval Testbed for Indoor Robot Global Localization
 --- 
 This repository is for testing image retrieval methods for robot global localization.  
-The test is focused on indoor environments from [Matterport3D Dataset](https://niessner.github.io/Matterport/).  
+It provides test on indoor environments from [Matterport3D Dataset](https://niessner.github.io/Matterport/).  
 [Hierarchical Localization toolbox (hloc)](https://github.com/cvg/Hierarchical-Localization) is mainly tested for the image retrieval method.  
 
 Following features are implemented.
