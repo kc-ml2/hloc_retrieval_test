@@ -77,7 +77,7 @@ unzip /your/path/to/download/v1/tasks/mp3d_habitat.zip -d ./
 ```
 
 
-## Set Up
+### Set Up
 ```bash
 git clone git@github.com:kc-ml2/hloc_retrieval_test.git
 cd hloc_retrieval_test
@@ -120,7 +120,6 @@ python run_retrieval_test.py
 python run_retrieval_test.py --visulaize
 ```
 
-
 ## Supported Methods
 
 ### Method 1. Hierarchical Localization (NetVLAD + Superpoint)
@@ -156,16 +155,75 @@ It is also superior in our real-world test scenario.
 |real world|NetVLAD + Superpoint|<span style="color: red">0.892</span>|<span style="color: red">0.465</span> (0.766)|
 
 
+## Test with Real-world Data or Your Own Data
+If you want to test in real-world data example, download our image set with commands below. Use the [config file](https://github.com/kc-ml2/hloc_retrieval_test/blob/main/config/realworld_69FOV.py) to run this set.  
+```bash
+mkdir output
+cd output
+
+pip install gdown
+gdown https://drive.google.com/uc?id=1vKStXeQ--owwUDIKsbWO-NrEuWYeo7c_
+unzip output_realworld.zip
+
+cd ..
+
+python generate_hloc_feature.py --config config/realworld_69FOV.py
+python run_retrieval_test.py --config config/realworld_69FOV.py
+```
+
+If you want to use your own image set, the file tree and image file naming should follow the example.  
+The image file name must be a six-digit padded integer.  
+You can change `LOCALIZATION_TEST_PATH` with your own directory.  
+```bash
+# file tree
+└── /your/directory/
+    ├── pos_record_map_node_observation_level_0.json
+    ├── pos_record_test_query_0.json
+    ├── map_node_observation_level_0
+    │   ├── 000000.jpg
+    │   ├── 000001.jpg
+    │   ├── 000002.jpg
+    │   ├── ...
+    └── test_query_0
+        ├── 000000.jpg
+        ├── 000001.jpg
+        ├── 000002.jpg
+        ├──...
+
+# pose record json file (pos_record_test_query_0.json)
+{
+    "000000_grid": [
+        1,
+        0
+    ],
+    "000001_grid": [
+        2,
+        0
+    ],
+    "000002_grid": [
+        3,
+        0
+    ],
+    ...
+}
+```
+
+
+## Multiple Observation per Node
+Multiple images can be assigned to a single node. Run example with the commands below.  
+```bash
+# In config file, CamConfig.NUM_CAMERA must be bigger than 1, and CamConfig.IMAGE_CONCAT must be False
+python generate_map_observation.py --config config/singleview_90FOV.py
+python generate_hloc_feature.py --config config/singleview_90FOV.py
+python run_retrieval_test.py --config config/singleview_90FOV.py
+```
+
+
+
 ## Graph Map Generation
-
-
-## Supported Observation Data Structure
-
-
-## Test with Your Own Data
-
-
-
+Habitat-Sim provides top-down map at current position. However, if the robot is summoned on a table or sofa, the correct top-down map cannot be acquired.  
+To solve this, we sampled many top-down map at many random positions, and get the top-down map with the largest area size. Please see code & comments at [here](https://github.com/kc-ml2/hloc_retrieval_test/blob/main/utils/habitat_utils.py#L235).  
+We applied [sknw skeletonization](https://github.com/Image-Py/sknw) on this largest area map, and get graph map. See [here](https://github.com/kc-ml2/hloc_retrieval_test/blob/main/utils/skeletonize_utils.py#L220) for code.
 
 ## Code Formatting
 - Code formatting tool: `black`, `isort`
