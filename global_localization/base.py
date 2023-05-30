@@ -103,27 +103,27 @@ class LocalizationBase:
             d2_list.append(d2)
 
             if self.is_visualize:
-                print("Query No.: ", i)
-                print("Accuracy", accuracy)
-                print("Pos Distance: ", d1)
-                print("Node Distance: ", d2)
-
                 if accuracy is False:
+                    print("Query No.: ", i)
+                    print("Accuracy", accuracy)
+                    print("Pos Distance: ", d1)
+                    print("Node Distance: ", d2)
+
                     self.display_observation_comparison(result, gt_node, i)
 
-                # Visualize result position on map
-                if recolored_topdown_map is not None and self.test_on_sim:
-                    map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
-                    map_image = self.visualize_on_map(map_image, result)
-                    draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
+                    # Visualize result position on map
+                    if recolored_topdown_map is not None and self.test_on_sim:
+                        map_image = cv2.cvtColor(recolored_topdown_map, cv2.COLOR_GRAY2BGR)
+                        map_image = self.visualize_on_map(map_image, result)
+                        draw_point_from_grid_pos(map_image, grid_pos, (0, 255, 0))
 
-                    cv2.namedWindow("map", cv2.WINDOW_NORMAL)
-                    cv2.resizeWindow("map", 512, 512)
-                    cv2.imshow("map", map_image)
+                        cv2.namedWindow("map", cv2.WINDOW_NORMAL)
+                        cv2.resizeWindow("map", 512, 512)
+                        cv2.imshow("map", map_image)
 
-                key = cv2.waitKey()
-                if key == ord("n"):
-                    break
+                    key = cv2.waitKey()
+                    if key == ord("n"):
+                        break
 
         k = i + 1
         print("Temporay accuracy: ", sum(accuracy_list) / k)
@@ -173,14 +173,26 @@ class LocalizationBase:
         query_img = cv2.imread(query_path)
         blank_img = np.zeros([10, predicted_img.shape[1], 3], dtype=np.uint8)
 
-        # Merge all images to show in one window. Add padding if the size of the image is different
-        if self.num_frames_per_node == 1:
-            match_img = np.concatenate([query_img, blank_img, predicted_img, blank_img, true_img], axis=0)
-        else:
+        # Add padding if the size of the image is different
+        if self.num_frames_per_node > 1:
             padded_img = np.full(np.shape(predicted_img), 255, dtype=np.uint8)
             x_offset = predicted_img.shape[1] // 2 - query_img.shape[1] // 2
-            padded_img[:, x_offset : x_offset + query_img.shape[1], :] = query_img
-            match_img = np.concatenate([padded_img, blank_img, predicted_img, blank_img, true_img], axis=0)
+            padded_img[:, x_offset : x_offset + query_img.shape[1], :] = query_img.copy()
+            query_img = padded_img
+
+        # Put string on images
+        query_img = cv2.putText(
+            query_img, "current observation", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 3, cv2.LINE_AA
+        )
+        predicted_img = cv2.putText(
+            predicted_img, "predicted node", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 3, cv2.LINE_AA
+        )
+        true_img = cv2.putText(
+            true_img, "ground truth node", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 3, cv2.LINE_AA
+        )
+
+        # Merge all images to show in one window
+        match_img = np.concatenate([query_img, blank_img, predicted_img, blank_img, true_img], axis=0)
 
         cv2.namedWindow("localization", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("localization", 1700, 700)
