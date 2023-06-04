@@ -8,7 +8,7 @@ Following features are implemented.
    - Extract image retrieval database using [Habitat-Sim](https://github.com/facebookresearch/habitat-sim)
    - Test hloc toolbox in various indoor environments
 
-If you are interested in more information, please visit our [blog]().
+If you are interested in more information, please visit our [blog](https://www.kc-ml2.com/posts/blog_RobotGlobalLocalization).
 
 ![image](https://drive.google.com/uc?export=view&id=1xoNqm8kCQbL1v5M5za-VeNj1Sr81RQXl)
 
@@ -142,7 +142,7 @@ python run_retrieval_test.py --visulaize
 
 ## Result
 
-For more information about metric, please visit our [blog]().  
+For more information about metric, please visit our [blog](https://www.kc-ml2.com/posts/blog_RobotGlobalLocalization).  
 Hierarchical localization (NetVLAD + Superpoint) performs best for image retrieval in Habitat-Sim.  
 It is also superior in our real-world test scenario.
 
