@@ -1,6 +1,7 @@
 import random
 
 import cv2
+import networkx as nx
 import numpy as np
 from skimage.morphology import skeletonize
 import sknw
@@ -74,6 +75,13 @@ def convert_to_dense_topology(binary_map, pruning, prune_thres, num_prune_iter=2
                 if len(graph.adj[node]) == 0:
                     graph.remove_node(node)
 
+        # Re-index node id so that there is not missing number
+        mapping = {}
+        for i, node in enumerate(sorted(graph)):
+            mapping.update({node: i})
+        graph = nx.relabel_nodes(graph, mapping)
+
+    # Convert all points in each edge to node for dense graph generation
     temp_graph = graph.copy()
     for (s, e) in temp_graph.edges():
         initial_dense_node_idx = max(graph.nodes()) + 1
