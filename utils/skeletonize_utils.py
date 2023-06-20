@@ -40,16 +40,43 @@ def convert_to_topology(binary_map):
     return skeleton, graph
 
 
-def convert_to_dense_topology(binary_map):
+def convert_to_dense_topology(binary_map, pruning, prune_thres, num_prune_iter=2):
     """Convert binary image to topology."""
     skeleton = skeletonize(binary_map).astype(np.uint8)
     skeleton[skeleton > 0] = 255
 
     graph = sknw.build_sknw(skeleton)
 
+    if pruning:
+        for _ in range(num_prune_iter):
+            # Get list of short edges
+            short_edges = []
+            for (s, e) in graph.edges():
+                edge_length = graph[s][e]["weight"]
+                if edge_length <= prune_thres:
+                    short_edges.append((s, e))
+
+            # Get list of edges to remove (The edge which has a single neighbor. End node)
+            edge_to_remove = []
+            for (s, e) in short_edges:
+                num_neighbors_of_start_node = len(graph.adj[s])
+                num_neighbors_of_end_node = len(graph.adj[e])
+                if num_neighbors_of_start_node == 1 or num_neighbors_of_end_node == 1:
+                    edge_to_remove.append((s, e))
+
+            # Remove edges
+            for (s, e) in edge_to_remove:
+                graph.remove_edge(s, e)
+
+            # Remove remaining nodes
+            temp_graph = graph.copy()
+            for node in temp_graph.nodes():
+                if len(graph.adj[node]) == 0:
+                    graph.remove_node(node)
+
     temp_graph = graph.copy()
     for (s, e) in temp_graph.edges():
-        initial_dense_node_idx = len(graph.nodes())
+        initial_dense_node_idx = max(graph.nodes()) + 1
         ps = graph[s][e]["pts"]
 
         dense_node_idx_list = []
@@ -217,11 +244,11 @@ def remove_isolated_area(topdown_map, removal_threshold=1000):
     return topdown_map
 
 
-def topdown_map_to_graph(topdown_map, is_remove_isolated):
+def topdown_map_to_graph(topdown_map, is_remove_isolated, pruning=False, prune_thres=30):
     """Generate graph map from topdown map."""
     if is_remove_isolated:
         topdown_map = remove_isolated_area(topdown_map)
     binary_map = convert_to_binarymap(topdown_map)
-    _, graph = convert_to_dense_topology(binary_map)
+    _, graph = convert_to_dense_topology(binary_map, pruning, prune_thres)
 
     return graph

@@ -19,6 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--map-height-json", default="./data/map_height.json")
     parser.add_argument("--not-generate-test-query", action="store_true")
     parser.add_argument("--map-debug", action="store_true")
+    parser.add_argument("--prune", action="store_true")
     args, _ = parser.parse_known_args()
     module_name = args.config
     scene_list_file = args.scene_list_file
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     height_json_path = args.map_height_json
     not_generate_test_query = args.not_generate_test_query
     map_debug = args.map_debug
+    pruning = args.prune
 
     config = load_config_module(module_name)
     output_path = config.PathConfig.LOCALIZATION_TEST_PATH
@@ -41,7 +43,7 @@ if __name__ == "__main__":
 
             # Build binary top-down map & skeleton graph
             topdown_map = sim.topdown_map_list[level]
-            graph = topdown_map_to_graph(topdown_map, config.DataConfig.REMOVE_ISOLATED)
+            graph = topdown_map_to_graph(topdown_map, config.DataConfig.REMOVE_ISOLATED, pruning)
 
             if len(list(graph.nodes)) == 0:
                 continue
