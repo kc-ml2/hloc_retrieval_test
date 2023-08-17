@@ -62,7 +62,7 @@ def make_cfg(settings):
         color_sensor_spec.resolution = [settings["height"], settings["width"]]
         color_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
         color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        color_sensor_spec.hfov = 69.0
+        color_sensor_spec.hfov = 90.0
         sensor_specs.append(color_sensor_spec)
 
     if settings["color_360_sensor"] is True:
@@ -214,7 +214,7 @@ def display_map(topdown_map, window_name="map", key_points=None, wait_for_key=Fa
                 position=(int(pnt[1]), int(pnt[0])),
                 color=(255, 0, 0),
                 markerType=cv2.MARKER_DIAMOND,
-                markerSize=1,
+                markerSize=2,
             )
 
     if key_points is not None and len(key_points) >= 2:
@@ -305,13 +305,13 @@ def draw_point_from_grid_pos(map_img, grid_pos, color):
     )
 
 
-def draw_point_from_node(map_img, graph, node_id):
+def draw_point_from_node(map_img, graph, node_id, color=(0, 0, 255), radius=0):
     """Draw point(circle) on map with negative radius."""
     cv2.circle(
         img=map_img,
         center=(int(graph.nodes()[node_id]["o"][1]), int(graph.nodes()[node_id]["o"][0])),
-        radius=0,
-        color=(0, 0, 255),
+        radius=radius,
+        color=color,
         thickness=-1,
     )
 
